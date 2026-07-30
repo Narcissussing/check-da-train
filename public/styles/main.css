@@ -191,8 +191,7 @@ h1 span {
 
 .villes {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 1rem;
+  grid-template-columns: 1fr;
   margin-bottom: 1.5rem;
 }
 
@@ -319,22 +318,79 @@ h1 span {
   z-index: 1;
 }
 
-.carte-principale .ressenti {
-  color: var(--text-dim);
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  margin-top: 0.5rem;
-  position: relative;
-  z-index: 1;
+.meteo-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.9rem;
 }
 
-.carte-principale .temp-journee {
-  color: var(--text-dim);
-  font-size: 0.75rem;
+.meteo-detail {
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(10, 14, 20, 0.12);
   font-family: var(--font-mono);
+}
+
+.meteo-detail span,
+.meteo-detail strong {
+  display: block;
+  white-space: nowrap;
+}
+
+.meteo-detail span {
+  color: var(--text-dim);
+  font-size: 0.56rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.meteo-detail strong {
+  margin-top: 0.2rem;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.meteo-detail-pluie {
+  -webkit-appearance: none;
+  appearance: none;
+  grid-column: 1 / -1;
+  width: 100%;
+  text-align: left;
+  border-color: rgba(96, 165, 250, 0.2);
+  cursor: pointer;
+}
+
+.meteo-detail-pluie strong {
+  color: #93c5fd;
+}
+
+.meteo-detail-pluie small {
+  display: block;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  opacity: 0;
+  transition:
+    max-height 0.25s ease,
+    margin-top 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.meteo-detail-pluie.ouverte small {
+  max-height: 2rem;
   margin-top: 0.35rem;
-  position: relative;
-  z-index: 1;
+  opacity: 1;
+}
+
+.meteo-detail-pluie[disabled] {
+  cursor: default;
 }
 
 .carte-secondaire .temp {
@@ -357,19 +413,54 @@ h1 span {
   padding-top: 0.5rem;
 }
 
-.gym > h2 {
+.gym-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.gym-entete > h2 {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text);
-  margin-bottom: 1rem;
   padding-left: 0.75rem;
   border-left: 3px solid var(--accent);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.meaux-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    var(--meaux-bg-from),
+    var(--meaux-bg-to)
+  );
+  color: var(--meaux-description);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.meaux-compact strong {
+  color: var(--meaux-accent-bright);
+  font-size: 0.95rem;
+}
+
+.meaux-gym {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 /* Colonnes Aller / Retour */
@@ -379,11 +470,17 @@ h1 span {
   gap: 1rem;
 }
 
+.creneaux-liste,
+.creneau > ul {
+  list-style: none;
+}
+
 .colonnes-creneaux > div {
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
+  padding: 0;
 }
 
 .colonnes-creneaux h3 {
@@ -393,23 +490,27 @@ h1 span {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--accent);
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  min-height: 3rem;
+  margin: 0;
+  padding: 0.9rem 1rem 0.65rem;
   border-bottom: 1px solid var(--border);
 }
 
 .creneau {
   display: grid;
-  grid-template-columns: 55px minmax(0, 1fr);
+  grid-template-columns: 3.5rem minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0;
+  column-gap: 0.65rem;
+  width: 100%;
+  min-height: 4rem;
+  padding: 0.65rem 1rem;
   font-size: 0.9rem;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
   transition:
     background var(--transition),
-    padding var(--transition),
-    transform var(--transition);
+    min-height var(--transition);
 }
 
 .creneau:last-child {
@@ -425,17 +526,53 @@ h1 span {
   font-weight: 600;
   font-size: 0.9rem;
   color: var(--text);
-  min-width: 55px;
+  min-width: 0;
 }
 
 .creneau .resume {
+  min-width: 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .creneau > ul {
-  grid-column: 1 / -1;
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
   width: 100%;
+}
+
+.creneau:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.creneau-complement {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  opacity: 0;
+  transition:
+    max-height 0.25s ease,
+    margin-top 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.creneau.deplie .creneau-complement {
+  max-height: 2rem;
+  margin-top: 0.5rem;
+  opacity: 1;
 }
 
 /* ──────────────────────────────────────────
@@ -459,29 +596,38 @@ h1 span {
    ────────────────────────────────────────── */
 
 .carte-principale .carte-contenu {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1.5rem;
-  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.6fr) minmax(0, 2fr);
+  align-items: stretch;
+  gap: 1.25rem;
+  height: auto;
 }
 
 .carte-principale .meteo-info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .carte-principale .trains-panneau {
-  display: flex;
-  gap: 1rem;
-  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+  height: auto;
 }
 
 .trains-gare {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.25rem;
-  min-width: 120px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(10, 14, 20, 0.15);
 }
 
 .trains-gare h3 {
@@ -489,7 +635,7 @@ h1 span {
   align-items: center;
   gap: 0.4rem;
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -497,13 +643,38 @@ h1 span {
 }
 
 .prochain-countdown {
-  color: var(--text-dim);
-  font-size: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
   white-space: nowrap;
-  opacity: 0.75;
+  opacity: 0.95;
+}
+
+.badge-demo {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.85rem;
+  z-index: 2;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--border-hover);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.badge-demo:hover,
+.badge-demo:focus-visible {
+  border-color: var(--trilport-accent);
+  color: var(--text);
 }
 
 .trains-gare.departs h3 {
@@ -517,8 +688,8 @@ h1 span {
   font-family: var(--font-mono);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  padding: 0.3rem 0.5rem;
+  align-items: flex-start;
+  padding: 0.4rem 0;
   border-radius: 6px;
   cursor: default;
   transition:
@@ -532,26 +703,44 @@ h1 span {
   line-height: 1;
 }
 
-.train-horaire,
-.train-creneau-horaire {
-  display: inline-flex;
-  align-items: flex-end;
-  flex-direction: column;
-  gap: 0;
+.train-horaire {
+  display: grid;
+  grid-template-areas:
+    "heure ancienne"
+    "destination ponctualite";
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 0.45rem;
+  row-gap: 0.15rem;
+  width: 100%;
   white-space: nowrap;
 }
 
-.train-horaire > * + * {
-  margin-top: 0.2rem;
+.train-horaire .train-heure {
+  grid-area: heure;
+  justify-self: start;
 }
 
-.train-temps {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-  line-height: 1;
-  white-space: nowrap;
+.train-horaire .train-heure-prevue {
+  grid-area: ancienne;
+  justify-self: end;
+  margin: 0;
+}
+
+.train-ligne .train-horaire .dest-long,
+.train-ligne .train-horaire .dest-court {
+  grid-area: destination;
+  justify-self: start;
+  margin: 0;
+}
+
+.train-horaire .train-ponctualite {
+  grid-area: ponctualite;
+  justify-self: end;
+}
+
+.train-heure-prevue.fantome {
+  visibility: hidden;
 }
 
 .train-creneau-temps {
@@ -563,16 +752,12 @@ h1 span {
 .train-heure-prevue {
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.82rem;
   text-decoration: line-through;
   text-decoration-color: currentColor;
   text-decoration-thickness: 1.5px;
   opacity: 0.9;
-  margin-bottom: 0.2rem;
-}
-
-.train-heure-prevue.fantome {
-  visibility: hidden;
+  margin-top: 0.2rem;
 }
 
 .train-ponctualite {
@@ -590,7 +775,7 @@ h1 span {
 
 /* Premier train — grand */
 .train-ligne.principal .train-heure {
-  font-size: 2rem;
+  font-size: 3rem;
 }
 .train-ligne.principal .dest-long,
 .train-ligne.principal .dest-court {
@@ -648,15 +833,15 @@ h1 span {
 
 /* Deuxième train — petit */
 .train-ligne.secondaire .train-heure {
-  font-size: 0.8rem;
-  opacity: 0.5;
+  font-size: 1.55rem;
+  opacity: 0.75;
 }
 .train-ligne.secondaire .train-ponctualite {
   font-size: 0.55rem;
   opacity: 0.8;
 }
 .trains-gare.departs .train-ligne.secondaire .train-heure {
-  font-size: 1.4rem;
+  font-size: 1.55rem;
   opacity: 0.8;
   color: #59dde9;
 }
@@ -680,6 +865,14 @@ h1 span {
   gap: 0.4rem;
   padding: 0.2rem 0;
   list-style: none;
+}
+
+.train-creneau:nth-child(n + 2) {
+  display: none;
+}
+
+.creneau.deplie .train-creneau:nth-child(n + 2) {
+  display: grid;
 }
 
 .train-creneau-heure {
@@ -752,6 +945,36 @@ h1 span {
   color: #fb923c;
 }
 
+.trains-gare .train-ligne .train-heure.retard {
+  --train-couleur-normale: var(--text);
+  animation: luire-retard 1.8s ease-in-out infinite alternate;
+}
+
+.trains-gare.departs .train-ligne.principal .train-heure.retard {
+  --train-couleur-normale: #4ade80;
+}
+
+.trains-gare.arrivees .train-ligne.principal .train-heure.retard {
+  --train-couleur-normale: #f87171;
+}
+
+.trains-gare.departs .train-ligne.secondaire .train-heure.retard {
+  --train-couleur-normale: #59dde9;
+}
+
+@keyframes luire-retard {
+  from {
+    color: var(--train-couleur-normale);
+    text-shadow: 0 0 0 rgba(251, 146, 60, 0);
+  }
+  to {
+    color: #fb923c;
+    text-shadow:
+      0 0 8px rgba(251, 146, 60, 0.65),
+      0 0 18px rgba(251, 146, 60, 0.3);
+  }
+}
+
 .trains-gare .train-ligne .train-heure.avance,
 .train-creneau-heure.avance,
 .train-ponctualite.avance {
@@ -766,35 +989,6 @@ h1 span {
   color: #4ade80;
 }
 
-/* ──────────────────────────────────────────
-   Meilleur créneau train
-   ────────────────────────────────────────── */
-
-.creneau.meilleur {
-  margin-left: -1.25rem;
-  margin-right: -1.25rem;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
-  background: linear-gradient(
-    90deg,
-    var(--surface-2) 0%,
-    var(--accent-glow) 35%,
-    var(--surface-2) 70%
-  );
-  background-size: 200% 100%;
-  border-top: 1px solid var(--border-hover);
-  border-bottom-color: var(--border-hover);
-  animation: glisser-meilleur-creneau 5s ease-in-out infinite alternate;
-}
-
-@keyframes glisser-meilleur-creneau {
-  from {
-    background-position: 100% 50%;
-  }
-  to {
-    background-position: 0% 50%;
-  }
-}
 /* ──────────────────────────────────────────
    Bandeau trafic — fixé en bas de page
    ────────────────────────────────────────── */
@@ -1038,9 +1232,12 @@ h1 span {
    ────────────────────────────────────────── */
 
 .train-statut {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .train-statut.attente {
@@ -1081,6 +1278,13 @@ h1 span {
   animation: clignoter 1s ease-in-out infinite;
   z-index: 1;
 }
+
+@media (max-width: 960px) {
+  .colonnes-creneaux {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 700px) {
   /* Layout columns -> single column */
   .villes,
@@ -1093,7 +1297,8 @@ h1 span {
     font-size: 3rem;
   }
   .carte-principale .carte-contenu {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   .carte-principale .trains-panneau {
     display: grid;
@@ -1107,6 +1312,8 @@ h1 span {
   .trains-gare {
     align-items: flex-start;
     min-width: 0;
+    min-height: 9rem;
+    padding: 0.65rem;
   }
   .train-ligne {
     align-items: flex-start;
@@ -1114,25 +1321,42 @@ h1 span {
     padding-right: 0;
   }
   .train-horaire {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-  .train-horaire > * + * {
-    margin-top: 0.2rem;
-    margin-left: 0;
+    align-items: baseline;
+    column-gap: 0.35rem;
   }
   .train-horaire .train-ponctualite {
     line-height: 1.2;
+  }
+  .train-ligne.principal .train-heure {
+    font-size: 2.65rem;
+  }
+  .meaux-compact {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.62rem;
+  }
+  .meaux-compact strong {
+    font-size: 0.72rem;
   }
 
   /* Créneaux: fixed train-time column */
   .creneau {
     grid-template-columns: 3.5rem minmax(0, 1fr);
-    gap: 0.4rem;
-    cursor: pointer;
+    grid-template-rows: auto auto;
+    column-gap: 0.4rem;
+    min-height: 3.75rem;
+    padding: 0.6rem 0.75rem;
   }
-  .creneau .resume,
+  .creneau .resume {
+    display: none;
+  }
+  .creneau > ul {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .creneau > .train-statut {
+    grid-column: 2;
+    grid-row: 1;
+  }
   .train-creneau {
     font-size: 0.75rem;
   }
@@ -1141,19 +1365,7 @@ h1 span {
     column-gap: 0.3rem;
   }
   .creneau.deplie {
-    padding-top: 0.8rem;
-    padding-bottom: 0.8rem;
-    transform: scale(1.01);
     background: var(--surface-2);
-  }
-  .creneau.deplie.meilleur {
-    background: linear-gradient(
-      90deg,
-      var(--surface-2) 0%,
-      var(--accent-glow) 35%,
-      var(--surface-2) 70%
-    );
-    background-size: 200% 100%;
   }
   .creneau.deplie .dest-long {
     display: inline;
@@ -1182,6 +1394,16 @@ h1 span {
   }
   .dest-court {
     display: inline;
+  }
+}
+
+@media (max-width: 560px) {
+  .carte-principale .trains-panneau {
+    grid-template-columns: 1fr;
+  }
+
+  .trains-gare {
+    min-height: 8rem;
   }
 }
 

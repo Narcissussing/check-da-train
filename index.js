@@ -14,11 +14,13 @@ import {
   filtrerDeparts,
   evaluerCreneau,
   formaterDatePerturbation,
+  trouverProchainePluie,
   traduireCodeMeteo,
 } from "./services/utils.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
+const MODE_DEMO_AUTORISE = process.env.ENABLE_DEMO_MODE === "true";
 
 if (!process.env.IDFM_API_KEY) {
   throw new Error("La variable d'environnement IDFM_API_KEY est requise.");
@@ -151,8 +153,53 @@ function statutService(departs, disponible) {
   return heureParis < 5 ? "attente" : heureParis >= 23 ? "termine" : "attente";
 }
 
+function creerTrainsDemo() {
+  const creerVisite = (destination, dansMinutes, ecartMinutes, type) => {
+    const heure = new Date(Date.now() + dansMinutes * 60_000);
+    const heurePrevue = new Date(heure.getTime() - ecartMinutes * 60_000);
+    const appel =
+      type === "depart"
+        ? {
+            ExpectedDepartureTime: heure.toISOString(),
+            AimedDepartureTime: heurePrevue.toISOString(),
+          }
+        : {
+            ExpectedArrivalTime: heure.toISOString(),
+            AimedArrivalTime: heurePrevue.toISOString(),
+          };
+
+    return {
+      MonitoredVehicleJourney: {
+        DestinationName: [{ value: destination }],
+        MonitoredCall: appel,
+      },
+    };
+  };
+
+  const convertir = (visites) =>
+    extraireDeparts({
+      Siri: {
+        ServiceDelivery: {
+          StopMonitoringDelivery: [{ MonitoredStopVisit: visites }],
+        },
+      },
+    });
+
+  return {
+    departs: convertir([
+      creerVisite("Paris Est", 8, 3, "depart"),
+      creerVisite("Meaux", 28, 0, "depart"),
+    ]),
+    arrivees: convertir([
+      creerVisite("Château-Thierry", 12, 0, "arrivee"),
+      creerVisite("La Ferté-Milon", 34, -1, "arrivee"),
+    ]),
+  };
+}
+
 app.get("/", async (req, res) => {
   try {
+    const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
     const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo] =
       await Promise.allSettled([
         recupererProchainsPassages("STIF:StopArea:SP:43161:"),
@@ -167,18 +214,23 @@ app.get("/", async (req, res) => {
     const trilportDisponible = resultatTrilport.status === "fulfilled";
 
     // Départs Trilport → Meaux / Paris
-    const departsTrilportDepart = filtrerDeparts(
+    let departsTrilportDepart = filtrerDeparts(
       departsTrilport,
       ["Meaux", "Paris Est"],
       2,
     );
 
     // Arrivées à Trilport depuis l'autre sens
-    const arrivesTrilport = filtrerDeparts(
+    let arrivesTrilport = filtrerDeparts(
       departsTrilport,
       ["Château-Thierry", "La Ferté-Milon"],
       2,
     );
+    if (modeDemo) {
+      const trainsDemo = creerTrainsDemo();
+      departsTrilportDepart = trainsDemo.departs;
+      arrivesTrilport = trainsDemo.arrivees;
+    }
     const { meteos, previsions } =
       resultatMeteo.status === "fulfilled"
         ? resultatMeteo.value
@@ -188,6 +240,9 @@ app.get("/", async (req, res) => {
         ? resultatTrafic.value
         : { disruptions: [] };
     const messages = extraireMessages(infosTrafic);
+    const prochainePluieTrilport = meteos[0]
+      ? trouverProchainePluie(meteos[0])
+      : null;
 
     // Déterminer le niveau d'alerte trafic
     const perturbations = messages.filter(
@@ -228,9 +283,12 @@ app.get("/", async (req, res) => {
         : [];
     const statutDeparts = statutService(
       departsTrilportDepart,
-      trilportDisponible,
+      modeDemo || trilportDisponible,
     );
-    const statutArrivees = statutService(arrivesTrilport, trilportDisponible);
+    const statutArrivees = statutService(
+      arrivesTrilport,
+      modeDemo || trilportDisponible,
+    );
 
     // On enrichit chaque créneau avec verdicts, score et résumé
     const creneauxEvalues = enrichirCreneaux(
@@ -246,18 +304,6 @@ app.get("/", async (req, res) => {
         creneau.statutTrain = "indisponible";
       }
     }
-    // Marquer le meilleur créneau aller et retour
-    for (const direction of ["aller", "retour"]) {
-      const creneauxDirection = creneauxEvalues.filter(
-        (c) => c.direction === direction,
-      );
-      const meilleur = creneauxDirection.reduce(
-        (min, c) => (c.score < min.score ? c : min),
-        creneauxDirection[0],
-      );
-      if (meilleur) meilleur.estMeilleur = true;
-    }
-
     const travauxFuturs = messages
       .filter((m) => m.cause === "TRAVAUX" && m.concerneMonTrajet)
       .sort((a, b) => a.debut.localeCompare(b.debut))
@@ -288,6 +334,9 @@ app.get("/", async (req, res) => {
       prochaineTravaux,
       travauxFuturs,
       afficherAlerteCarte,
+      prochainePluieTrilport,
+      modeDemo,
+      demoDisponible: MODE_DEMO_AUTORISE,
     });
   } catch (error) {
     console.error(
@@ -306,6 +355,9 @@ app.get("/", async (req, res) => {
       niveauTrafic: "fluide",
       afficherAlerteCarte: false,
       prochaineTravaux: null,
+      prochainePluieTrilport: null,
+      modeDemo: false,
+      demoDisponible: false,
     });
   }
 });

@@ -264,6 +264,62 @@ export function formaterCompteARebours(minutes) {
   return `dans ${minutes} min`;
 }
 
+export function trouverProchainePluie(prevision, maintenant = new Date()) {
+  const heures = prevision?.hourly?.time ?? [];
+  const precipitations = prevision?.hourly?.precipitation ?? [];
+
+  for (let index = 0; index < heures.length; index += 1) {
+    if ((precipitations[index] ?? 0) < 0.1) continue;
+
+    const debut = dateISOParis(heures[index]);
+    const fin = new Date(debut.getTime() + 60 * MINUTE_EN_MS);
+
+    if (maintenant >= debut && maintenant < fin) {
+      return {
+        resume: "Pluie en cours",
+        dateExacte: null,
+      };
+    }
+
+    if (debut > maintenant) {
+      const minutes = Math.max(
+        1,
+        Math.round((debut.getTime() - maintenant.getTime()) / MINUTE_EN_MS),
+      );
+
+      const dateExacte = debut.toLocaleString("fr-FR", {
+        timeZone: "Europe/Paris",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      if (minutes < 24 * 60) {
+        return {
+          resume:
+            minutes < 60
+              ? `Dans ${minutes} min`
+              : `Dans ${Math.ceil(minutes / 60)} h`,
+          dateExacte,
+        };
+      }
+
+      const jours = Math.ceil(minutes / (24 * 60));
+      return {
+        resume: `Dans ${jours} jour${jours > 1 ? "s" : ""}`,
+        dateExacte,
+      };
+    }
+  }
+
+  return {
+    resume: "Pas de pluie prévue",
+    dateExacte: null,
+  };
+}
+
 export function raccourcirDestination(dest) {
   const raccourcis = {
     "Château-Thierry": "Ch.-Thierry",

@@ -39,12 +39,17 @@
 
   <% } else { %>
 
-  <%# === Cartes météo : Trilport grande, Meaux petite === %>
+  <%# === Tableau principal Trilport === %>
   <% if (meteos && meteos.length === 2) { %>
   <section class="villes">
 
     <%# Carte principale : Trilport %>
     <article class="carte carte-principale">
+      <% if (modeDemo) { %>
+      <a class="badge-demo" href="/">Quitter la démo</a>
+      <% } else if (demoDisponible && departsTrilportDepart.length === 0 && arrivesTrilport.length === 0) { %>
+      <a class="badge-demo" href="/?demo=1">Voir l’aperçu</a>
+      <% } %>
       <% if (afficherAlerteCarte) { %>
       <span class="carte-alerte">⚠️</span>
       <% } %>
@@ -54,8 +59,25 @@
           <h2>Trilport</h2>
           <p class="temp"><%= meteos[0].current.temperature_2m.toFixed(1) %>°C</p>
           <p class="description"><%= traduireCodeMeteo(meteos[0].current.weather_code) %></p>
-          <p class="ressenti">Ressenti <%= meteos[0].current.apparent_temperature.toFixed(1) %>°C</p>
-          <p class="temp-journee">↓ <%= meteos[0].daily.temperature_2m_min[0].toFixed(0) %>° · ↑ <%= meteos[0].daily.temperature_2m_max[0].toFixed(0) %>°</p>
+          <div class="meteo-details">
+            <div class="meteo-detail">
+              <span>Ressenti</span>
+              <strong><%= meteos[0].current.apparent_temperature.toFixed(1) %>°C</strong>
+            </div>
+            <div class="meteo-detail">
+              <span>Min / max</span>
+              <strong><%= meteos[0].daily.temperature_2m_min[0].toFixed(0) %>° · <%= meteos[0].daily.temperature_2m_max[0].toFixed(0) %>°</strong>
+            </div>
+            <% if (prochainePluieTrilport) { %>
+            <button class="meteo-detail meteo-detail-pluie" type="button" aria-expanded="false" <%= prochainePluieTrilport.dateExacte ? '' : 'disabled' %>>
+              <span>Prochaine pluie</span>
+              <strong><%= prochainePluieTrilport.resume %></strong>
+              <% if (prochainePluieTrilport.dateExacte) { %>
+              <small><%= prochainePluieTrilport.dateExacte %></small>
+              <% } %>
+            </button>
+            <% } %>
+          </div>
         </div>
 
         <div class="trains-panneau">
@@ -66,14 +88,14 @@
             <% departsTrilportDepart.forEach((train, i) => { %>
             <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
               <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                <span class="train-temps">
-                  <% if (i === 0) { %><span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span><% } %>
-                  <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                </span>
+                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                <span class="dest-long"><%= train.destination %></span>
+                <span class="dest-court"><%= train.destinationCourte %></span>
+                <% if (i === 0) { %>
+                <span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span>
                 <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+                <% } %>
               </span>
-              <span class="dest-long"><%= train.destination %></span>
-              <span class="dest-court"><%= train.destinationCourte %></span>
             </div>
             <% }) %>
             <% } else { %>
@@ -87,14 +109,14 @@
             <% arrivesTrilport.forEach((train, i) => { %>
             <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
               <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                <span class="train-temps">
-                  <% if (i === 0) { %><span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span><% } %>
-                  <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                </span>
+                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                <span class="dest-long"><%= train.destination %></span>
+                <span class="dest-court"><%= train.destinationCourte %></span>
+                <% if (i === 0) { %>
+                <span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span>
                 <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+                <% } %>
               </span>
-              <span class="dest-long"><%= train.destination %></span>
-              <span class="dest-court"><%= train.destinationCourte %></span>
             </div>
             <% }) %>
             <% } else { %>
@@ -106,20 +128,21 @@
       </div>
     </article>
 
-    <%# Carte secondaire : Meaux %>
-    <article class="carte carte-secondaire">
-      <h2>Meaux</h2>
-      <p class="temp"><%= meteos[1].current.temperature_2m.toFixed(0) %>°C</p>
-      <p class="description"><%= traduireCodeMeteo(meteos[1].current.weather_code) %></p>
-    </article>
-
   </section>
   <% } %>
 
   <%# === Section gym === %>
   <% if (creneaux && creneaux.length > 0) { %>
   <section class="gym">
-    <h2>🏋️ Gym ce soir ?</h2>
+    <div class="gym-entete">
+      <h2>🏋️ Gym ce soir ?</h2>
+      <% if (meteos?.[1]) { %>
+      <div class="meaux-compact meaux-gym">
+        <span>Meaux</span>
+        <strong><%= meteos[1].current.temperature_2m.toFixed(0) %>°C</strong>
+      </div>
+      <% } %>
+    </div>
 
     <div class="colonnes-creneaux">
 
@@ -127,7 +150,7 @@
         <h3>Aller (Trilport → Meaux)</h3>
         <ul class="creneaux-liste">
           <% creneaux.filter((c) => c.direction === "aller").forEach((c) => { %>
-          <li class="creneau <%= c.estMeilleur ? 'meilleur' : '' %>">
+          <li class="creneau" role="button" tabindex="0" aria-expanded="false">
             <span class="heure"><%= c.realHeure %></span>
             <span class="resume"><%= c.resume %></span>
             <% if (c.statutTrain === "ok") { %>
@@ -151,6 +174,11 @@
             <% } else { %>
             <span class="train-statut attente">· · ·</span>
             <% } %>
+            <div class="creneau-complement">
+              <span><%= c.temperature.toFixed(0) %>°C</span>
+              <span><%= c.precipitation %> mm de pluie</span>
+              <span><%= c.cloud_cover %>% de nuages</span>
+            </div>
           </li>
           <% }) %>
         </ul>
@@ -159,7 +187,7 @@
         <h3>Retour (Meaux → Trilport)</h3>
         <ul class="creneaux-liste">
           <% creneaux.filter((c) => c.direction === "retour").forEach((c) => { %>
-          <li class="creneau <%= c.estMeilleur ? 'meilleur' : '' %>">
+          <li class="creneau" role="button" tabindex="0" aria-expanded="false">
             <span class="heure"><%= c.realHeure %></span>
             <span class="resume"><%= c.resume %></span>
             <% if (c.statutTrain === "ok") { %>
@@ -183,6 +211,11 @@
             <% } else { %>
             <span class="train-statut attente">· · ·</span>
             <% } %>
+            <div class="creneau-complement">
+              <span><%= c.temperature.toFixed(0) %>°C</span>
+              <span><%= c.precipitation %> mm de pluie</span>
+              <span><%= c.cloud_cover %>% de nuages</span>
+            </div>
           </li>
           <% }) %>
         </ul>
@@ -277,6 +310,9 @@
 
   <%# Script pour développer les créneaux gym %>
   <script src="/scripts/gym-details.js"></script>
+
+  <%# Script pour afficher la date exacte de la prochaine pluie %>
+  <script src="/scripts/weather-details.js"></script>
 </body>
 
 </html>
