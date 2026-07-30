@@ -399,13 +399,17 @@ h1 span {
 }
 
 .creneau {
-  display: flex;
+  display: grid;
+  grid-template-columns: 55px minmax(0, 1fr);
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0;
   font-size: 0.9rem;
   border-bottom: 1px solid var(--border);
-  transition: padding-left var(--transition);
+  transition:
+    background var(--transition),
+    padding var(--transition),
+    transform var(--transition);
 }
 
 .creneau:last-child {
@@ -413,7 +417,7 @@ h1 span {
 }
 
 .creneau:hover {
-  padding-left: 0.5rem;
+  background: var(--surface-2);
 }
 
 .creneau .heure {
@@ -426,8 +430,12 @@ h1 span {
 
 .creneau .resume {
   color: var(--text-muted);
-  flex: 1;
   font-size: 0.9rem;
+}
+
+.creneau > ul {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 /* ──────────────────────────────────────────
@@ -477,12 +485,25 @@ h1 span {
 }
 
 .trains-gare h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-family: var(--font-mono);
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   margin-bottom: 0.35rem;
+}
+
+.prochain-countdown {
+  color: var(--text-dim);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  opacity: 0.75;
 }
 
 .trains-gare.departs h3 {
@@ -514,17 +535,44 @@ h1 span {
 .train-horaire,
 .train-creneau-horaire {
   display: inline-flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 0;
+  white-space: nowrap;
+}
+
+.train-horaire > * + * {
+  margin-top: 0.2rem;
+}
+
+.train-temps {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.train-creneau-temps {
+  display: block;
+  min-width: 0;
   white-space: nowrap;
 }
 
 .train-heure-prevue {
-  color: var(--text-dim);
+  color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   text-decoration: line-through;
-  opacity: 0.65;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 1.5px;
+  opacity: 0.9;
+  margin-bottom: 0.2rem;
+}
+
+.train-heure-prevue.fantome {
+  visibility: hidden;
 }
 
 .train-ponctualite {
@@ -626,10 +674,11 @@ h1 span {
    ────────────────────────────────────────── */
 
 .train-creneau {
-  display: flex;
+  display: grid;
+  grid-template-columns: 3.25rem 4.25rem minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 0.4rem;
-  padding: 0.1rem 0;
+  padding: 0.2rem 0;
   list-style: none;
 }
 
@@ -638,6 +687,37 @@ h1 span {
   font-weight: 600;
   font-size: 0.85rem;
   color: var(--text);
+}
+
+.train-creneau-temps .train-heure-prevue {
+  font-size: 0.6rem;
+}
+
+.train-creneau .dest-long,
+.train-creneau .dest-court {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.train-creneau-heure.a-heure {
+  color: #4ade80;
+}
+
+.train-creneau-ecart {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.train-creneau-ecart.retard {
+  color: #fb923c;
+}
+
+.train-creneau-ecart.avance {
+  color: #60a5fa;
 }
 
 .train-creneau-dest {
@@ -682,13 +762,38 @@ h1 span {
   color: #4ade80;
 }
 
+.trains-gare .train-ligne .train-heure.a-heure {
+  color: #4ade80;
+}
+
 /* ──────────────────────────────────────────
    Meilleur créneau train
    ────────────────────────────────────────── */
 
 .creneau.meilleur {
-  border-left: 3px solid var(--accent);
-  padding-left: 0.5rem;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 0%,
+    var(--accent-glow) 35%,
+    var(--surface-2) 70%
+  );
+  background-size: 200% 100%;
+  border-top: 1px solid var(--border-hover);
+  border-bottom-color: var(--border-hover);
+  animation: glisser-meilleur-creneau 5s ease-in-out infinite alternate;
+}
+
+@keyframes glisser-meilleur-creneau {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0% 50%;
+  }
 }
 /* ──────────────────────────────────────────
    Bandeau trafic — fixé en bas de page
@@ -991,24 +1096,70 @@ h1 span {
     flex-direction: column;
   }
   .carte-principale .trains-panneau {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
-    justify-content: space-between;
+    gap: 0.75rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 0.75rem;
     margin-top: 0.75rem;
   }
   .trains-gare {
     align-items: flex-start;
+    min-width: 0;
+  }
+  .train-ligne {
+    align-items: flex-start;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .train-horaire {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .train-horaire > * + * {
+    margin-top: 0.2rem;
+    margin-left: 0;
+  }
+  .train-horaire .train-ponctualite {
+    line-height: 1.2;
   }
 
-  /* Créneaux: stack and compact text */
+  /* Créneaux: fixed train-time column */
   .creneau {
-    flex-wrap: wrap;
+    grid-template-columns: 3.5rem minmax(0, 1fr);
     gap: 0.4rem;
+    cursor: pointer;
   }
   .creneau .resume,
   .train-creneau {
     font-size: 0.75rem;
+  }
+  .train-creneau {
+    grid-template-columns: 3.25rem 3.75rem minmax(0, 1fr) auto;
+    column-gap: 0.3rem;
+  }
+  .creneau.deplie {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+    transform: scale(1.01);
+    background: var(--surface-2);
+  }
+  .creneau.deplie.meilleur {
+    background: linear-gradient(
+      90deg,
+      var(--surface-2) 0%,
+      var(--accent-glow) 35%,
+      var(--surface-2) 70%
+    );
+    background-size: 200% 100%;
+  }
+  .creneau.deplie .dest-long {
+    display: inline;
+  }
+  .creneau.deplie .dest-court {
+    display: none;
   }
 
   /* Compact traffic banner */

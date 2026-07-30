@@ -1,0 +1,15 @@
+{
+  "watch": [
+    "index.js",
+    "services",
+    "views",
+    "public/scripts",
+    "public/styles"
+  ],
+  "ext": "js,ejs,css,json",
+  "legacyWatch": true,
+  "ignore": [
+    "node_modules/**",
+    ".git/**"
+  ]
+}

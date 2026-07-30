@@ -176,6 +176,7 @@ export function extraireDeparts(data) {
               MINUTE_EN_MS,
           )
         : undefined;
+    const dansXMin = heure ? minutesAvantDepart(heure) : undefined;
     const destination =
       visite?.MonitoredVehicleJourney?.DestinationName?.[0]?.value
         ?.replace(/Ch.teau-Thierry/u, "Château-Thierry")
@@ -206,7 +207,11 @@ export function extraireDeparts(data) {
           : ecartMinutes < 0
             ? "avance"
             : "a-heure",
-      dansXMin: heure ? minutesAvantDepart(heure) : undefined,
+      dansXMin,
+      compteAReboursFormate:
+        dansXMin === undefined
+          ? undefined
+          : formaterCompteARebours(dansXMin),
     };
   });
 }
@@ -251,6 +256,12 @@ export function formaterHeure(iso) {
 export function minutesAvantDepart(iso) {
   const depart = new Date(iso);
   return Math.round((depart.getTime() - Date.now()) / MINUTE_EN_MS);
+}
+
+export function formaterCompteARebours(minutes) {
+  if (minutes < 0) return `il y a ${Math.abs(minutes)} min`;
+  if (minutes === 0) return "maintenant";
+  return `dans ${minutes} min`;
 }
 
 export function raccourcirDestination(dest) {
