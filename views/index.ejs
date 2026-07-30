@@ -65,7 +65,11 @@
             <% if (departsTrilportDepart.length > 0) { %>
             <% departsTrilportDepart.forEach((train, i) => { %>
             <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
-              <span class="train-heure"><%= train.heureFormatee %></span>
+              <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
+                <% if (train.ecartMinutes) { %><span class="train-heure-prevue"><%= train.heurePrevueFormatee %></span><% } %>
+                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+              </span>
               <span class="dest-long"><%= train.destination %></span>
               <span class="dest-court"><%= train.destinationCourte %></span>
               <span class="train-countdown"><%= train.dansXMin %> min</span>
@@ -81,7 +85,11 @@
             <% if (arrivesTrilport.length > 0) { %>
             <% arrivesTrilport.forEach((train, i) => { %>
             <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
-              <span class="train-heure"><%= train.heureFormatee %></span>
+              <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
+                <% if (train.ecartMinutes) { %><span class="train-heure-prevue"><%= train.heurePrevueFormatee %></span><% } %>
+                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+              </span>
               <span class="dest-long"><%= train.destination %></span>
               <span class="dest-court"><%= train.destinationCourte %></span>
               <span class="train-countdown"><%= train.dansXMin %> min</span>
@@ -124,7 +132,11 @@
             <ul>
               <% c.trainsAller.forEach((train) => { %>
               <li class="train-creneau">
-                <span class="train-creneau-heure"><%= train.heureFormatee %></span>
+                <span class="train-creneau-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
+                  <% if (train.ecartMinutes) { %><span class="train-heure-prevue"><%= train.heurePrevueFormatee %></span><% } %>
+                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                  <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+                </span>
                 <span class="dest-long"><%= train.destination %></span>
                 <span class="dest-court"><%= train.destinationCourte %></span>
                 <span class="train-creneau-countdown"><%= train.dansXMin %> min</span>
@@ -153,7 +165,11 @@
             <ul>
               <% c.trains.forEach((train) => { %>
               <li class="train-creneau">
-                <span class="train-creneau-heure"><%= train.heureFormatee %></span>
+                <span class="train-creneau-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
+                  <% if (train.ecartMinutes) { %><span class="train-heure-prevue"><%= train.heurePrevueFormatee %></span><% } %>
+                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                  <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+                </span>
                 <span class="dest-long"><%= train.destination %></span>
                 <span class="dest-court"><%= train.destinationCourte %></span>
                 <span class="train-creneau-countdown"><%= train.dansXMin %> min</span>

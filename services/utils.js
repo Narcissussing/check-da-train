@@ -58,7 +58,16 @@ function dateAujourdhuiParis() {
 
 function extraireHoraires(visite) {
   const trajet = visite?.MonitoredVehicleJourney?.MonitoredCall;
-  return trajet?.ExpectedDepartureTime ?? trajet?.ExpectedArrivalTime;
+  const estUnDepart = Boolean(trajet?.ExpectedDepartureTime);
+
+  return {
+    heure:
+      trajet?.ExpectedDepartureTime ??
+      trajet?.ExpectedArrivalTime,
+    heurePrevue: estUnDepart
+      ? trajet?.AimedDepartureTime
+      : trajet?.AimedArrivalTime,
+  };
 }
 
 function nettoyerMessageTrafic(message) {
@@ -159,7 +168,14 @@ export function extraireDeparts(data) {
   );
 
   return visites.map((visite) => {
-    const heure = extraireHoraires(visite);
+    const { heure, heurePrevue } = extraireHoraires(visite);
+    const ecartMinutes =
+      heure && heurePrevue
+        ? Math.round(
+            (new Date(heure).getTime() - new Date(heurePrevue).getTime()) /
+              MINUTE_EN_MS,
+          )
+        : undefined;
     const destination =
       visite?.MonitoredVehicleJourney?.DestinationName?.[0]?.value
         ?.replace(/Ch.teau-Thierry/u, "Château-Thierry")
@@ -171,6 +187,25 @@ export function extraireDeparts(data) {
       direction: visite?.MonitoredVehicleJourney?.DirectionRef?.value,
       heure,
       heureFormatee: heure ? formaterHeure(heure) : undefined,
+      heurePrevue,
+      heurePrevueFormatee: heurePrevue
+        ? formaterHeure(heurePrevue)
+        : undefined,
+      ecartMinutes,
+      ponctualiteLibelle:
+        ecartMinutes === undefined
+          ? undefined
+          : ecartMinutes > 0
+            ? `${ecartMinutes} min de retard`
+            : ecartMinutes < 0
+              ? `${Math.abs(ecartMinutes)} min d’avance`
+              : "à l’heure",
+      ponctualiteClasse:
+        ecartMinutes > 0
+          ? "retard"
+          : ecartMinutes < 0
+            ? "avance"
+            : "a-heure",
       dansXMin: heure ? minutesAvantDepart(heure) : undefined,
     };
   });
