@@ -32,6 +32,9 @@
 - [X] Alerte départ/arrivée plus visible (icône plus grande + anneau qui pulse)
 - [X] Secousse "ailleurs" renforcée (plus forte, plus fréquente)
 - [X] Bug LL-3 : popups trafic ne couvraient que 700px de haut, les clics traversaient en dessous
+- [X] Bug LL-4 : `inset` non supporté par Safari iOS 12 — train/fond météo/popups pouvaient ne pas s'afficher (confirmé sur iPad Air iOS 12.5.8)
+- [X] Bug LL-1 : `gap` sur flexbox non supporté par Safari iOS 12 — 13 règles corrigées (marges à la place)
+- [X] Bug LL-5 : surlignage `:hover` restait collé après un tap sur l'iPad — 9 règles passées dans `@media (hover: hover)`
 - [ ] Migration vers React (composants, countdown temps réel)
 - [ ] Modal avec détails par créneau (température, précipitations…)
 - [ ] Bouton gym caché les dimanches (avec override possible)
