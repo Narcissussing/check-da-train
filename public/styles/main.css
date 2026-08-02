@@ -118,9 +118,18 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
   padding-bottom: 24px;
   margin-bottom: 24px;
+}
+
+/* `gap` sur flexbox n'est pas supporté avant Safari 14.1 (bug LL-1) — sur
+   les conteneurs flex de ce fichier, l'espacement passe donc par des
+   marges sur les enfants plutôt que `gap`. `> * + *` reproduit fidèlement
+   `gap` quand tous les enfants concernés sont de vrais éléments ; quand un
+   nœud texte s'intercale (icône suivie de texte, ex. .eyebrow, .fleche-
+   toggle), la marge est posée directement sur l'élément voisin à la place. */
+.header > * + * {
+  margin-left: 1rem;
 }
 
 .logo-link,
@@ -146,7 +155,10 @@ button {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+}
+
+.header-actions > * + * {
+  margin-left: 0.6rem;
 }
 
 .badge-demo {
@@ -162,7 +174,18 @@ button {
     color var(--transition);
 }
 
-.badge-demo:hover,
+/* :hover réservé aux appareils qui ont un vrai pointeur (souris) — sur
+   l'iPad (tactile), un tap déclenche :hover sans jamais le "relâcher"
+   (pas de mouseleave sans souris), donc le surlignage restait affiché
+   jusqu'au tap suivant ailleurs. :focus-visible reste hors de la media
+   query : c'est un état clavier, indépendant du support du survol. */
+@media (hover: hover) {
+  .badge-demo:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
 .badge-demo:focus-visible {
   border-color: var(--accent);
   color: var(--texte);
@@ -222,7 +245,13 @@ button {
   margin-right: 0.3rem;
 }
 
-.barre-demo-bouton:hover,
+@media (hover: hover) {
+  .barre-demo-bouton:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
 .barre-demo-bouton:focus-visible {
   border-color: var(--accent);
   color: var(--texte);
@@ -292,9 +321,11 @@ button {
     background var(--transition);
 }
 
-.theme-toggle:hover {
-  border-color: var(--accent);
-  background: var(--surface-2);
+@media (hover: hover) {
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
 }
 
 .theme-toggle:focus-visible {
@@ -329,12 +360,19 @@ button {
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
   font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--texte-muted);
+}
+
+/* .eyebrow parfois "icône + texte" (ex. "Gym ce soir") — le texte est un
+   nœud texte brut, pas un élément, donc `> * + *` ne le verrait pas ;
+   la marge va directement sur l'icône. Sans effet sur les .eyebrow
+   texte seul (Départ/Arrivée), qui n'ont pas d'icône. */
+.eyebrow .icone {
+  margin-right: 0.4rem;
 }
 
 .erreur {
@@ -399,15 +437,21 @@ button {
 .carte-meteo-haut {
   display: flex;
   align-items: center;
-  gap: 1rem;
   margin-bottom: 1.1rem;
+}
+
+.carte-meteo-haut > * + * {
+  margin-left: 1rem;
 }
 
 /* ── Animation de fond météo — discrète, sous le contenu ── */
 
 .meteo-fond {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 0;
   width: 100%;
   height: 100%;
@@ -724,7 +768,6 @@ button {
   appearance: none;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
   width: 100%;
   margin-top: 0.75rem;
   padding: 0;
@@ -737,8 +780,14 @@ button {
   cursor: pointer;
 }
 
-.pluie-toggle:hover {
-  color: var(--texte-muted);
+.pluie-toggle > * + * {
+  margin-left: 0.4rem;
+}
+
+@media (hover: hover) {
+  .pluie-toggle:hover {
+    color: var(--texte-muted);
+  }
 }
 
 .pluie-toggle[disabled] {
@@ -768,8 +817,11 @@ button {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.5rem;
   margin-bottom: 0.6rem;
+}
+
+.carte-train-entete > * + * {
+  margin-left: 0.5rem;
 }
 
 .carte-train-entete-gauche {
@@ -798,7 +850,10 @@ button {
 
 .alerte-anneau {
   position: absolute;
-  inset: -5px;
+  top: -5px;
+  right: -5px;
+  bottom: -5px;
+  left: -5px;
   border-radius: 50%;
   background: var(--danger);
   opacity: 0.55;
@@ -856,10 +911,16 @@ button {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
   margin-top: 0.45rem;
   color: var(--texte);
   font-size: 0.9rem;
+}
+
+/* Le nom de destination est un nœud texte brut, pas un élément — `> * + *`
+   ne le verrait pas comme "élément précédent", donc la marge va
+   directement sur le badge de ponctualité. */
+.train-destination .train-ponct-inline {
+  margin-left: 0.5rem;
 }
 
 .train-ponct-inline {
@@ -904,7 +965,6 @@ button {
 .gym-details-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   margin-top: auto;
   padding-top: 0.9rem;
   border: none;
@@ -918,8 +978,10 @@ button {
   transition: color var(--transition);
 }
 
-.carte-train-toggle:hover {
-  color: var(--texte);
+@media (hover: hover) {
+  .carte-train-toggle:hover {
+    color: var(--texte);
+  }
 }
 
 .carte-train-toggle:focus-visible {
@@ -928,6 +990,10 @@ button {
 }
 
 .fleche-toggle {
+  /* Le texte du bouton ("Voir départs", …) est un nœud texte brut, pas un
+     élément — `> * + *` ne le verrait pas, donc la marge va directement
+     ici plutôt que sur .carte-train-toggle/.gym-details-toggle. */
+  margin-left: 0.35rem;
   transition: transform var(--transition);
 }
 
@@ -956,10 +1022,13 @@ button {
 .train-detail-ligne {
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
   padding: 0.45rem 0;
   border-top: 1px solid var(--carte-border);
   font-size: 0.82rem;
+}
+
+.train-detail-ligne > * + * {
+  margin-left: 0.6rem;
 }
 
 .train-detail-ligne:first-child {
@@ -1024,7 +1093,10 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+}
+
+.carte-gym-entete > * + * {
+  margin-left: 1rem;
 }
 
 .gym-entete-droite {
@@ -1126,8 +1198,10 @@ button {
   border-bottom: none;
 }
 
-.creneau:hover {
-  background: var(--carte);
+@media (hover: hover) {
+  .creneau:hover {
+    background: var(--carte);
+  }
 }
 
 .creneau .heure {
@@ -1167,7 +1241,6 @@ button {
   grid-row: 2;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
   max-height: 0;
   margin-top: 0;
   overflow: hidden;
@@ -1178,6 +1251,10 @@ button {
     max-height 0.25s ease,
     margin-top 0.25s ease,
     opacity 0.2s ease;
+}
+
+.creneau-complement > * + * {
+  margin-left: 0.8rem;
 }
 
 .creneau.deplie .creneau-complement {
@@ -1285,16 +1362,22 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
   min-height: 92px;
 }
+/* Pas de remplacement pour l'ancien `gap` ici : les deux boutons coin et
+   l'illustration du train sont tous en `position: absolute`, donc hors du
+   flux — .carte-trafic-corps est en réalité le seul enfant flex, `gap`
+   n'avait déjà plus d'effet. */
 
 .carte-trafic-corps {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
   position: relative;
   z-index: 1;
+}
+
+.carte-trafic-corps > * + * {
+  margin-left: 0.75rem;
 }
 
 .statut-dot {
@@ -1356,7 +1439,12 @@ button {
   transition: color var(--transition);
 }
 
-.carte-trafic-info-bouton:hover,
+@media (hover: hover) {
+  .carte-trafic-info-bouton:hover {
+    color: var(--texte);
+  }
+}
+
 .carte-trafic-info-bouton:focus-visible {
   color: var(--texte);
 }
@@ -1379,7 +1467,13 @@ button {
     color var(--transition);
 }
 
-.carte-trafic-travaux-bouton:hover,
+@media (hover: hover) {
+  .carte-trafic-travaux-bouton:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
 .carte-trafic-travaux-bouton:focus-visible {
   border-color: var(--accent);
   color: var(--texte);
@@ -1387,7 +1481,10 @@ button {
 
 .illustration-train-conteneur {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
@@ -1506,7 +1603,10 @@ button {
    plein écran), .popup-boite est son contenu réel, centré. */
 .popup-fond {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 60;
   display: flex;
   align-items: center;
@@ -1575,7 +1675,12 @@ button {
   cursor: pointer;
 }
 
-.popup-fermer:hover,
+@media (hover: hover) {
+  .popup-fermer:hover {
+    color: var(--texte);
+  }
+}
+
 .popup-fermer:focus-visible {
   color: var(--texte);
 }
