@@ -1,103 +1,65 @@
 /* ============================================================
-   LOOKULOOKU — Sport Edition
+   LOOKULOOKU
+   Calme, minimal, rapide — voir docs/ui-design.md.
    Tout est piloté par variables CSS — un seul endroit à modifier.
    ============================================================ */
 
 /* ──────────────────────────────────────────
-   THÈME PAR DÉFAUT : DARK (cockpit nuit)
+   THÈME PAR DÉFAUT : BUREAU (sombre)
    ────────────────────────────────────────── */
 
 :root,
 :root[data-theme="bureau"] {
-  /* Surfaces générales */
-  --bg: #0a0e14;
-  --surface: #141921;
-  --surface-2: #1c222c;
-  --border: #252b36;
-  --border-hover: #3a4150;
+  --bg: #0d1117;
+  --carte: #151c26;
+  --carte-border: rgba(255, 255, 255, 0.05);
+  --surface-2: #1b2330;
 
-  /* Textes */
-  --text: #f5f7fa;
-  --text-muted: #8a93a3;
-  --text-dim: #5a6373;
+  --texte: #f5f7fa;
+  --texte-muted: #8a93a3;
+  --texte-dim: #5a6373;
 
-  /* Accent principal */
-  --accent: #a3ff12;
-  --accent-glow: rgba(163, 255, 18, 0.15);
+  --accent: #57d364;
+  --accent-glow: rgba(87, 211, 100, 0.15);
+  --succes: #57d364;
+  --succes-doux: #8fe89a;
+  --avertissement: #f5a524;
+  --danger: #f2555a;
+  --danger-doux: #f79a9d;
+  --info: #5b9fef;
 
-  /* Couleurs de statut (verdicts) */
-  --status-tranquille: #22c55e;
-  --status-lunettes: #eab308;
-  --status-couche: #3b82f6;
-  --status-parapluie: #ef4444;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
 
-  /* CARTE TRILPORT — violets, "maison" */
-  --trilport-bg-from: #1e1b3a;
-  --trilport-bg-to: #2d1b4e;
-  --trilport-accent: #a78bfa;
-  --trilport-accent-bright: #c4b5fd;
-  --trilport-label: #a78bfa;
-  --trilport-description: #c4b5fd;
-
-  /* CARTE MEAUX — cyan, "destination gym" */
-  --meaux-bg-from: #0c2a3a;
-  --meaux-bg-to: #0f3848;
-  --meaux-accent: #22d3ee;
-  --meaux-accent-bright: #67e8f9;
-  --meaux-label: #22d3ee;
-  --meaux-description: #67e8f9;
-
-  /* Typographie */
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-  --font-display: "Outfit", system-ui, sans-serif;
-
-  /* Effets */
-  --radius: 8px;
-  --transition: 0.2s ease;
-  --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --rayon: 18px;
+  --rayon-sm: 12px;
+  --transition: 0.18s ease;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
 /* ──────────────────────────────────────────
-   THÈME ALTERNATIF : LIGHT (sport diurne, saisonnier)
+   THÈME ALTERNATIF : CINÉMA (clair)
    ────────────────────────────────────────── */
 
 :root[data-theme="cinema"] {
-  --bg: #f5f7fa;
-  --surface: #ffffff;
-  --surface-2: #f0f3f7;
-  --border: #d8dde5;
-  --border-hover: #a8b0bd;
+  --bg: #f4f6f9;
+  --carte: #ffffff;
+  --carte-border: rgba(13, 17, 23, 0.06);
+  --surface-2: #eef1f5;
 
-  --text: #0a0e14;
-  --text-muted: #5a6373;
-  --text-dim: #8a93a3;
+  --texte: #0d1117;
+  --texte-muted: #5c6673;
+  --texte-dim: #8a93a3;
 
-  --accent: #5cb800;
-  --accent-glow: rgba(92, 184, 0, 0.18);
+  --accent: #1f9d46;
+  --accent-glow: rgba(31, 157, 70, 0.14);
+  --succes: #1f9d46;
+  --succes-doux: #167a37;
+  --avertissement: #b9740a;
+  --danger: #d8393e;
+  --danger-doux: #b52e32;
+  --info: #2563eb;
 
-  --status-tranquille: #16a34a;
-  --status-lunettes: #ca8a04;
-  --status-couche: #2563eb;
-  --status-parapluie: #dc2626;
-
-  /* CARTE TRILPORT — vert frais, "maison" en mode jour */
-  --trilport-bg-from: #e8f5e9;
-  --trilport-bg-to: #c8e6c9;
-  --trilport-accent: #2e7d32;
-  --trilport-accent-bright: #66bb6a;
-  --trilport-label: #2e7d32;
-  --trilport-description: #2e7d32;
-
-  /* CARTE MEAUX — automne chaud, "destination gym" en mode jour */
-  --meaux-bg-from: #fff3e0;
-  --meaux-bg-to: #ffe0b2;
-  --meaux-accent: #e65100;
-  --meaux-accent-bright: #fb8c00;
-  --meaux-label: #e65100;
-  --meaux-description: #e65100;
-
-  --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.08);
+  --ombre: 0 16px 40px rgba(13, 17, 23, 0.08);
 }
 
 /* ──────────────────────────────────────────
@@ -110,28 +72,42 @@
   padding: 0;
 }
 
+html {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
 body {
   min-height: 100vh;
   background: var(--bg);
-  color: var(--text);
+  color: var(--texte);
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.4;
-  padding: 1.5rem 1.5rem 5rem;
+  padding: 32px;
   transition:
     background var(--transition),
     color var(--transition);
 }
 
-main,
-body > * {
-  max-width: 1100px;
+.page,
+.header {
+  max-width: 1180px;
   margin-left: auto;
   margin-right: auto;
 }
 
 ul {
   list-style: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.icone {
+  display: block;
+  flex-shrink: 0;
 }
 
 /* ──────────────────────────────────────────
@@ -142,42 +118,178 @@ ul {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 1.5rem;
+  gap: 1rem;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
 }
+
 .logo-link,
 .logo-link:visited {
   text-decoration: none;
-  color: inherit;
-  display: flex;
-  align-items: center;
-}
-h1 {
-  font-family: var(--font-display);
+  color: var(--texte);
   font-weight: 700;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   letter-spacing: -0.02em;
-  color: var(--text);
 }
 
-h1 span {
+.logo-link span {
   color: var(--accent);
 }
 
+.header-date {
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.badge-demo {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--carte);
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.badge-demo:hover,
+.badge-demo:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+/* ──────────────────────────────────────────
+   Barre démo (QA : forcer météo/trafic à l'affichage)
+   ────────────────────────────────────────── */
+
+.barre-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border: 1px dashed var(--carte-border);
+  border-radius: var(--rayon-sm);
+  background: var(--carte);
+}
+
+.barre-demo-titre {
+  margin: 2px 12px 2px 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texte-dim);
+}
+
+.barre-demo-groupe {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 12px 0 0;
+}
+
+.barre-demo-groupe li {
+  margin: 2px 6px 2px 0;
+}
+
+.barre-demo-bouton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.65rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+
+.barre-demo-bouton .icone {
+  margin-right: 0.3rem;
+}
+
+.barre-demo-bouton:hover,
+.barre-demo-bouton:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+.barre-demo-bouton.actif {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.barre-demo-point {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: var(--texte-dim);
+}
+
+.barre-demo-bouton-fluide .barre-demo-point {
+  background: var(--succes);
+}
+
+.barre-demo-bouton-info .barre-demo-point {
+  background: var(--avertissement);
+}
+
+.barre-demo-bouton-ailleurs .barre-demo-point {
+  background: var(--avertissement);
+}
+
+.barre-demo-bouton-alerte .barre-demo-point {
+  background: var(--danger);
+}
+
+.barre-demo-bouton.actif .barre-demo-point {
+  background: #0d1117;
+}
+
+.barre-demo-reinit {
+  margin-left: auto;
+}
+
+.barre-demo-scenarios {
+  flex-basis: 100%;
+}
+
+.barre-demo-scenarios.ouvert {
+  border-top: 1px dashed var(--carte-border);
+  padding-top: 0.9rem;
+}
+
 .theme-toggle {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--carte);
+  color: var(--texte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon-sm);
   width: 40px;
   height: 40px;
-  font-size: 1.1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition);
+  transition:
+    border-color var(--transition),
+    background var(--transition);
 }
 
 .theme-toggle:hover {
@@ -185,315 +297,814 @@ h1 span {
   background: var(--surface-2);
 }
 
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* ──────────────────────────────────────────
-   Section villes
+   Cartes — base commune
    ────────────────────────────────────────── */
 
-.villes {
-  display: grid;
-  grid-template-columns: 1fr;
-  margin-bottom: 1.5rem;
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon);
+  padding: 24px;
+  box-shadow: var(--ombre);
+  animation: apparition 0.25s ease;
 }
 
-/* Style commun aux deux cartes */
-.carte {
-  border-radius: var(--radius);
-  padding: 1.25rem 1.5rem;
-  transition:
-    transform var(--transition),
-    box-shadow var(--transition);
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-muted);
+}
+
+.erreur {
+  background: var(--carte);
+  color: var(--danger);
+  padding: 1rem 1.25rem;
+  border-radius: var(--rayon);
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid var(--danger);
+}
+
+/* ──────────────────────────────────────────
+   Rangée principale : météo / départ / arrivée
+   ────────────────────────────────────────── */
+
+.grille-principale {
+  display: grid;
+  /* minmax(0, Nfr), not just "Nfr" — a bare fr track still defaults to
+     minmax(auto, Nfr), so a column whose content happens to need more
+     room (e.g. "Château-Thierry" vs "Paris Est") gets silently widened
+     past its fair share, breaking the 3.5fr/3.5fr equal split between
+     départ and arrivée. The 0 minimum forces both to their exact
+     proportional width and lets content truncate instead. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr);
+  gap: 24px;
+  margin-bottom: 24px;
+  /* align-items: start (not stretch) — a grid row still sizes to its
+     tallest cell, but with "start" the other cards stay their own natural
+     height instead of stretching to fill it. Otherwise opening "Voir
+     départs" (which grows that one card) would visibly inflate Météo and
+     Arrivée too, even though nothing in them changed. */
+  align-items: start;
+}
+
+.grille-principale .carte {
+  display: flex;
+  flex-direction: column;
+  /* Grid items default to min-width:auto (their content's min-content
+     size) even inside a minmax(0, ...) track — without this, long
+     content (e.g. a destination name) still forces the card wider than
+     its column, defeating the minmax(0, ...) fix above. */
+  min-width: 0;
+}
+
+/* --- Carte météo --- */
+
+.carte-meteo {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--border);
 }
 
-.carte:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-hover);
+/* Le contenu doit rester lisible par-dessus l'animation de fond
+   (.meteo-fond, z-index:0) : chaque bloc direct passe en z-index:1. */
+.carte-meteo-haut,
+.carte-meteo-stats,
+.pluie-toggle {
+  position: relative;
+  z-index: 1;
 }
 
-/* Barre d'accent en haut de chaque carte */
-.carte::after {
-  content: "";
+.carte-meteo-haut {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+/* ── Animation de fond météo — discrète, sous le contenu ── */
+
+.meteo-fond {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--texte);
+  pointer-events: none;
 }
 
-/* Petit label "VILLE" en haut */
-.carte::before {
-  content: "VILLE";
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  margin-bottom: 0.5rem;
-  position: relative;
-  z-index: 1;
+.meteo-fond-soleil .soleil-lueur {
+  opacity: 0.1;
+  animation: lueur-pulser 5s ease-in-out infinite;
 }
 
-/* ── Trilport (carte principale) ── */
-.carte-principale {
-  background: linear-gradient(
-    135deg,
-    var(--trilport-bg-from) 0%,
-    var(--trilport-bg-to) 100%
-  );
+.meteo-fond-soleil .soleil-rayons {
+  opacity: 0.18;
+  transform-origin: 200px 100px;
+  animation: rayons-tourner 50s linear infinite;
 }
 
-.carte-principale::after {
-  background: linear-gradient(
-    90deg,
-    var(--trilport-accent),
-    var(--trilport-accent-bright)
-  );
+@keyframes lueur-pulser {
+  0%,
+  100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.16;
+  }
 }
 
-.carte-principale::before {
-  color: var(--trilport-label);
+@keyframes rayons-tourner {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.carte-principale .description {
-  color: var(--trilport-description);
+.meteo-fond .nuage-forme {
+  animation: nuage-derive 60s linear infinite;
 }
 
-/* ── Meaux (carte secondaire) ── */
-.carte-secondaire {
-  background: linear-gradient(
-    135deg,
-    var(--meaux-bg-from) 0%,
-    var(--meaux-bg-to) 100%
-  );
+.meteo-fond .nuage-2 {
+  animation-duration: 85s;
+  animation-delay: -20s;
 }
 
-.carte-secondaire::after {
-  background: linear-gradient(
-    90deg,
-    var(--meaux-accent),
-    var(--meaux-accent-bright)
-  );
+@keyframes nuage-derive {
+  from {
+    transform: translateX(-60px);
+  }
+  to {
+    transform: translateX(460px);
+  }
 }
 
-.carte-secondaire::before {
-  color: var(--meaux-label);
+.meteo-fond .nuage-forme {
+  /* même faible opacité pour toutes les scènes — avant, pluie/orage/neige
+     avaient un opacity="0.7" en dur dans le SVG, largement trop marqué
+     ("gros nuage gris solide" plutôt qu'une texture de fond discrète). */
+  opacity: 0.1;
 }
 
-.carte-secondaire .description {
-  color: var(--meaux-description);
+.meteo-fond-pluie .nuage-forme,
+.meteo-fond-orage .nuage-forme {
+  animation: none;
 }
 
-/* Typographie commune aux cartes */
-.carte h2 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--text);
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  position: relative;
-  z-index: 1;
+.pluie-gouttes .pluie-goutte {
+  opacity: 0;
+  animation: goutte-tomber 1s linear infinite;
+}
+.pluie-gouttes .pluie-goutte:nth-child(2) {
+  animation-delay: -0.1s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(3) {
+  animation-delay: -0.2s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(4) {
+  animation-delay: -0.3s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(5) {
+  animation-delay: -0.4s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(6) {
+  animation-delay: -0.5s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(7) {
+  animation-delay: -0.6s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(8) {
+  animation-delay: -0.7s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(9) {
+  animation-delay: -0.8s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(10) {
+  animation-delay: -0.9s;
 }
 
-.carte-principale .temp {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 4rem;
+@keyframes goutte-tomber {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  15% {
+    opacity: 0.3;
+  }
+  85% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(200px);
+  }
+}
+
+.meteo-fond-orage .orage-gouttes .pluie-goutte {
+  animation-duration: 0.6s;
+}
+
+/* Trois éclairs superposés, durées volontairement "non rondes" et sans
+   diviseur commun simple (4.7s / 7.3s / 9.1s) — leurs pics ne retombent
+   quasiment jamais ensemble, donc le motif combiné ne se sent pas comme
+   une boucle fixe qui se répète, même en le regardant plusieurs minutes.
+   Chacun a aussi sa propre forme (un blip net, un double-flash, un flash
+   qui tient un peu plus longtemps) plutôt que trois copies identiques. */
+.orage-eclair {
+  opacity: 0;
+}
+
+.orage-eclair-1 {
+  animation: eclair-1 4.7s ease-in-out infinite;
+}
+
+.orage-eclair-2 {
+  animation: eclair-2 7.3s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+.orage-eclair-3 {
+  animation: eclair-3 9.1s ease-in-out infinite;
+  animation-delay: -5.6s;
+}
+
+/* Blip net et bref. */
+@keyframes eclair-1 {
+  0%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  97% {
+    opacity: 0.26;
+  }
+  97.6% {
+    opacity: 0;
+  }
+}
+
+/* Double-flash rapide, plus discret. */
+@keyframes eclair-2 {
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+  }
+  91% {
+    opacity: 0.15;
+  }
+  91.8% {
+    opacity: 0.03;
+  }
+  92.6% {
+    opacity: 0.18;
+  }
+  93.4% {
+    opacity: 0;
+  }
+}
+
+/* Flash qui tient un peu plus longtemps avant de retomber, plutôt qu'un
+   blip instantané. */
+@keyframes eclair-3 {
+  0%,
+  88%,
+  100% {
+    opacity: 0;
+  }
+  89% {
+    opacity: 0.2;
+  }
+  90.5% {
+    opacity: 0.2;
+  }
+  92% {
+    opacity: 0;
+  }
+}
+
+/* Décalage et durée par flocon : style inline généré dans icons.js
+   (flocons()), pas de liste :nth-child à tenir à jour ici — le nombre de
+   flocons peut changer librement. */
+.neige-flocons .neige-flocon {
+  opacity: 0;
+  animation-name: flocon-tomber;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes flocon-tomber {
+  0% {
+    opacity: 0;
+    transform: translate(0, -10px);
+  }
+  10% {
+    opacity: 0.35;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, 200px);
+  }
+}
+
+/* Nappes de brouillard floutées (filtre SVG), superposées à des vitesses et
+   profondeurs différentes — certaines dérivent vers la droite, d'autres
+   vers la gauche (`animation-direction: reverse`, toujours un seul sens
+   chacune, pas d'aller-retour) pour un effet de couches indépendantes
+   plutôt que des barres qui avancent en bloc. */
+.meteo-fond-brouillard .brouillard-nappe {
+  opacity: 0.18;
+  animation: brouillard-derive 34s linear infinite;
+}
+.meteo-fond-brouillard .n2 {
+  animation-duration: 44s;
+  animation-delay: -12s;
+  animation-direction: reverse;
+  opacity: 0.13;
+}
+.meteo-fond-brouillard .n3 {
+  animation-duration: 26s;
+  animation-delay: -6s;
+  opacity: 0.15;
+}
+.meteo-fond-brouillard .n4 {
+  animation-duration: 38s;
+  animation-delay: -20s;
+  animation-direction: reverse;
+  opacity: 0.11;
+}
+
+@keyframes brouillard-derive {
+  from {
+    transform: translateX(-70px);
+  }
+  to {
+    transform: translateX(470px);
+  }
+}
+
+.carte-meteo-icone {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.temp {
+  font-weight: 700;
+  font-size: 3.4rem;
   line-height: 1;
-  color: var(--text);
-  letter-spacing: -0.04em;
-  margin-bottom: 0.5rem;
-  position: relative;
-  z-index: 1;
+  letter-spacing: -0.03em;
 }
 
-.carte-principale .description,
-.carte-secondaire .description {
+.condition {
+  color: var(--texte-muted);
   font-size: 0.9rem;
-  text-transform: lowercase;
-  position: relative;
-  z-index: 1;
+  margin-top: 0.3rem;
 }
 
-.meteo-details {
+.ressenti {
+  color: var(--texte-dim);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.carte-meteo-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-  margin-top: 0.9rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--carte-border);
 }
 
-.meteo-detail {
+.stat {
   min-width: 0;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 7px;
-  background: rgba(10, 14, 20, 0.12);
-  font-family: var(--font-mono);
 }
 
-.meteo-detail span,
-.meteo-detail strong {
+.stat span {
   display: block;
-  white-space: nowrap;
-}
-
-.meteo-detail span {
-  color: var(--text-dim);
-  font-size: 0.56rem;
+  color: var(--texte-dim);
+  font-size: 0.65rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.meteo-detail strong {
+.stat strong {
+  display: block;
   margin-top: 0.2rem;
-  color: var(--text);
-  font-size: 0.78rem;
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.meteo-detail-pluie {
+.pluie-toggle {
   -webkit-appearance: none;
   appearance: none;
-  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   width: 100%;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texte-dim);
+  font-family: inherit;
+  font-size: 0.75rem;
   text-align: left;
-  border-color: rgba(96, 165, 250, 0.2);
   cursor: pointer;
 }
 
-.meteo-detail-pluie strong {
-  color: #93c5fd;
+.pluie-toggle:hover {
+  color: var(--texte-muted);
 }
 
-.meteo-detail-pluie small {
-  display: block;
-  max-height: 0;
-  margin-top: 0;
-  overflow: hidden;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  opacity: 0;
-  transition:
-    max-height 0.25s ease,
-    margin-top 0.25s ease,
-    opacity 0.2s ease;
-}
-
-.meteo-detail-pluie.ouverte small {
-  max-height: 2rem;
-  margin-top: 0.35rem;
-  opacity: 1;
-}
-
-.meteo-detail-pluie[disabled] {
+.pluie-toggle[disabled] {
   cursor: default;
 }
 
-.carte-secondaire .temp {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 2.5rem;
-  line-height: 1;
-  color: var(--text);
-  letter-spacing: -0.03em;
-  margin-bottom: 0.5rem;
+.pluie-toggle small {
+  display: block;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--texte-dim);
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.pluie-toggle.ouverte small {
+  max-height: 2rem;
+  opacity: 1;
+  margin-top: 0.2rem;
+}
+
+/* --- Cartes train (départ / arrivée) --- */
+
+.carte-train-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.carte-train-entete-gauche {
+  display: flex;
+  align-items: center;
+}
+
+.carte-train-entete-gauche .eyebrow {
+  margin-right: 0.4rem;
+}
+
+/* Icône seule (un cercle, celui du tracé — pas de badge/bouton rond
+   autour) qui clignote sur départ/arrivée quand niveauTrafic === "alerte",
+   avec un anneau qui pulse derrière pour vraiment attirer l'œil (un
+   simple clignotement d'opacité sur une petite icône passait trop
+   inaperçu). Décalage d'une demi-période entre les deux cartes
+   (.decalee) pour qu'elles pulsent en alternance plutôt qu'en même
+   temps.  */
+.alerte-clignotante-conteneur {
   position: relative;
-  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alerte-anneau {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: var(--danger);
+  opacity: 0.55;
+  animation: anneau-pulse 1.4s ease-out infinite;
+}
+
+.alerte-anneau.decalee {
+  animation-delay: 0.7s;
+}
+
+@keyframes anneau-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.alerte-clignotante {
+  position: relative;
+  color: var(--danger);
+  animation: clignoter 1.4s ease-in-out infinite;
+}
+
+.alerte-clignotante.decalee {
+  animation-delay: 0.7s;
+}
+
+.countdown {
+  color: var(--texte-dim);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.train-heure-principale {
+  font-weight: 700;
+  font-size: 3.1rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.train-heure-principale.succes {
+  color: var(--succes);
+}
+
+.train-heure-principale.danger {
+  color: var(--danger);
+}
+
+.train-destination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  color: var(--texte);
+  font-size: 0.9rem;
+}
+
+.train-ponct-inline {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.train-ponct-inline.retard {
+  color: var(--avertissement);
+}
+
+.train-ponct-inline.avance {
+  color: var(--info);
+}
+
+.train-ponct-inline.a-heure {
+  color: var(--succes);
+}
+
+.train-puis {
+  margin-top: 0.5rem;
+  color: var(--texte-muted);
+  font-size: 0.8rem;
+}
+
+.statut-service {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte-dim);
+}
+
+.statut-service.indisponible {
+  color: var(--danger);
+}
+
+.statut-service.attente {
+  color: var(--avertissement);
+}
+
+.carte-train-toggle,
+.gym-details-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border: none;
+  background: none;
+  color: var(--texte-muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color var(--transition);
+}
+
+.carte-train-toggle:hover {
+  color: var(--texte);
+}
+
+.carte-train-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.fleche-toggle {
+  transition: transform var(--transition);
+}
+
+.carte-train-toggle.ouvert .fleche-toggle {
+  transform: rotate(180deg);
+}
+
+/* Panneaux "tucked away" : fermés par défaut, révélés en douceur */
+
+.disclosure {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease,
+    margin-top 0.25s ease;
+}
+
+.disclosure.ouvert {
+  max-height: 700px;
+  opacity: 1;
+  margin-top: 0.9rem;
+}
+
+.train-detail-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--carte-border);
+  font-size: 0.82rem;
+}
+
+.train-detail-ligne:first-child {
+  border-top: none;
+}
+
+.train-detail-heure {
+  font-weight: 600;
+  min-width: 3rem;
+}
+
+.train-detail-heure.retard {
+  color: var(--avertissement);
+}
+
+.train-detail-heure.avance {
+  color: var(--info);
+}
+
+.train-detail-dest {
+  color: var(--texte-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.train-detail-ancienne {
+  color: var(--texte-dim);
+  text-decoration: line-through;
+  font-size: 0.75rem;
+}
+
+.train-detail-ponct {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.train-detail-ponct.retard {
+  color: var(--avertissement);
+}
+
+.train-detail-ponct.avance {
+  color: var(--info);
+}
+
+.train-detail-ponct.a-heure {
+  color: var(--succes);
 }
 
 /* ──────────────────────────────────────────
-   Section gym
+   Carte gym
    ────────────────────────────────────────── */
 
-.gym {
-  padding-top: 0.5rem;
+.carte-gym {
+  margin-bottom: 24px;
 }
 
-.gym-entete {
+.carte-gym-entete {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
 }
 
-.gym-entete > h2 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text);
-  padding-left: 0.75rem;
-  border-left: 3px solid var(--accent);
+.gym-entete-droite {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.meaux-compact {
+.meaux-meteo {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--carte-border);
   border-radius: 999px;
-  background: linear-gradient(
-    135deg,
-    var(--meaux-bg-from),
-    var(--meaux-bg-to)
-  );
-  color: var(--meaux-description);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  line-height: 1;
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
-.meaux-compact strong {
-  color: var(--meaux-accent-bright);
-  font-size: 0.95rem;
+.meaux-meteo .icone {
+  margin-right: 0.3rem;
 }
 
-.meaux-gym {
-  display: inline-flex;
-  flex-shrink: 0;
+.gym-colonnes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--carte-border);
 }
 
-/* Colonnes Aller / Retour */
+.gym-col span {
+  display: block;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gym-col strong {
+  display: block;
+  margin-top: 0.3rem;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.gym-col strong.gym-col-verdict {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.gym-col-verdict .icone {
+  margin-right: 0.35rem;
+}
+
+/* Colonnes Aller / Retour dans le panneau déplié */
+
 .colonnes-creneaux {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.creneaux-liste,
-.creneau > ul {
-  list-style: none;
-}
-
 .colonnes-creneaux > div {
   overflow: hidden;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon-sm);
 }
 
 .colonnes-creneaux h3 {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--accent);
-  min-height: 3rem;
   margin: 0;
-  padding: 0.9rem 1rem 0.65rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.85rem 1rem 0.6rem;
+  border-bottom: 1px solid var(--carte-border);
 }
 
 .creneau {
@@ -503,14 +1114,12 @@ h1 span {
   align-items: center;
   column-gap: 0.65rem;
   width: 100%;
-  min-height: 4rem;
-  padding: 0.65rem 1rem;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border);
+  min-height: 3.6rem;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--carte-border);
   cursor: pointer;
-  transition:
-    background var(--transition),
-    min-height var(--transition);
+  transition: background var(--transition);
 }
 
 .creneau:last-child {
@@ -518,24 +1127,27 @@ h1 span {
 }
 
 .creneau:hover {
-  background: var(--surface-2);
+  background: var(--carte);
 }
 
 .creneau .heure {
-  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--text);
-  min-width: 0;
+  font-size: 0.85rem;
 }
 
 .creneau .resume {
   min-width: 0;
-  color: var(--text-muted);
-  font-size: 0.9rem;
+  color: var(--texte-muted);
+  font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.creneau .resume .icone {
+  display: inline-block;
+  vertical-align: -3px;
+  margin-right: 0.2rem;
 }
 
 .creneau > ul {
@@ -559,8 +1171,7 @@ h1 span {
   max-height: 0;
   margin-top: 0;
   overflow: hidden;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
+  color: var(--texte-dim);
   font-size: 0.65rem;
   opacity: 0;
   transition:
@@ -575,296 +1186,12 @@ h1 span {
   opacity: 1;
 }
 
-/* ──────────────────────────────────────────
-   Erreur
-   ────────────────────────────────────────── */
-
-.erreur {
-  background: var(--surface);
-  color: var(--status-parapluie);
-  padding: 1rem 1.25rem;
-  border-radius: var(--radius);
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  border: 1px solid var(--status-parapluie);
-  margin-top: 1rem;
-}
-
-/* ──────────────────────────────────────────
-   Trains dans la carte Trilport
-   ────────────────────────────────────────── */
-
-.carte-principale .carte-contenu {
-  display: grid;
-  grid-template-columns: minmax(11rem, 0.6fr) minmax(0, 2fr);
-  align-items: stretch;
-  gap: 1.25rem;
-  height: auto;
-}
-
-.carte-principale .meteo-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.carte-principale .trains-panneau {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  width: 100%;
-  height: auto;
-}
-
-.trains-gare {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.25rem;
-  min-width: 0;
-  min-height: 0;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  background: rgba(10, 14, 20, 0.15);
-}
-
-.trains-gare h3 {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: var(--font-mono);
-  font-size: 0.86rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  margin-bottom: 0.35rem;
-}
-
-.prochain-countdown {
-  color: var(--text-muted);
-  font-size: 0.66rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-  opacity: 0.95;
-}
-
-.badge-demo {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.85rem;
-  z-index: 2;
-  padding: 0.2rem 0.4rem;
-  border: 1px solid var(--border-hover);
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.55rem;
-  letter-spacing: 0.04em;
-  text-decoration: none;
-  transition:
-    border-color var(--transition),
-    color var(--transition);
-}
-
-.badge-demo:hover,
-.badge-demo:focus-visible {
-  border-color: var(--trilport-accent);
-  color: var(--text);
-}
-
-.trains-gare.departs h3 {
-  color: #4ade80;
-}
-.trains-gare.arrivees h3 {
-  color: #f87171;
-}
-
-.train-ligne {
-  font-family: var(--font-mono);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0.4rem 0;
-  border-radius: 6px;
-  cursor: default;
-  transition:
-    transform 0.2s ease,
-    background 0.2s ease;
-  width: 100%;
-}
-
-.train-ligne .train-heure {
-  font-weight: 700;
-  line-height: 1;
-}
-
-.train-horaire {
-  display: grid;
-  grid-template-areas:
-    "heure ancienne"
-    "destination ponctualite";
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  column-gap: 0.45rem;
-  row-gap: 0.15rem;
-  width: 100%;
-  white-space: nowrap;
-}
-
-.train-horaire .train-heure {
-  grid-area: heure;
-  justify-self: start;
-}
-
-.train-horaire .train-heure-prevue {
-  grid-area: ancienne;
-  justify-self: end;
-  margin: 0;
-}
-
-.train-ligne .train-horaire .dest-long,
-.train-ligne .train-horaire .dest-court {
-  grid-area: destination;
-  justify-self: start;
-  margin: 0;
-}
-
-.train-horaire .train-ponctualite {
-  grid-area: ponctualite;
-  justify-self: end;
-}
-
-.train-heure-prevue.fantome {
-  visibility: hidden;
-}
-
-.train-creneau-temps {
-  display: block;
-  min-width: 0;
-  white-space: nowrap;
-}
-
-.train-heure-prevue {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  text-decoration: line-through;
-  text-decoration-color: currentColor;
-  text-decoration-thickness: 1.5px;
-  opacity: 0.9;
-  margin-top: 0.2rem;
-}
-
-.train-ponctualite {
-  font-family: var(--font-mono);
-  font-size: 0.58rem;
-  font-weight: 600;
-}
-
-.train-ligne .dest-long,
-.train-ligne .dest-court {
-  font-size: 0.65rem;
-  opacity: 0.7;
-  margin-top: 0.15rem;
-}
-
-/* Premier train — grand */
-.train-ligne.principal .train-heure {
-  font-size: 3rem;
-}
-.train-ligne.principal .dest-long,
-.train-ligne.principal .dest-court {
-  font-size: 0.7rem;
-}
-
-.trains-gare.departs .train-ligne.principal .train-heure {
-  color: #4ade80;
-}
-.trains-gare.departs .train-ligne.principal .dest-long,
-.trains-gare.departs .train-ligne.principal .dest-court {
-  color: #86efac;
-}
-.trains-gare.arrivees .train-ligne.principal .train-heure {
-  color: #f87171;
-}
-.trains-gare.arrivees .train-ligne.principal .dest-long,
-.trains-gare.arrivees .train-ligne.principal .dest-court {
-  color: #fca5a5;
-}
-.dest-court {
-  display: none;
-}
-
-/* ──────────────────────────────────────────
-   Statut service carte Trilport
-   ────────────────────────────────────────── */
-
-.statut-service {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  margin-top: 0.25rem;
-  display: block;
-}
-
-.statut-service.termine {
-  color: var(--text-dim);
-  opacity: 0.5;
-}
-
-.statut-service.attente {
-  color: #f59e0b;
-}
-
-.statut-service.indisponible {
-  color: var(--status-parapluie);
-}
-
-.statut-service.bientot {
-  color: #f59e0b;
-  animation: clignoter 2s ease-in-out infinite;
-}
-
-/* Deuxième train — petit */
-.train-ligne.secondaire .train-heure {
-  font-size: 1.55rem;
-  opacity: 0.75;
-}
-.train-ligne.secondaire .train-ponctualite {
-  font-size: 0.55rem;
-  opacity: 0.8;
-}
-.trains-gare.departs .train-ligne.secondaire .train-heure {
-  font-size: 1.55rem;
-  opacity: 0.8;
-  color: #59dde9;
-}
-.trains-gare.departs .train-ligne.secondaire .dest-long {
-  color: #67e8f9;
-}
-
-/* Hover sur le premier */
-.train-ligne.principal:hover {
-  transform: translateX(-4px);
-  background: rgba(255, 255, 255, 0.06);
-}
-/* ──────────────────────────────────────────
-   Trains dans les créneaux gym
-   ────────────────────────────────────────── */
-
 .train-creneau {
   display: grid;
-  grid-template-columns: 3.25rem 4.25rem minmax(0, 1fr) auto;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 0.4rem;
   padding: 0.2rem 0;
-  list-style: none;
 }
 
 .train-creneau:nth-child(n + 2) {
@@ -876,14 +1203,20 @@ h1 span {
 }
 
 .train-creneau-heure {
-  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.85rem;
-  color: var(--text);
+  font-size: 0.8rem;
 }
 
-.train-creneau-temps .train-heure-prevue {
-  font-size: 0.6rem;
+.train-creneau-heure.a-heure {
+  color: var(--succes);
+}
+
+.train-creneau-heure.retard {
+  color: var(--avertissement);
+}
+
+.train-creneau-heure.avance {
+  color: var(--info);
 }
 
 .train-creneau .dest-long,
@@ -892,453 +1225,466 @@ h1 span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--texte-muted);
+  font-size: 0.75rem;
 }
 
-.train-creneau-heure.a-heure {
-  color: #4ade80;
+.dest-court {
+  display: none;
 }
 
 .train-creneau-ecart {
-  font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .train-creneau-ecart.retard {
-  color: #fb923c;
+  color: var(--avertissement);
 }
 
 .train-creneau-ecart.avance {
-  color: #60a5fa;
-}
-
-.train-creneau-dest {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  flex: 1;
+  color: var(--info);
 }
 
 .train-creneau-countdown {
-  font-family: var(--font-mono);
   font-size: 0.65rem;
-  color: var(--text-dim);
+  color: var(--texte-dim);
   white-space: nowrap;
 }
-.train-ligne.principal .train-countdown {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  opacity: 0.6;
-  margin-top: 0.1rem;
-}
-
-.train-ligne.secondaire .train-countdown {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  opacity: 0.4;
-}
-
-/* L'état temps réel prend le pas sur la couleur de direction. */
-.trains-gare .train-ligne .train-heure.retard,
-.train-creneau-heure.retard,
-.train-ponctualite.retard {
-  color: #fb923c;
-}
-
-.trains-gare .train-ligne .train-heure.retard {
-  --train-couleur-normale: var(--text);
-  animation: luire-retard 1.8s ease-in-out infinite alternate;
-}
-
-.trains-gare.departs .train-ligne.principal .train-heure.retard {
-  --train-couleur-normale: #4ade80;
-}
-
-.trains-gare.arrivees .train-ligne.principal .train-heure.retard {
-  --train-couleur-normale: #f87171;
-}
-
-.trains-gare.departs .train-ligne.secondaire .train-heure.retard {
-  --train-couleur-normale: #59dde9;
-}
-
-@keyframes luire-retard {
-  from {
-    color: var(--train-couleur-normale);
-    text-shadow: 0 0 0 rgba(251, 146, 60, 0);
-  }
-  to {
-    color: #fb923c;
-    text-shadow:
-      0 0 8px rgba(251, 146, 60, 0.65),
-      0 0 18px rgba(251, 146, 60, 0.3);
-  }
-}
-
-.trains-gare .train-ligne .train-heure.avance,
-.train-creneau-heure.avance,
-.train-ponctualite.avance {
-  color: #60a5fa;
-}
-
-.train-ponctualite.a-heure {
-  color: #4ade80;
-}
-
-.trains-gare .train-ligne .train-heure.a-heure {
-  color: #4ade80;
-}
-
-/* ──────────────────────────────────────────
-   Bandeau trafic — fixé en bas de page
-   ────────────────────────────────────────── */
-
-.bandeau-trafic {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  z-index: 100;
-}
-
-.bandeau-trafic.fluide {
-  background: rgba(34, 197, 94, 0.12);
-  border-top: 1px solid rgba(34, 197, 94, 0.3);
-  color: #4ade80;
-}
-
-.bandeau-trafic.info {
-  background: rgba(249, 115, 22, 0.12);
-  border-top: 1px solid rgba(249, 115, 22, 0.3);
-  color: #fb923c;
-}
-
-.bandeau-trafic.alerte {
-  background: rgba(239, 68, 68, 0.15);
-  border-top: 1px solid rgba(239, 68, 68, 0.4);
-  color: #f87171;
-}
-
-.trafic-interactif {
-  width: 100%;
-  border-right: none;
-  border-bottom: none;
-  border-left: none;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.trafic-interactif:focus-visible,
-.trafic-details-fermer:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
-.trafic-fleche {
-  margin-left: auto;
-  font-size: 1rem;
-}
-
-.trafic-details {
-  position: fixed;
-  z-index: 101;
-  right: 1.5rem;
-  bottom: 3.5rem;
-  left: 1.5rem;
-  max-width: 650px;
-  margin: auto;
-  padding: 1rem 1.25rem;
-  background: var(--surface);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-hover);
-  color: var(--text);
-  max-height: 50vh;
-  overflow-y: auto;
-}
-
-.trafic-details[hidden] {
-  display: none;
-}
-
-.trafic-details-entete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.trafic-details h2 {
-  font-family: var(--font-display);
-  font-size: 1rem;
-}
-
-.trafic-details p {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  white-space: pre-line;
-}
-
-.trafic-details .trafic-details-meta {
-  margin-top: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-}
-
-.trafic-details-fermer {
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--text);
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.bandeau-trafic.indisponible {
-  background: rgba(138, 147, 163, 0.12);
-  border-top: 1px solid rgba(138, 147, 163, 0.3);
-  color: var(--text-muted);
-}
-
-.bandeau-travaux {
-  margin-top: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius);
-
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  user-select: none;
-}
-
-.bandeau-travaux .trajet {
-  color: var(--text);
-}
-
-.bandeau-travaux .dates {
-  color: var(--text-muted);
-}
-
-
-.bandeau-travaux span:first-child {
-  font-size: 1rem;
-}
-.bandeau-travaux:hover {
-  border-color: var(--border-hover);
-  background: var(--surface-2);
-}
-.bandeau-travaux.ouvert span:last-child {
-  display: inline-block;
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
-.fleche {
-  transition: transform 0.3s ease;
-  display: inline-block;
-}
-
-.bandeau-travaux.ouvert .fleche {
-  transform: rotate(90deg);
-}
-.travaux-liste {
-  max-height: 0;
-  overflow: hidden;
-
-  opacity: 0;
-
- transition:
-  max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-  opacity 0.35s ease;
-
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255,255,255,.06);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-}
-
-.travaux-liste.ouvert {
-  max-height: 600px;
-  opacity: 1;
-}
-
-.travaux-item {
-  padding: 12px 16px;
-
-  color: var(--text-muted);
-  font-size: 0.85rem;
-
-  transform: translateY(-10px);
-  opacity: 0;
-
-  transition:
-    transform .3s ease,
-    opacity .3s ease;
-}
-
-.travaux-item:not(:last-child) {
-  border-bottom: 1px solid var(--border);
-}
-.travaux-liste.ouvert .travaux-item {
-  transform: translateY(0);
-  opacity: 1;
-}
-
-.travaux-details {
-  max-height: 0;
-  overflow: hidden;
-
-  opacity: 0;
-
-  transition:
-    max-height 0.35s ease,
-    opacity 0.25s ease,
-    padding 0.25s ease;
-
-  padding-top: 0;
-}
-.travaux-details.open {
-  max-height: 500px;
-  opacity: 1;
-  padding-top: 12px;
-}
-.theme-toggle:focus-visible,
-.bandeau-travaux:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-/* ──────────────────────────────────────────
-   Statut train dans les créneaux
-   ────────────────────────────────────────── */
 
 .train-statut {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  margin-left: 0;
+  font-size: 0.8rem;
 }
 
 .train-statut.attente {
-  color: var(--text-dim);
+  color: var(--texte-dim);
   letter-spacing: 0.2em;
 }
 
 .train-statut.passe {
-  opacity: 0.5;
+  color: var(--texte-dim);
+  opacity: 0.7;
 }
 
 .train-statut.indisponible {
-  color: var(--status-parapluie);
+  color: var(--danger);
   font-size: 0.7rem;
 }
 
-/* Clignotement de l'icône en cas de perturbation */
+/* ──────────────────────────────────────────
+   Carte trafic
+   ────────────────────────────────────────── */
+
+.carte-trafic {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 92px;
+}
+
+.carte-trafic-corps {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.statut-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--texte-dim);
+}
+
+.carte-trafic-fluide .statut-dot {
+  background: var(--succes);
+}
+
+.carte-trafic-info .statut-dot {
+  background: var(--avertissement);
+}
+
+.carte-trafic-ailleurs .statut-dot {
+  background: var(--avertissement);
+}
+
+.carte-trafic-alerte .statut-dot {
+  background: var(--danger);
+  animation: clignoter 1.4s ease-in-out infinite;
+}
+
+.carte-trafic-titre {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Deux boutons dans les coins de la carte trafic, absolus par rapport à
+   .carte-trafic (position:relative), au-dessus du train qui glisse
+   (z-index:0) et du texte (z-index:1). Traitements différents :
+   - "i" (infos perturbation), haut à droite : icône seule, un cercle
+     (celui du tracé de l'icône info) — même traitement que l'alerte
+     clignotante des cartes train, pas de badge rond en plus autour.
+   - cône travaux, bas à droite : reste un bouton rond avec fond/bordure,
+     lui n'a pas besoin de se fondre avec un autre indicateur visuel. */
+.carte-trafic-icone-bouton {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.carte-trafic-info-bouton {
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: none;
+  color: var(--texte-muted);
+  transition: color var(--transition);
+}
+
+.carte-trafic-info-bouton:hover,
+.carte-trafic-info-bouton:focus-visible {
+  color: var(--texte);
+}
+
+.carte-trafic-info-bouton.actif {
+  color: var(--danger);
+}
+
+.carte-trafic-travaux-bouton {
+  bottom: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--carte-border);
+  border-radius: 50%;
+  background: var(--carte);
+  color: var(--texte-muted);
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+.carte-trafic-travaux-bouton:hover,
+.carte-trafic-travaux-bouton:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+.illustration-train-conteneur {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.illustration-train-glisseur {
+  position: absolute;
+  top: 50%;
+  left: -45%;
+  height: 200%;
+  width: auto;
+  transform: translateY(-50%);
+  animation: traverser-train 26s linear infinite;
+}
+
+.illustration-train-img {
+  display: block;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.6;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.35));
+}
+
+.illustration-train-conteneur.en-panne .illustration-train-glisseur {
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: none;
+}
+
+.illustration-train-conteneur.en-panne .illustration-train-img {
+  opacity: 0.8;
+  animation: secousse-panne 2s ease-in-out infinite;
+}
+
+.illustration-train-conteneur.secoue .illustration-train-img {
+  animation: secousse-legere 1.5s ease-in-out infinite;
+}
+
+@keyframes traverser-train {
+  from {
+    left: 0;
+    transform: translate(-100%, -50%);
+  }
+
+  to {
+    left: 100%;
+    transform: translate(0, -50%);
+  }
+}
+
+/* Immobile au centre, avec un petit tressautement qui revient toutes les 2s
+   plutôt qu'un arrêt totalement figé. */
+@keyframes secousse-panne {
+  0%,
+  80%,
+  100% {
+    transform: none;
+  }
+  85% {
+    transform: translate(-3px, 2px) rotate(-1deg);
+  }
+  89% {
+    transform: translate(3px, -2px) rotate(1deg);
+  }
+  93% {
+    transform: translate(-2px, 1px) rotate(-0.6deg);
+  }
+  97% {
+    transform: translate(2px, -1px) rotate(0.5deg);
+  }
+}
+
+/* Même idée que secousse-panne mais plus fréquente — le train roule
+   toujours, ce n'est qu'un tremblement continu (mais bien visible, pas
+   juste un frémissement qu'on devine). */
+@keyframes secousse-legere {
+  0%,
+  45%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translate(-3.5px, 2px) rotate(-1.5deg);
+  }
+  56% {
+    transform: translate(3.5px, -2px) rotate(1.5deg);
+  }
+  62% {
+    transform: translate(-3px, 1.8px) rotate(-1.2deg);
+  }
+  68% {
+    transform: translate(3px, -1.8px) rotate(1.2deg);
+  }
+  74% {
+    transform: translate(-2px, 1.2px) rotate(-0.8deg);
+  }
+  80% {
+    transform: translate(2px, -1.2px) rotate(0.8deg);
+  }
+  86% {
+    transform: translate(-1px, 0.6px) rotate(-0.4deg);
+  }
+  92% {
+    transform: translate(1px, -0.6px) rotate(0.4deg);
+  }
+}
+
+/* Popups (détails perturbation / travaux) : contrairement aux disclosures
+   inline (départs, arrivées, gym), ceux-ci se détachent complètement de
+   la carte trafic en modale plein écran plutôt que de pousser le contenu
+   en dessous — la carte trafic est courte, un panneau qui s'y déplierait
+   déborderait ou pousserait tout le reste de la page. Réutilise le même
+   mécanisme [data-toggle-target]/.ouvert que les disclosures (voir
+   disclosure.js) : .popup-fond EST le panneau .disclosure (fond assombri
+   plein écran), .popup-boite est son contenu réel, centré. */
+.popup-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  max-height: none;
+  margin-top: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  transition:
+    background var(--transition),
+    opacity var(--transition);
+}
+
+.popup-fond.ouvert {
+  /* .disclosure.ouvert (2 classes) sets max-height:700px/margin-top —
+     même spécificité que .popup-fond.ouvert, donc sans cette redéclaration
+     ici, .disclosure.ouvert gagnait et limitait le fond assombri à 700px
+     de haut au lieu de couvrir tout l'écran. Résultat concret : en dessous
+     de 700px, le clic retombait sur le vrai contenu de la carte (ex. le
+     bouton travaux) au lieu du fond du popup — un tap "pour fermer" en
+     dehors du popup pouvait ouvrir l'autre popup à la place. */
+  max-height: none;
+  margin-top: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.popup-boite {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--carte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 20px;
+  transform: translateY(10px) scale(0.98);
+  transition: transform var(--transition);
+}
+
+.popup-fond.ouvert .popup-boite {
+  transform: translateY(0) scale(1);
+}
+
+.popup-titre {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-right: 1.6rem;
+}
+
+.popup-fermer {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  color: var(--texte-muted);
+  cursor: pointer;
+}
+
+.popup-fermer:hover,
+.popup-fermer:focus-visible {
+  color: var(--texte);
+}
+
+.popup-boite p {
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+  white-space: pre-line;
+}
+
+.popup-boite .panneau-meta {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--texte-dim);
+}
+
+.panneau-travaux-item {
+  padding: 0.4rem 0;
+}
+
+.panneau-travaux-item:not(:last-child) {
+  border-bottom: 1px solid var(--carte-border);
+}
+
 @keyframes clignoter {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0;
+    opacity: 0.25;
   }
 }
 
-.bandeau-trafic.alerte .bandeau-icone {
-  animation: clignoter 1s ease-in-out infinite;
+/* ──────────────────────────────────────────
+   Responsive
+   ────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  /* Cards stay 3-across down to 760px (see below), but the weather card
+     itself is naturally narrower in that row than on desktop — 4 stat
+     columns get tight ("Humidité"/"Vent" crowd each other, "Pluie : …"
+     wraps). Give them 2x2 room without touching the card layout itself;
+     900px comfortably covers every iPad portrait width (768–834px). */
+  .carte-meteo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
 }
 
-/* Icône d'alerte dans la carte Trilport */
-.carte-alerte {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  font-size: 1.1rem;
-  animation: clignoter 1s ease-in-out infinite;
-  z-index: 1;
-}
-
-@media (max-width: 960px) {
+@media (max-width: 760px) {
+  /* 760px, not 960px — the smallest real iPad portrait width is 768px
+     (classic/mini), and weather + départ + arrivée must stay in one row
+     on the target iPad regardless of orientation. This breakpoint is
+     meant for phones only now; every iPad width (768px+) stays on the
+     3-column desktop grid above. */
+  .grille-principale {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .carte-meteo {
+    grid-column: 1 / -1;
+  }
   .colonnes-creneaux {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 700px) {
-  /* Layout columns -> single column */
-  .villes,
-  .colonnes-creneaux {
+  body {
+    padding: 20px;
+  }
+  .header {
+    flex-wrap: wrap;
+    row-gap: 0.6rem;
+  }
+  .header-date {
+    display: none;
+  }
+  .badge-demo {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.66rem;
+  }
+  .carte-meteo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+  .grille-principale {
     grid-template-columns: 1fr;
   }
-
-  /* Main card adjustments */
-  .carte-principale .temp {
+  .temp {
     font-size: 3rem;
   }
-  .carte-principale .carte-contenu {
+  .train-heure-principale {
+    font-size: 2.75rem;
+  }
+  .gym-colonnes {
     grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  .carte-principale .trains-panneau {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
     gap: 0.75rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 0.75rem;
-    margin-top: 0.75rem;
   }
-  .trains-gare {
+  .carte-trafic {
+    flex-direction: column;
     align-items: flex-start;
-    min-width: 0;
-    min-height: 9rem;
-    padding: 0.65rem;
   }
-  .train-ligne {
-    align-items: flex-start;
-    padding-left: 0;
-    padding-right: 0;
+  .illustration-train-conteneur {
+    display: none;
   }
-  .train-horaire {
-    align-items: baseline;
-    column-gap: 0.35rem;
+  .carte-trafic {
+    min-height: 0;
   }
-  .train-horaire .train-ponctualite {
-    line-height: 1.2;
-  }
-  .train-ligne.principal .train-heure {
-    font-size: 2.65rem;
-  }
-  .meaux-compact {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.62rem;
-  }
-  .meaux-compact strong {
-    font-size: 0.72rem;
-  }
-
-  /* Créneaux: fixed train-time column */
   .creneau {
     grid-template-columns: 3.5rem minmax(0, 1fr);
     grid-template-rows: auto auto;
@@ -1358,11 +1704,8 @@ h1 span {
     grid-row: 1;
   }
   .train-creneau {
+    grid-template-columns: 3.25rem minmax(0, 1fr) auto;
     font-size: 0.75rem;
-  }
-  .train-creneau {
-    grid-template-columns: 3.25rem 3.75rem minmax(0, 1fr) auto;
-    column-gap: 0.3rem;
   }
   .creneau.deplie {
     background: var(--surface-2);
@@ -1373,37 +1716,11 @@ h1 span {
   .creneau.deplie .dest-court {
     display: none;
   }
-
-  /* Compact traffic banner */
-  .bandeau-trafic {
-    font-size: 0.7rem;
-    padding: 0.5rem 1rem;
-    position: static;
-    margin-top: 1rem;
-  }
-  .trafic-details {
-    position: static;
-    max-width: none;
-    margin: 0.5rem 0 1rem;
-  }
-  body {
-    padding-bottom: 1.5rem;
-  }
   .dest-long {
     display: none;
   }
   .dest-court {
     display: inline;
-  }
-}
-
-@media (max-width: 560px) {
-  .carte-principale .trains-panneau {
-    grid-template-columns: 1fr;
-  }
-
-  .trains-gare {
-    min-height: 8rem;
   }
 }
 

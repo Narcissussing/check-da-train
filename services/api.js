@@ -43,7 +43,7 @@ export async function recupererDonneesMeteo(ville) {
       latitude: ville.latitude,
       longitude: ville.longitude,
       current:
-        "temperature_2m,apparent_temperature,weather_code,precipitation,is_day",
+        "temperature_2m,apparent_temperature,weather_code,precipitation,is_day,relative_humidity_2m,wind_speed_10m",
       daily: "sunrise,sunset,temperature_2m_min,temperature_2m_max",
       hourly: "temperature_2m,precipitation,cloud_cover,weather_code",
       timezone: "Europe/Paris",
