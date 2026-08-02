@@ -8,7 +8,31 @@
 - [X] Indicateur visuel du "meilleur créneau" (basé sur le score)
 - [X] Refactoring JS — séparer en modules (api.js, utils.js, index.js)
 - [X] Refactoring CSS — réorganiser et nettoyer les règles redondantes
-- [ ] Migration vers React (composants, countdown temps réel, refresh partiel)
+- [X] Redesign 5 cartes single-page (voir docs/ui-design.md)
+- [X] Panneaux "Voir départs/arrivées/créneaux" + pluie se referment seuls après 10s
+- [X] Icône météo colorée selon la température (bleu → vert → orange → rouge)
+- [X] Vraie image de train (Ligne P) dans la carte trafic, qui glisse en continu et s'arrête/casse visuellement en cas d'alerte
+- [X] Animation météo de fond (soleil/nuage/pluie/orage/neige/brouillard) derrière la carte météo
+- [X] Icônes SVG pour les verdicts gym (au lieu des emoji ✅🌧️🥶☀️)
+- [X] Créneau gym "vitrine" = le plus proche à venir, pas systématiquement le premier de la liste
+- [X] Badge météo Meaux réaffiché dans l'en-tête de la carte gym
+- [X] Panneaux "tucked away" : un tap dedans relance leur propre minuterie de 10s (bug LL-2)
+- [X] Cartes départ/arrivée : même hauteur garantie, quel que soit le nombre de trains à venir
+- [X] Cartes départ/arrivée : même largeur garantie (grid minmax(0, …), pas juste "Nfr")
+- [X] iPad (portrait comme paysage) garde météo/départ/arrivée sur une seule rangée
+- [X] Refresh 60s invisible — fusion DOM ciblée au lieu d'un replaceChild complet (plus de fondu/reset d'animation à chaque cycle)
+- [X] Barre démo : boutons pour forcer chaque condition météo et chaque niveau trafic (dont "en panne"), combinables, activables un par un
+- [X] Barre démo : panneau "Scénarios" avec les combinaisons météo × trafic en un clic
+- [X] Animation brouillard améliorée (nappes floutées superposées au lieu de barres plates)
+- [X] Train en panne : fond mal assorti corrigé (rectangle de fond du SVG tracé supprimé)
+- [X] Carte trafic : "Détails"/"Travaux" remplacés par des icônes coin (i / cône travaux) + popup
+- [X] Nouveau niveau trafic "ailleurs" (perturbation hors trajet) : train qui roule mais tressaute légèrement
+- [X] Fix : la démo météo corrompait le cache météo partagé (15 min) au lieu de n'affecter que sa propre requête
+- [X] Carte trafic : bouton "i" en icône seule (comme l'alerte des cartes train), pas de badge rond en plus
+- [X] Alerte départ/arrivée plus visible (icône plus grande + anneau qui pulse)
+- [X] Secousse "ailleurs" renforcée (plus forte, plus fréquente)
+- [X] Bug LL-3 : popups trafic ne couvraient que 700px de haut, les clics traversaient en dessous
+- [ ] Migration vers React (composants, countdown temps réel)
 - [ ] Modal avec détails par créneau (température, précipitations…)
 - [ ] Bouton gym caché les dimanches (avec override possible)
 - [ ] Lunettes : tenir compte de l'heure aussi en hiver

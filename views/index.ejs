@@ -7,10 +7,10 @@
   <title>LookuLooku</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚆</text></svg>">
 
-  <%# Polices Google : serif pour Bureau, sans pour Cinéma %>
+  <%# Police Google unique : Inter, dans l'esprit "premium et calme" du design %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@400;600&family=Playfair+Display:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <script>
     try {
@@ -22,297 +22,398 @@
 
 <body>
 
-  <%# Bouton de bascule de thème %>
   <header class="header">
-    <h1>
-      <a href="/" class="logo-link">
-        looku<span>•</span>looku
-      </a>
-    </h1>
-    <button class="theme-toggle" aria-label="Changer de thème">🌙</button>
+    <a href="/" class="logo-link">
+      looku<span>•</span>looku
+    </a>
+    <p class="header-date"><%= locals.dateAffichee %></p>
+    <div class="header-actions">
+      <% if (modeDemo) { %>
+      <a class="badge-demo" href="/">Quitter la démo</a>
+      <% } else if (demoDisponible) { %>
+      <a class="badge-demo" href="/?demo=1">Démo</a>
+      <% } %>
+      <button class="theme-toggle" aria-label="Changer de thème" type="button"></button>
+    </div>
   </header>
 
-  <main id="dashboard-content">
+  <main id="dashboard-content" class="page">
+  <% if (modeDemo) { %>
+  <section class="barre-demo" aria-label="Démo : forcer un état à l’affichage">
+    <p class="barre-demo-titre">Démo</p>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsMeteo.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%- icone(iconeMeteo(bouton.code, true), { taille: 15 }) %>
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsTrafic.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton barre-demo-bouton-<%= bouton.cle %><%= bouton.actif ? ' actif' : '' %>">
+          <span class="barre-demo-point"></span>
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
+    <button class="barre-demo-bouton" type="button" data-toggle-target="barre-demo-scenarios" aria-expanded="false">Scénarios (<%= locals.scenariosDemo.length %>)</button>
+    <% if (meteoDemoActif || traficDemoActif) { %>
+    <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
+    <% } %>
+    <div class="disclosure barre-demo-scenarios" id="barre-demo-scenarios">
+      <ul class="barre-demo-groupe">
+        <% locals.scenariosDemo.forEach(function (scenario) { %>
+        <li>
+          <a href="<%= scenario.href %>" class="barre-demo-bouton<%= scenario.actif ? ' actif' : '' %>"><%= scenario.label %></a>
+        </li>
+        <% }) %>
+      </ul>
+    </div>
+  </section>
+  <% } %>
   <% if (locals.erreur) { %>
-  <%# Cas d'erreur %>
   <p class="erreur">Oups : <%= erreur %></p>
 
   <% } else { %>
 
-  <%# === Tableau principal Trilport === %>
+  <%# === Rangée principale : météo / prochain départ / prochaine arrivée === %>
   <% if (meteos && meteos.length === 2) { %>
-  <section class="villes">
+  <section class="grille-principale">
 
-    <%# Carte principale : Trilport %>
-    <article class="carte carte-principale">
-      <% if (modeDemo) { %>
-      <a class="badge-demo" href="/">Quitter la démo</a>
-      <% } else if (demoDisponible && departsTrilportDepart.length === 0 && arrivesTrilport.length === 0) { %>
-      <a class="badge-demo" href="/?demo=1">Voir l’aperçu</a>
-      <% } %>
-      <% if (afficherAlerteCarte) { %>
-      <span class="carte-alerte">⚠️</span>
-      <% } %>
-      <div class="carte-contenu">
-
-        <div class="meteo-info">
-          <h2>Trilport</h2>
-          <p class="temp"><%= meteos[0].current.temperature_2m.toFixed(1) %>°C</p>
-          <p class="description"><%= traduireCodeMeteo(meteos[0].current.weather_code) %></p>
-          <div class="meteo-details">
-            <div class="meteo-detail">
-              <span>Ressenti</span>
-              <strong><%= meteos[0].current.apparent_temperature.toFixed(1) %>°C</strong>
-            </div>
-            <div class="meteo-detail">
-              <span>Min / max</span>
-              <strong><%= meteos[0].daily.temperature_2m_min[0].toFixed(0) %>° · <%= meteos[0].daily.temperature_2m_max[0].toFixed(0) %>°</strong>
-            </div>
-            <% if (prochainePluieTrilport) { %>
-            <button class="meteo-detail meteo-detail-pluie" type="button" aria-expanded="false" <%= prochainePluieTrilport.dateExacte ? '' : 'disabled' %>>
-              <span>Prochaine pluie</span>
-              <strong><%= prochainePluieTrilport.resume %></strong>
-              <% if (prochainePluieTrilport.dateExacte) { %>
-              <small><%= prochainePluieTrilport.dateExacte %></small>
-              <% } %>
-            </button>
-            <% } %>
-          </div>
-        </div>
-
-        <div class="trains-panneau">
-
-          <div class="trains-gare departs">
-            <h3>Départs <% if (departsTrilportDepart[0]) { %><span class="prochain-countdown"><%= departsTrilportDepart[0].compteAReboursFormate %></span><% } %></h3>
-            <% if (departsTrilportDepart.length > 0) { %>
-            <% departsTrilportDepart.forEach((train, i) => { %>
-            <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
-              <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                <span class="dest-long"><%= train.destination %></span>
-                <span class="dest-court"><%= train.destinationCourte %></span>
-                <% if (i === 0) { %>
-                <span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span>
-                <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
-                <% } %>
-              </span>
-            </div>
-            <% }) %>
-            <% } else { %>
-            <span class="statut-service <%= statutDeparts %>"><%= statutDeparts === "indisponible" ? "Indisponible" : statutDeparts === "attente" ? "En attente" : "Terminé" %></span>
-            <% } %>
-          </div>
-
-          <div class="trains-gare arrivees">
-            <h3>Arrivées <% if (arrivesTrilport[0]) { %><span class="prochain-countdown"><%= arrivesTrilport[0].compteAReboursFormate %></span><% } %></h3>
-            <% if (arrivesTrilport.length > 0) { %>
-            <% arrivesTrilport.forEach((train, i) => { %>
-            <div class="train-ligne <%= i === 0 ? 'principal' : 'secondaire' %>">
-              <span class="train-horaire" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                <span class="train-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                <span class="dest-long"><%= train.destination %></span>
-                <span class="dest-court"><%= train.destinationCourte %></span>
-                <% if (i === 0) { %>
-                <span class="train-heure-prevue <%= train.ecartMinutes ? '' : 'fantome' %>" aria-hidden="<%= train.ecartMinutes ? 'false' : 'true' %>"><%= train.ecartMinutes ? train.heurePrevueFormatee : "00:00" %></span>
-                <% if (train.ponctualiteLibelle) { %><span class="train-ponctualite <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
-                <% } %>
-              </span>
-            </div>
-            <% }) %>
-            <% } else { %>
-            <span class="statut-service <%= statutArrivees %>"><%= statutArrivees === "indisponible" ? "Indisponible" : statutArrivees === "attente" ? "En attente" : "Terminé" %></span>
-            <% } %>
-          </div>
-
+    <%# --- Carte météo --- %>
+    <article class="carte carte-meteo">
+      <%- animationMeteoFond(sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1)) %>
+      <div class="carte-meteo-haut">
+        <div class="carte-meteo-icone" style="color: <%= couleurTemperature(meteos[0].current.temperature_2m) %>"><%- icone(iconeMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1), { taille: 56 }) %></div>
+        <div>
+          <p class="temp"><%= Math.round(meteos[0].current.temperature_2m) %>°</p>
+          <p class="condition"><%= traduireCodeMeteo(meteos[0].current.weather_code).replace(/^\S+\s*/u, "") %></p>
+          <p class="ressenti">Ressenti <%= Math.round(meteos[0].current.apparent_temperature) %>°</p>
         </div>
       </div>
+
+      <div class="carte-meteo-stats">
+        <div class="stat">
+          <span>Max</span>
+          <strong><%= Math.round(meteos[0].daily.temperature_2m_max[0]) %>°</strong>
+        </div>
+        <div class="stat">
+          <span>Min</span>
+          <strong><%= Math.round(meteos[0].daily.temperature_2m_min[0]) %>°</strong>
+        </div>
+        <div class="stat">
+          <span>Humidité</span>
+          <strong><%= Math.round(meteos[0].current.relative_humidity_2m) %>%</strong>
+        </div>
+        <div class="stat">
+          <span>Vent</span>
+          <strong><%= Math.round(meteos[0].current.wind_speed_10m) %> km/h</strong>
+        </div>
+      </div>
+
+      <% if (prochainePluieTrilport) { %>
+      <button class="pluie-toggle" type="button" aria-expanded="false" <%= prochainePluieTrilport.dateExacte ? '' : 'disabled' %>>
+        <%- icone("goutte", { taille: 14 }) %>
+        <span>Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
+        <% if (prochainePluieTrilport.dateExacte) { %>
+        <small><%= prochainePluieTrilport.dateExacte %></small>
+        <% } %>
+      </button>
+      <% } %>
+    </article>
+
+    <%# --- Carte prochain départ --- %>
+    <article class="carte carte-train carte-depart">
+      <div class="carte-train-entete">
+        <span class="carte-train-entete-gauche">
+          <span class="eyebrow">Départ</span>
+          <% if (niveauTrafic === "alerte") { %>
+          <span class="alerte-clignotante-conteneur">
+            <span class="alerte-anneau"></span>
+            <%- icone("alerte", { taille: 18, classe: "alerte-clignotante" }) %>
+          </span>
+          <% } %>
+        </span>
+        <% if (departsTrilportDepart[0]) { %><span class="countdown"><%= departsTrilportDepart[0].compteAReboursFormate %></span><% } %>
+      </div>
+
+      <% if (departsTrilportDepart.length > 0) { %>
+      <p class="train-heure-principale succes"><%= departsTrilportDepart[0].heureFormatee %></p>
+      <p class="train-destination">
+        <%= departsTrilportDepart[0].destination %>
+        <% if (departsTrilportDepart[0].ponctualiteLibelle) { %><span class="train-ponct-inline <%= departsTrilportDepart[0].ponctualiteClasse %>"><%= departsTrilportDepart[0].ponctualiteLibelle %></span><% } %>
+      </p>
+      <%# Toujours réservée (invisible si vide) : départ et arrivée doivent
+          garder la même hauteur, que chacun ait 1, 2 ou 3 trains à venir. %>
+      <p class="train-puis" <% if (departsTrilportDepart.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= departsTrilportDepart[1] ? departsTrilportDepart[1].heureFormatee : "—" %><% if (departsTrilportDepart[2]) { %> · <%= departsTrilportDepart[2].heureFormatee %><% } %></p>
+      <% } else { %>
+      <span class="statut-service <%= statutDeparts %>"><%= statutDeparts === "indisponible" ? "Indisponible" : statutDeparts === "attente" ? "En attente" : "Terminé" %></span>
+      <% } %>
+
+      <% if (departsTrilportDepart.length > 0) { %>
+      <button class="carte-train-toggle" type="button" data-toggle-target="depart-details" aria-expanded="false">
+        Voir départs <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
+      </button>
+      <div class="disclosure carte-train-details" id="depart-details">
+        <% departsTrilportDepart.forEach((train) => { %>
+        <div class="train-detail-ligne">
+          <span class="train-detail-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+          <span class="train-detail-dest"><%= train.destination %></span>
+          <% if (train.ecartMinutes) { %><span class="train-detail-ancienne"><%= train.heurePrevueFormatee %></span><% } %>
+          <% if (train.ponctualiteLibelle) { %><span class="train-detail-ponct <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+    </article>
+
+    <%# --- Carte prochaine arrivée --- %>
+    <article class="carte carte-train carte-arrivee">
+      <div class="carte-train-entete">
+        <span class="carte-train-entete-gauche">
+          <span class="eyebrow">Arrivée</span>
+          <% if (niveauTrafic === "alerte") { %>
+          <span class="alerte-clignotante-conteneur">
+            <span class="alerte-anneau decalee"></span>
+            <%- icone("alerte", { taille: 18, classe: "alerte-clignotante decalee" }) %>
+          </span>
+          <% } %>
+        </span>
+        <% if (arrivesTrilport[0]) { %><span class="countdown"><%= arrivesTrilport[0].compteAReboursFormate %></span><% } %>
+      </div>
+
+      <% if (arrivesTrilport.length > 0) { %>
+      <p class="train-heure-principale danger"><%= arrivesTrilport[0].heureFormatee %></p>
+      <p class="train-destination">
+        <%= arrivesTrilport[0].destination %>
+        <% if (arrivesTrilport[0].ponctualiteLibelle) { %><span class="train-ponct-inline <%= arrivesTrilport[0].ponctualiteClasse %>"><%= arrivesTrilport[0].ponctualiteLibelle %></span><% } %>
+      </p>
+      <p class="train-puis" <% if (arrivesTrilport.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= arrivesTrilport[1] ? arrivesTrilport[1].heureFormatee : "—" %><% if (arrivesTrilport[2]) { %> · <%= arrivesTrilport[2].heureFormatee %><% } %></p>
+      <% } else { %>
+      <span class="statut-service <%= statutArrivees %>"><%= statutArrivees === "indisponible" ? "Indisponible" : statutArrivees === "attente" ? "En attente" : "Terminé" %></span>
+      <% } %>
+
+      <% if (arrivesTrilport.length > 0) { %>
+      <button class="carte-train-toggle" type="button" data-toggle-target="arrivee-details" aria-expanded="false">
+        Voir arrivées <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
+      </button>
+      <div class="disclosure carte-train-details" id="arrivee-details">
+        <% arrivesTrilport.forEach((train) => { %>
+        <div class="train-detail-ligne">
+          <span class="train-detail-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+          <span class="train-detail-dest"><%= train.destination %></span>
+          <% if (train.ecartMinutes) { %><span class="train-detail-ancienne"><%= train.heurePrevueFormatee %></span><% } %>
+          <% if (train.ponctualiteLibelle) { %><span class="train-detail-ponct <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
     </article>
 
   </section>
   <% } %>
 
-  <%# === Section gym === %>
+  <%# === Carte gym === %>
   <% if (creneaux && creneaux.length > 0) { %>
-  <section class="gym">
-    <div class="gym-entete">
-      <h2>🏋️ Gym ce soir ?</h2>
-      <% if (meteos?.[1]) { %>
-      <div class="meaux-compact meaux-gym">
-        <span>Meaux</span>
-        <strong><%= meteos[1].current.temperature_2m.toFixed(0) %>°C</strong>
+  <% const creneauxAller = creneaux.filter((c) => c.direction === "aller"); %>
+  <% const creneauxRetour = creneaux.filter((c) => c.direction === "retour"); %>
+  <%# Le créneau "vitrine" (avant clic) doit être le plus proche à venir,
+      pas systématiquement le tout premier de la journée : on prend le
+      premier non-passé, sinon le dernier de la liste (fin de soirée). %>
+  <% const slotAller = creneauxAller.find((c) => c.statutTrain !== "passe") || creneauxAller[creneauxAller.length - 1]; %>
+  <% const slotRetour = creneauxRetour.find((c) => c.statutTrain !== "passe") || creneauxRetour[creneauxRetour.length - 1]; %>
+  <section class="carte carte-gym">
+    <div class="carte-gym-entete">
+      <span class="eyebrow"><%- icone("haltere", { taille: 15 }) %> Gym ce soir</span>
+      <div class="gym-entete-droite">
+        <% if (meteos[1]) { %>
+        <span class="meaux-meteo">
+          <%- icone(iconeMeteo(meteos[1].current.weather_code, meteos[1].current.is_day === 1), { taille: 15 }) %>
+          Meaux <%= Math.round(meteos[1].current.temperature_2m) %>°
+        </span>
+        <% } %>
       </div>
-      <% } %>
     </div>
 
-    <div class="colonnes-creneaux">
-
-      <div>
-        <h3>Aller (Trilport → Meaux)</h3>
-        <ul class="creneaux-liste">
-          <% creneaux.filter((c) => c.direction === "aller").forEach((c) => { %>
-          <li class="creneau" role="button" tabindex="0" aria-expanded="false">
-            <span class="heure"><%= c.realHeure %></span>
-            <span class="resume"><%= c.resume %></span>
-            <% if (c.statutTrain === "ok") { %>
-            <ul>
-              <% c.trainsAller.forEach((train) => { %>
-              <li class="train-creneau">
-                <span class="train-creneau-temps" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                </span>
-                <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
-                <span class="dest-long"><%= train.destination %></span>
-                <span class="dest-court"><%= train.destinationCourte %></span>
-                <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
-              </li>
-              <% }) %>
-            </ul>
-            <% } else if (c.statutTrain === "passe") { %>
-            <span class="train-statut passe">🚫</span>
-            <% } else if (c.statutTrain === "indisponible") { %>
-            <span class="train-statut indisponible">Indisponible</span>
-            <% } else { %>
-            <span class="train-statut attente">· · ·</span>
-            <% } %>
-            <div class="creneau-complement">
-              <span><%= c.temperature.toFixed(0) %>°C</span>
-              <span><%= c.precipitation %> mm de pluie</span>
-              <span><%= c.cloud_cover %>% de nuages</span>
-            </div>
-          </li>
-          <% }) %>
-        </ul>
+    <div class="gym-colonnes">
+      <div class="gym-col">
+        <span>Départ Trilport</span>
+        <strong><%= slotAller.statutTrain === "ok" ? slotAller.trainsAller[0].heureFormatee : slotAller.realHeure %></strong>
       </div>
-      <div>
-        <h3>Retour (Meaux → Trilport)</h3>
-        <ul class="creneaux-liste">
-          <% creneaux.filter((c) => c.direction === "retour").forEach((c) => { %>
-          <li class="creneau" role="button" tabindex="0" aria-expanded="false">
-            <span class="heure"><%= c.realHeure %></span>
-            <span class="resume"><%= c.resume %></span>
-            <% if (c.statutTrain === "ok") { %>
-            <ul>
-              <% c.trains.forEach((train) => { %>
-              <li class="train-creneau">
-                <span class="train-creneau-temps" title="<%= train.heurePrevueFormatee ? `Prévu à ${train.heurePrevueFormatee}` : 'Horaire prévu indisponible' %>">
-                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                </span>
-                <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
-                <span class="dest-long"><%= train.destination %></span>
-                <span class="dest-court"><%= train.destinationCourte %></span>
-                <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
-              </li>
-              <% }) %>
-            </ul>
-            <% } else if (c.statutTrain === "passe") { %>
-            <span class="train-statut passe">🚫</span>
-            <% } else if (c.statutTrain === "indisponible") { %>
-            <span class="train-statut indisponible">Indisponible</span>
-            <% } else { %>
-            <span class="train-statut attente">· · ·</span>
-            <% } %>
-            <div class="creneau-complement">
-              <span><%= c.temperature.toFixed(0) %>°C</span>
-              <span><%= c.precipitation %> mm de pluie</span>
-              <span><%= c.cloud_cover %>% de nuages</span>
-            </div>
-          </li>
-          <% }) %>
-        </ul>
+      <div class="gym-col">
+        <span>Météo</span>
+        <strong class="gym-col-verdict"><%- icone(iconeVerdict(slotAller.verdicts), { taille: 17 }) %> <%= slotAller.resume.replace(/^\S+\s*/u, "") %></strong>
       </div>
+      <div class="gym-col">
+        <span>Retour conseillé</span>
+        <strong><% if (slotRetour) { %><%= slotRetour.statutTrain === "ok" ? slotRetour.trains[0].heureFormatee : slotRetour.realHeure %><% } else { %>—<% } %></strong>
+      </div>
+    </div>
 
+    <button class="carte-train-toggle" type="button" data-toggle-target="gym-details" aria-expanded="false">
+      Voir tous les créneaux <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
+    </button>
+
+    <div class="disclosure gym-details" id="gym-details">
+      <div class="colonnes-creneaux">
+
+        <div>
+          <h3>Aller (Trilport → Meaux)</h3>
+          <ul class="creneaux-liste">
+            <% creneauxAller.forEach((c) => { %>
+            <li class="creneau" role="button" tabindex="0" aria-expanded="false">
+              <span class="heure"><%= c.realHeure %></span>
+              <span class="resume"><%- icone(iconeVerdict(c.verdicts), { taille: 14 }) %> <%= c.resume.replace(/^\S+\s*/u, "") %></span>
+              <% if (c.statutTrain === "ok") { %>
+              <ul>
+                <% c.trainsAller.forEach((train) => { %>
+                <li class="train-creneau">
+                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                  <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
+                  <span class="dest-long"><%= train.destination %></span>
+                  <span class="dest-court"><%= train.destinationCourte %></span>
+                  <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
+                </li>
+                <% }) %>
+              </ul>
+              <% } else if (c.statutTrain === "passe") { %>
+              <span class="train-statut passe">passé</span>
+              <% } else if (c.statutTrain === "indisponible") { %>
+              <span class="train-statut indisponible">Indisponible</span>
+              <% } else { %>
+              <span class="train-statut attente">· · ·</span>
+              <% } %>
+              <div class="creneau-complement">
+                <span><%= c.temperature.toFixed(0) %>°C</span>
+                <span><%= c.precipitation %> mm de pluie</span>
+                <span><%= c.cloud_cover %>% de nuages</span>
+              </div>
+            </li>
+            <% }) %>
+          </ul>
+        </div>
+
+        <div>
+          <h3>Retour (Meaux → Trilport)</h3>
+          <ul class="creneaux-liste">
+            <% creneauxRetour.forEach((c) => { %>
+            <li class="creneau" role="button" tabindex="0" aria-expanded="false">
+              <span class="heure"><%= c.realHeure %></span>
+              <span class="resume"><%- icone(iconeVerdict(c.verdicts), { taille: 14 }) %> <%= c.resume.replace(/^\S+\s*/u, "") %></span>
+              <% if (c.statutTrain === "ok") { %>
+              <ul>
+                <% c.trains.forEach((train) => { %>
+                <li class="train-creneau">
+                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+                  <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
+                  <span class="dest-long"><%= train.destination %></span>
+                  <span class="dest-court"><%= train.destinationCourte %></span>
+                  <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
+                </li>
+                <% }) %>
+              </ul>
+              <% } else if (c.statutTrain === "passe") { %>
+              <span class="train-statut passe">passé</span>
+              <% } else if (c.statutTrain === "indisponible") { %>
+              <span class="train-statut indisponible">Indisponible</span>
+              <% } else { %>
+              <span class="train-statut attente">· · ·</span>
+              <% } %>
+              <div class="creneau-complement">
+                <span><%= c.temperature.toFixed(0) %>°C</span>
+                <span><%= c.precipitation %> mm de pluie</span>
+                <span><%= c.cloud_cover %>% de nuages</span>
+              </div>
+            </li>
+            <% }) %>
+          </ul>
+        </div>
+
+      </div>
     </div>
   </section>
   <% } %>
 
   <% } %>
 
-  <%# Bandeau trafic — fixé en bas de page %>
-  <% if (niveauTrafic === "alerte" && detailAlerte) { %>
-  <button class="bandeau-trafic alerte trafic-interactif" id="trafic-toggle" type="button" aria-expanded="false" aria-controls="trafic-details">
-    <span class="bandeau-icone">🔴</span>
-    <span><%= texteAlerte %></span>
-    <span class="trafic-fleche" aria-hidden="true">ⓘ</span>
-  </button>
+  <%# === Carte trafic (toujours affichée, même en cas d'erreur ailleurs) === %>
+  <section class="carte carte-trafic carte-trafic-<%= niveauTrafic %>">
+    <% if ((niveauTrafic === "alerte" || niveauTrafic === "ailleurs") && detailAlerte) { %>
+    <button class="carte-trafic-icone-bouton carte-trafic-info-bouton<%= niveauTrafic === "alerte" ? " actif" : "" %>" type="button" data-toggle-target="trafic-details" aria-expanded="false" aria-label="Détails de la perturbation">
+      <%- icone("info", { taille: 20 }) %>
+    </button>
+    <% } %>
+    <% if (locals.prochaineTravaux) { %>
+    <button class="carte-trafic-icone-bouton carte-trafic-travaux-bouton" type="button" data-toggle-target="travaux-details" aria-expanded="false" aria-label="Travaux Ligne P">
+      <%- icone("travaux", { taille: 16 }) %>
+    </button>
+    <% } %>
 
-  <section class="trafic-details" id="trafic-details" aria-label="Détails de la perturbation" hidden>
-    <div class="trafic-details-entete">
-      <h2>Détails de la perturbation</h2>
-      <button class="trafic-details-fermer" type="button" aria-label="Fermer les détails">×</button>
+    <div class="carte-trafic-corps">
+      <span class="statut-dot"></span>
+      <div class="carte-trafic-texte">
+        <% if (niveauTrafic === "fluide") { %>
+        <p class="carte-trafic-titre">Trafic fluide</p>
+        <% } else if (niveauTrafic === "info") { %>
+        <p class="carte-trafic-titre">Perturbation sur la ligne P</p>
+        <% } else if (niveauTrafic === "ailleurs" || niveauTrafic === "alerte") { %>
+        <p class="carte-trafic-titre"><%= texteAlerte %></p>
+        <% } else { %>
+        <p class="carte-trafic-titre">Infos trafic temporairement indisponibles</p>
+        <% } %>
+      </div>
     </div>
-    <p><%= detailAlerte.details %></p>
-    <% if (detailAlerte.trajet) { %>
-    <p class="trafic-details-meta">Trajet : <%= detailAlerte.trajet %></p>
-    <% } %>
-    <% if (detailAlerte.debut) { %>
-    <p class="trafic-details-meta">Du <%= formaterDatePerturbation(detailAlerte.debut) %> au <%= formaterDatePerturbation(detailAlerte.fin) %></p>
-    <% } %>
+
+    <%- illustrationTrain(niveauTrafic) %>
   </section>
 
-  <% } else { %>
-  <div class="bandeau-trafic <%= niveauTrafic %>">
-
-    <% if (niveauTrafic === "fluide") { %>
-    <span class="bandeau-icone">🟢</span>
-    <span>Trafic fluide</span>
-
-    <% } else if (niveauTrafic === "info") { %>
-    <span class="bandeau-icone">🟠</span>
-    <span>Perturbation sur la ligne P</span>
-
-    <% } else if (niveauTrafic === "alerte") { %>
-    <span class="bandeau-icone">🔴</span>
-    <span>
-      <%= texteAlerte %> </span>
-    <% } else { %>
-    <span class="bandeau-icone">⚪</span>
-    <span>Infos trafic temporairement indisponibles</span>
-    <% } %>
-
-  </div>
-  <% } %>
-  <% if (prochaineTravaux) { %>
-
-  <button class="bandeau-travaux" id="travaux-toggle" type="button" aria-expanded="false" aria-controls="travaux-liste">
-    <span>📅</span>
-    <span>Travaux Ligne P</span>
-    <span class="fleche">▶</span>
-  </button>
-
-  <div class="travaux-liste" id="travaux-liste">
-    <% travauxFuturs.forEach((travaux) => { %>
-    <div class="travaux-item">
-      <%= travaux.dateDebut %> →
-      <%= travaux.dateFin %>
-      <% if (travaux.trajet) { %>
-      • <%= travaux.trajet %>
+  <% if ((niveauTrafic === "alerte" || niveauTrafic === "ailleurs") && detailAlerte) { %>
+  <div class="disclosure popup-fond" id="trafic-details">
+    <div class="popup-boite">
+      <button class="popup-fermer" type="button" data-close-target="trafic-details" aria-label="Fermer">
+        <%- icone("fermer", { taille: 16 }) %>
+      </button>
+      <p class="popup-titre"><%= texteAlerte %></p>
+      <p><%= detailAlerte.details %></p>
+      <% if (detailAlerte.trajet) { %>
+      <p class="panneau-meta">Trajet : <%= detailAlerte.trajet %></p>
+      <% } %>
+      <% if (detailAlerte.debut) { %>
+      <p class="panneau-meta">Du <%= formaterDatePerturbation(detailAlerte.debut) %> au <%= formaterDatePerturbation(detailAlerte.fin) %></p>
       <% } %>
     </div>
-    <% }) %>
-
   </div>
+  <% } %>
 
+  <% if (locals.prochaineTravaux) { %>
+  <div class="disclosure popup-fond" id="travaux-details">
+    <div class="popup-boite">
+      <button class="popup-fermer" type="button" data-close-target="travaux-details" aria-label="Fermer">
+        <%- icone("fermer", { taille: 16 }) %>
+      </button>
+      <p class="popup-titre">Travaux Ligne P</p>
+      <% travauxFuturs.forEach((travaux) => { %>
+      <p class="panneau-travaux-item">
+        <%= travaux.dateDebut %> → <%= travaux.dateFin %>
+        <% if (travaux.trajet) { %> • <%= travaux.trajet %><% } %>
+      </p>
+      <% }) %>
+    </div>
+  </div>
   <% } %>
 
   </main>
 
-  <%# Script de bascule de thème %>
-  <script src="/scripts/theme.js"></script>
-
-  <%# Script de rafraîchissement %>
-  <script src="/scripts/refresh.js"></script>
-
-  <%# Scrpt pour basculer la liste de travaux %>
-  <script src="/scripts/travaux.js"></script>
-
-  <%# Script pour afficher le détail des alertes trafic %>
-  <script src="/scripts/alert-details.js"></script>
-
-  <%# Script pour développer les créneaux gym %>
-  <script src="/scripts/gym-details.js"></script>
-
-  <%# Script pour afficher la date exacte de la prochaine pluie %>
-  <script src="/scripts/weather-details.js"></script>
+  <script type="module" src="/scripts/theme.js"></script>
+  <script type="module" src="/scripts/refresh.js"></script>
+  <script type="module" src="/scripts/disclosure.js"></script>
+  <script type="module" src="/scripts/gym-details.js"></script>
+  <script type="module" src="/scripts/weather-details.js"></script>
 </body>
 
 </html>
