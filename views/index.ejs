@@ -61,8 +61,17 @@
       </li>
       <% }) %>
     </ul>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsService.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
     <button class="barre-demo-bouton" type="button" data-toggle-target="barre-demo-scenarios" aria-expanded="false">Scénarios (<%= locals.scenariosDemo.length %>)</button>
-    <% if (meteoDemoActif || traficDemoActif) { %>
+    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif) { %>
     <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
     <% } %>
     <div class="disclosure barre-demo-scenarios" id="barre-demo-scenarios">
@@ -152,7 +161,7 @@
           garder la même hauteur, que chacun ait 1, 2 ou 3 trains à venir. %>
       <p class="train-puis" <% if (departsTrilportDepart.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= departsTrilportDepart[1] ? departsTrilportDepart[1].heureFormatee : "—" %><% if (departsTrilportDepart[2]) { %> · <%= departsTrilportDepart[2].heureFormatee %><% } %></p>
       <% } else { %>
-      <span class="statut-service <%= statutDeparts %>"><%= statutDeparts === "indisponible" ? "Indisponible" : statutDeparts === "attente" ? "En attente" : "Terminé" %></span>
+      <span class="statut-service <%= statutDeparts %>"><%= statutDeparts === "indisponible" ? "Indisponible" : statutDeparts === "attente" ? "En attente" : statutDeparts === "bientot" ? "Reprise bientôt" : "Fin de service" %></span>
       <% } %>
 
       <% if (departsTrilportDepart.length > 0) { %>
@@ -195,7 +204,7 @@
       </p>
       <p class="train-puis" <% if (arrivesTrilport.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= arrivesTrilport[1] ? arrivesTrilport[1].heureFormatee : "—" %><% if (arrivesTrilport[2]) { %> · <%= arrivesTrilport[2].heureFormatee %><% } %></p>
       <% } else { %>
-      <span class="statut-service <%= statutArrivees %>"><%= statutArrivees === "indisponible" ? "Indisponible" : statutArrivees === "attente" ? "En attente" : "Terminé" %></span>
+      <span class="statut-service <%= statutArrivees %>"><%= statutArrivees === "indisponible" ? "Indisponible" : statutArrivees === "attente" ? "En attente" : statutArrivees === "bientot" ? "Reprise bientôt" : "Fin de service" %></span>
       <% } %>
 
       <% if (arrivesTrilport.length > 0) { %>
@@ -369,7 +378,7 @@
       </div>
     </div>
 
-    <%- illustrationTrain(niveauTrafic) %>
+    <%- illustrationTrain(niveauTrafic, locals.phaseServiceActuelle) %>
   </section>
 
   <% if ((niveauTrafic === "alerte" || niveauTrafic === "ailleurs") && detailAlerte) { %>

@@ -148,18 +148,34 @@ function resultatOuTableau(resultat) {
   return resultat.status === "fulfilled" ? extraireDeparts(resultat.value) : [];
 }
 
-function statutService(departs, disponible) {
-  if (!disponible) return "indisponible";
-  if (departs.length > 0) return "ok";
-
-  const heureParis = Number(
+function heureActuelleParis() {
+  return Number(
     new Intl.DateTimeFormat("en-GB", {
       timeZone: "Europe/Paris",
       hour: "2-digit",
       hourCycle: "h23",
     }).format(new Date()),
   );
-  return heureParis < 5 ? "attente" : heureParis >= 23 ? "termine" : "attente";
+}
+
+// Phase de service Ligne P, purement horaire (pas de vraie grille horaire
+// disponible côté API, seulement les prochains passages en temps réel) :
+//   - "termine" : nuit, plus de train avant le lendemain matin.
+//   - "bientot" : juste avant la reprise, le premier train ne va pas
+//     tarder à apparaître dans les prochains passages.
+//   - "actif" : heures de service normales (même si un creux ponctuel
+//     fait que `departs` est vide à cet instant précis).
+function phaseService(heureParis) {
+  if (heureParis >= 23 || heureParis < 4) return "termine";
+  if (heureParis < 5) return "bientot";
+  return "actif";
+}
+
+function statutService(departs, disponible, phase) {
+  if (!disponible) return "indisponible";
+  if (departs.length > 0) return "ok";
+
+  return phase === "actif" ? "attente" : phase;
 }
 
 function dateAffichee() {
@@ -190,6 +206,8 @@ const SCENES_METEO_DEMO = {
 
 const NIVEAUX_TRAFIC_DEMO = ["fluide", "info", "ailleurs", "alerte"];
 
+const PHASES_SERVICE_DEMO = ["actif", "bientot", "termine"];
+
 const LABELS_METEO_DEMO = {
   soleil: "Soleil",
   nuage: "Nuageux",
@@ -206,17 +224,24 @@ const LABELS_TRAFIC_DEMO = {
   alerte: "En panne",
 };
 
+const LABELS_SERVICE_DEMO = {
+  actif: "Service actif",
+  bientot: "Reprise bientôt",
+  termine: "Fin de service",
+};
+
 // Construit les listes de boutons de la barre démo : chaque bouton pointe
 // vers l'URL qui active/désactive UNIQUEMENT sa propre valeur, en
 // préservant celle de l'autre axe (météo / trafic) déjà active — pour
 // pouvoir combiner les deux librement. Re-cliquer un bouton déjà actif
 // retire son paramètre (retour à l'état réel).
-function construireBoutonsDemo(meteoDemoActif, traficDemoActif) {
+function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif) {
   const boutonsMeteo = Object.keys(SCENES_METEO_DEMO).map((cle) => {
     const actif = meteoDemoActif === cle;
     const params = new URLSearchParams({ demo: "1" });
     if (!actif) params.set("meteo", cle);
     if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
     return {
       cle,
       label: LABELS_METEO_DEMO[cle],
@@ -231,6 +256,7 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif) {
     const params = new URLSearchParams({ demo: "1" });
     if (meteoDemoActif) params.set("meteo", meteoDemoActif);
     if (!actif) params.set("trafic", cle);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
     return {
       cle,
       label: LABELS_TRAFIC_DEMO[cle],
@@ -239,17 +265,35 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif) {
     };
   });
 
-  return { boutonsMeteo, boutonsTrafic };
+  const boutonsService = PHASES_SERVICE_DEMO.map((cle) => {
+    const actif = serviceDemoActif === cle;
+    const params = new URLSearchParams({ demo: "1" });
+    if (meteoDemoActif) params.set("meteo", meteoDemoActif);
+    if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (!actif) params.set("service", cle);
+    return {
+      cle,
+      label: LABELS_SERVICE_DEMO[cle],
+      href: `/?${params.toString()}`,
+      actif,
+    };
+  });
+
+  return { boutonsMeteo, boutonsTrafic, boutonsService };
 }
 
 // Boutons "scénario" : un clic force météo + trafic en une fois, pour
 // couvrir toutes les combinaisons (6 météo × 3 trafic = 18) sans avoir à
-// cliquer les deux axes séparément à chaque fois.
-function construireScenariosDemo(meteoDemoActif, traficDemoActif) {
+// cliquer les deux axes séparément à chaque fois. Préserve un éventuel
+// service démo actif (3e axe) — sinon cliquer un scénario le réinitialisait
+// silencieusement, contrairement aux boutons météo/trafic/service qui se
+// préservent tous mutuellement.
+function construireScenariosDemo(meteoDemoActif, traficDemoActif, serviceDemoActif) {
   const scenarios = [];
   Object.keys(SCENES_METEO_DEMO).forEach((meteo) => {
     NIVEAUX_TRAFIC_DEMO.forEach((trafic) => {
       const params = new URLSearchParams({ demo: "1", meteo, trafic });
+      if (serviceDemoActif) params.set("service", serviceDemoActif);
       scenarios.push({
         cle: `${meteo}-${trafic}`,
         label: `${LABELS_METEO_DEMO[meteo]} · ${LABELS_TRAFIC_DEMO[trafic]}`,
@@ -341,6 +385,21 @@ app.get("/", async (req, res) => {
       departsTrilportDepart = trainsDemo.departs;
       arrivesTrilport = trainsDemo.arrivees;
     }
+
+    // Bouton témoin phase de service (démo uniquement) : pour "bientot"/
+    // "termine", vide aussi les trains synthétiques ci-dessus — sinon la
+    // démo contredirait sa propre prévisualisation (des trains "présents"
+    // alors qu'on prévisualise justement "plus de train").
+    const serviceDemoActif =
+      modeDemo && PHASES_SERVICE_DEMO.includes(req.query.service)
+        ? req.query.service
+        : null;
+    const phaseServiceActuelle = serviceDemoActif ?? phaseService(heureActuelleParis());
+    if (serviceDemoActif && serviceDemoActif !== "actif") {
+      departsTrilportDepart = [];
+      arrivesTrilport = [];
+    }
+
     let { meteos, previsions } =
       resultatMeteo.status === "fulfilled"
         ? resultatMeteo.value
@@ -476,10 +535,12 @@ app.get("/", async (req, res) => {
     const statutDeparts = statutService(
       departsTrilportDepart,
       modeDemo || trilportDisponible,
+      phaseServiceActuelle,
     );
     const statutArrivees = statutService(
       arrivesTrilport,
       modeDemo || trilportDisponible,
+      phaseServiceActuelle,
     );
 
     // On enrichit chaque créneau avec verdicts, score et résumé
@@ -510,13 +571,15 @@ app.get("/", async (req, res) => {
       travaux.dateFin = travaux.fin.slice(6, 8) + "/" + travaux.fin.slice(4, 6);
     });
 
-    const { boutonsMeteo, boutonsTrafic } = construireBoutonsDemo(
+    const { boutonsMeteo, boutonsTrafic, boutonsService } = construireBoutonsDemo(
       meteoDemoActif,
       traficDemoActif,
+      serviceDemoActif,
     );
     const scenariosDemo = construireScenariosDemo(
       meteoDemoActif,
       traficDemoActif,
+      serviceDemoActif,
     );
 
     res.render("index.ejs", {
@@ -532,6 +595,7 @@ app.get("/", async (req, res) => {
       statutArrivees,
       traduireCodeMeteo,
       niveauTrafic,
+      phaseServiceActuelle,
       prochaineTravaux,
       travauxFuturs,
       prochainePluieTrilport,
@@ -539,8 +603,10 @@ app.get("/", async (req, res) => {
       demoDisponible: MODE_DEMO_AUTORISE,
       meteoDemoActif,
       traficDemoActif,
+      serviceDemoActif,
       boutonsMeteo,
       boutonsTrafic,
+      boutonsService,
       scenariosDemo,
       icone,
       iconeMeteo,
@@ -566,6 +632,7 @@ app.get("/", async (req, res) => {
       detailAlerte: null,
       erreur: error.message,
       niveauTrafic: "fluide",
+      phaseServiceActuelle: "actif",
       prochaineTravaux: null,
       prochainePluieTrilport: null,
       modeDemo: false,

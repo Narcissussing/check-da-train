@@ -35,19 +35,27 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
   return `<svg class="icone ${classe}" width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${contenu}</svg>`;
 }
 
-// Illustration pour la carte trafic — deux vraies images vectorisées
-// (public/images/train-profil.svg et train-en-panne.svg, tracées depuis
-// les illustrations fournies par l'utilisateur). Trois états selon
-// `niveauTrafic` :
+// Illustration pour la carte trafic — deux images vectorisées
+// (public/images/train-profil.svg, train-en-panne.svg, tracées depuis les
+// illustrations fournies par l'utilisateur) et une image raster
+// (train-dort.png, non vectorisée). États selon `niveauTrafic` et
+// `phaseServiceActuelle` (voir phaseService() dans index.js), par
+// priorité :
 //   - "alerte" (perturbation sur MON trajet, Trilport↔Meaux/Paris) :
 //     illustration endommagée, figée au centre, qui tressaute fort
-//     périodiquement.
+//     périodiquement. Prioritaire sur tout le reste — un vrai incident
+//     reste affiché même en pleine nuit.
+//   - phase "termine" (plus de service avant demain matin) : illustration
+//     dédiée (train-dort.png, un seul wagon avec la cabine bien visible —
+//     plus simple à garer proprement que la vue multi-wagons de
+//     train-profil.svg), immobile à droite, qui "dort" (petit Zzz qui
+//     s'échappe du haut de la cabine).
 //   - "ailleurs" (perturbation ailleurs sur la ligne P, hors trajet) :
 //     train normal, continue de traverser la carte, mais avec un léger
 //     tressautement continu — un signal plus discret qu'un vrai incident
 //     sur mon trajet.
-//   - tout le reste (fluide/info/indisponible) : traversée normale, sans
-//     secousse.
+//   - tout le reste (fluide/info/indisponible, service actif) : traversée
+//     normale, sans secousse.
 // Structure à deux niveaux (.illustration-train-glisseur pour la
 // position/traversée, .illustration-train-img pour la secousse) plutôt
 // qu'un seul élément : une `animation` CSS remplace entièrement la
@@ -58,24 +66,35 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
 // (train-ligne-p.svg — vue 3/4 avant — n'est plus utilisée mais conservée :
 // c'est la seule copie restante de cette illustration, le PNG source ayant
 // été supprimé par erreur.)
-export function illustrationTrain(niveauTrafic) {
+export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") {
   const enPanne = niveauTrafic === "alerte";
-  const secoue = niveauTrafic === "ailleurs";
+  const endormi = !enPanne && phaseServiceActuelle === "termine";
+  const secoue = !enPanne && !endormi && niveauTrafic === "ailleurs";
 
   const classes = ["illustration-train-conteneur"];
   if (enPanne) classes.push("en-panne");
+  if (endormi) classes.push("endormi");
   if (secoue) classes.push("secoue");
 
   const src = enPanne
     ? "/images/train-en-panne.svg"
-    : "/images/train-profil.svg";
+    : endormi
+      ? "/images/train-dort.png"
+      : "/images/train-profil.svg";
   const alt = enPanne
     ? "Illustration d'un train Transilien Ligne P endommagé"
-    : "Illustration d'un train Transilien Ligne P";
+    : endormi
+      ? "Illustration d'un train Transilien Ligne P à l'arrêt pour la nuit"
+      : "Illustration d'un train Transilien Ligne P";
+
+  const zzz = endormi
+    ? `<div class="train-zzz" aria-hidden="true"><span>Z</span><span>Z</span><span>Z</span></div>`
+    : "";
 
   return `<div class="${classes.join(" ")}">
     <div class="illustration-train-glisseur">
       <img class="illustration-train-img" src="${src}" alt="${alt}" />
+      ${zzz}
     </div>
   </div>`;
 }
