@@ -36,7 +36,7 @@ let miseAJourEnCours = false;
 // d'être en phase l'un avec l'autre, d'où le regroupement par durée plutôt
 // que tout forcer en un seul groupe.
 const SELECTEUR_ANIMATIONS_ALERTE =
-  ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
+  ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-info, .carte-trafic-ailleurs, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
 
 function synchroniserAnimationsAlerte(conteneur = document) {
   if (typeof document.timeline === "undefined") return;

@@ -35,10 +35,7 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
   return `<svg class="icone ${classe}" width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${contenu}</svg>`;
 }
 
-// Illustration pour la carte trafic — deux images vectorisées
-// (public/images/train-profil.svg, train-en-panne.svg, tracées depuis les
-// illustrations fournies par l'utilisateur) et une image raster
-// (train-dort.png, non vectorisée). États selon `niveauTrafic` et
+// Illustration pour la carte trafic. États selon `niveauTrafic` et
 // `phaseServiceActuelle` (voir phaseService() dans index.js), par
 // priorité :
 //   - "alerte" (perturbation sur MON trajet, Trilport↔Meaux/Paris) :
@@ -67,9 +64,26 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
 // secousse ne peuvent pas cohabiter sur le même élément — même logique
 // que les nuages météo (voir plus haut), appliquée ici à deux <div>
 // imbriqués plutôt qu'à un <g> SVG.
-// (train-ligne-p.svg — vue 3/4 avant — n'est plus utilisée mais conservée :
-// c'est la seule copie restante de cette illustration, le PNG source ayant
-// été supprimé par erreur.)
+// train-ligne-p.png (état "normal", en mouvement quasi permanent) est un
+// PNG raster, pas vectorisé — remplace train-profil.svg (2026-08-03,
+// bug LL-7) : ce dernier avait ~1300 <path> individuels (tracé depuis
+// une photo via imagetracerjs), et faire glisser en continu une SVG
+// aussi dense forçait un coût de rendu bien plus lourd qu'un bitmap sur
+// du matériel ancien (iPad iOS 12) — la carte trafic entière devenait
+// saccadée, et faisait ramer TOUT le reste de l'écran avec elle tant
+// qu'elle restait visible. Un PNG, une fois décodé, reste juste des
+// pixels que le GPU déplace, quel que soit le niveau de détail du
+// dessin. `train-en-panne.svg` (encore plus dense, ~1900 <path>) a reçu
+// le même traitement le même jour : remplacé par `train-en-panne.png`,
+// également fourni par l'utilisateur. Les deux SVG d'origine
+// (`train-profil.svg`, `train-en-panne.svg`) ont été supprimés du disque
+// par l'utilisateur en ajoutant leurs remplaçants PNG — récupérables
+// depuis l'historique Git si besoin, pas perdus pour de bon.
+// (train-ligne-p.svg — vue 3/4 avant, style vectorisé différent du PNG
+// ci-dessus malgré le nom partagé — n'était déjà plus utilisée, et son
+// fichier a été supprimé du disque le 2026-08-03 en ajoutant
+// train-ligne-p.png. Récupérable depuis l'historique Git si besoin
+// (commit 499dabe), pas perdu pour de bon malgré la suppression locale.)
 export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") {
   const enPanne = niveauTrafic === "alerte";
   const endormi = !enPanne && phaseServiceActuelle === "termine";
@@ -86,10 +100,10 @@ export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") 
   if (secoue) classes.push("secoue");
 
   const src = enPanne
-    ? "/images/train-en-panne.svg"
+    ? "/images/train-en-panne.png"
     : endormi
       ? "/images/train-dort.png"
-      : "/images/train-profil.svg";
+      : "/images/train-ligne-p.png";
   const alt = enPanne
     ? "Illustration d'un train Transilien Ligne P endommagé"
     : endormi

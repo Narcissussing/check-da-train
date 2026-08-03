@@ -1538,16 +1538,45 @@ button {
   background: var(--succes);
 }
 
-.carte-trafic-info .statut-dot {
+/* "info" (message général) et "ailleurs" (perturbation ailleurs sur la
+   ligne P, hors trajet) partagent désormais le même traitement — point
+   orange + lueur ambre discrète sur la carte (révisé 2026-08-03, via
+   LOOK-22/ChatGPT : la distinction calme/orange entre les deux ne
+   justifiait pas un système de couleur séparé). Seul "alerte" (touche
+   Trilport) reste rouge et clignotant — voir plus bas. */
+.carte-trafic-info .statut-dot,
+.carte-trafic-ailleurs .statut-dot {
   background: var(--avertissement);
 }
 
-/* "ailleurs" (perturbation ailleurs sur la ligne P, hors trajet) : style
-   calme/normal — bleu "info", pas d'orange ni de clignotement — l'orange
-   est réservé à une vraie perturbation (voir .carte-trafic-info ci-dessus).
-   Seul "alerte" (touche Trilport) doit alarmer. */
-.carte-trafic-ailleurs .statut-dot {
-  background: var(--info);
+.carte-trafic-info,
+.carte-trafic-ailleurs {
+  position: relative;
+}
+
+/* Même pseudo-élément/opacité que .carte-glow-chaude (voir plus haut) —
+   pas de box-shadow animé directement, pour ne pas réintroduire le coût
+   de repaint déjà corrigé (LL-10). `.carte-trafic` a `overflow: hidden`
+   (rogne le train qui glisse), donc ombre `inset` comme pour
+   `.carte-trafic-alerte::after`, pas une ombre qui déborde. */
+.carte-trafic-info::after,
+.carte-trafic-ailleurs::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  /* Même durée (1.4s) que tous les autres ::after de lueur — même si
+     celle-ci est calme, garder une durée commune permet à
+     synchroniserAnimationsAlerte (refresh.js, qui groupe par durée) de
+     la resynchroniser avec une carte départ/arrivée en retard modéré si
+     les deux sont visibles en même temps. */
+  animation: lueur-opacite 1.4s ease-in-out infinite;
+  box-shadow: inset 0 0 18px 3px rgba(255, 176, 82, 0.22);
 }
 
 .carte-trafic-alerte .statut-dot {
