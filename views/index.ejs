@@ -89,19 +89,9 @@
       </li>
       <% }) %>
     </ul>
-    <button class="barre-demo-bouton" type="button" data-toggle-target="barre-demo-scenarios" aria-expanded="false">Scénarios (<%= locals.scenariosDemo.length %>)</button>
     <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif) { %>
     <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
     <% } %>
-    <div class="disclosure barre-demo-scenarios" id="barre-demo-scenarios">
-      <ul class="barre-demo-groupe">
-        <% locals.scenariosDemo.forEach(function (scenario) { %>
-        <li>
-          <a href="<%= scenario.href %>" class="barre-demo-bouton<%= scenario.actif ? ' actif' : '' %>"><%= scenario.label %></a>
-        </li>
-        <% }) %>
-      </ul>
-    </div>
   </section>
   <% } %>
   <% if (locals.erreur) { %>
@@ -115,7 +105,10 @@
 
     <%# --- Carte météo --- %>
     <article class="carte carte-meteo">
-      <%- animationMeteoFond(sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1)) %>
+      <%- animationMeteoFond(
+        sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1),
+        meteos[0].current.temperature_2m
+      ) %>
       <div class="carte-meteo-haut">
         <div class="carte-meteo-icone" style="color: <%= couleurTemperature(meteos[0].current.temperature_2m) %>"><%- icone(iconeMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1), { taille: 56 }) %></div>
         <div>
@@ -146,13 +139,11 @@
 
       <% if (prochainePluieTrilport) { %>
       <% const pluieEnCours = prochainePluieTrilport.resume === "Pluie en cours"; %>
-      <button class="pluie-toggle" type="button" aria-expanded="false" <%= (prochainePluieTrilport.dateExacte || pluieEnCours) ? '' : 'disabled' %>>
+      <button class="pluie-toggle<%= pluieEnCours ? ' pluie-toggle-encours' : '' %>" type="button" aria-expanded="false" <%= (prochainePluieTrilport.dateExacte || pluieEnCours) ? '' : 'disabled' %>>
         <%- icone("goutte", { taille: 14 }) %>
-        <span>Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
+        <span class="pluie-libelle">Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
         <% if (prochainePluieTrilport.dateExacte) { %>
         <small><%= prochainePluieTrilport.dateExacte %></small>
-        <% } else if (pluieEnCours) { %>
-        <span class="pluie-gouttes-mini" aria-hidden="true"><span></span><span></span><span></span></span>
         <% } %>
       </button>
       <% } %>

@@ -197,7 +197,8 @@ function dateAffichee() {
 // code météo) pour que la carte entière (icône, températures, humidité,
 // vent, dégradé de couleur) ait l'air réelle, pas juste l'icône qui change.
 const SCENES_METEO_DEMO = {
-  soleil: { code: 0, temp: 29, ressenti: 30, min: 19, max: 31, humidite: 35, vent: 8 },
+  soleil: { code: 0, temp: 24, ressenti: 25, min: 16, max: 27, humidite: 40, vent: 8 },
+  "soleil-chaud": { code: 0, temp: 38, ressenti: 41, min: 24, max: 40, humidite: 28, vent: 6 },
   nuage: { code: 3, temp: 17, ressenti: 16, min: 11, max: 19, humidite: 68, vent: 14 },
   pluie: { code: 63, temp: 13, ressenti: 11, min: 9, max: 15, humidite: 85, vent: 22 },
   orage: { code: 95, temp: 21, ressenti: 20, min: 15, max: 24, humidite: 78, vent: 30 },
@@ -219,6 +220,7 @@ const NIVEAUX_RETARD_DEMO = ["leger", "moyen", "fort"];
 
 const LABELS_METEO_DEMO = {
   soleil: "Soleil",
+  "soleil-chaud": "Soleil très chaud",
   nuage: "Nuageux",
   pluie: "Pluie",
   orage: "Orage",
@@ -385,37 +387,6 @@ function construireBoutonsDemo(
   };
 }
 
-// Boutons "scénario" : un clic force météo + trafic en une fois, pour
-// couvrir toutes les combinaisons (6 météo × 3 trafic = 18) sans avoir à
-// cliquer les deux axes séparément à chaque fois. Préserve un éventuel
-// service démo actif (3e axe) — sinon cliquer un scénario le réinitialisait
-// silencieusement, contrairement aux boutons météo/trafic/service qui se
-// préservent tous mutuellement.
-function construireScenariosDemo(
-  meteoDemoActif,
-  traficDemoActif,
-  serviceDemoActif,
-  retardDemoActif,
-  pluieDemoActif,
-) {
-  const scenarios = [];
-  Object.keys(SCENES_METEO_DEMO).forEach((meteo) => {
-    NIVEAUX_TRAFIC_DEMO.forEach((trafic) => {
-      const params = new URLSearchParams({ demo: "1", meteo, trafic });
-      if (serviceDemoActif) params.set("service", serviceDemoActif);
-      if (retardDemoActif) params.set("retard", retardDemoActif);
-      if (pluieDemoActif) params.set("pluie", pluieDemoActif);
-      scenarios.push({
-        cle: `${meteo}-${trafic}`,
-        label: `${LABELS_METEO_DEMO[meteo]} · ${LABELS_TRAFIC_DEMO[trafic]}`,
-        href: `/?${params.toString()}`,
-        actif: meteoDemoActif === meteo && traficDemoActif === trafic,
-      });
-    });
-  });
-  return scenarios;
-}
-
 // Écarts (minutes de retard) associés à chaque bouton témoin "retard" —
 // leger reproduit l'écart par défaut (3 min, juste le texte "retard", pas
 // de lueur/clignotement) ; moyen et fort dépassent les seuils de
@@ -569,6 +540,12 @@ app.get("/", async (req, res) => {
       meteos[0].current.wind_speed_10m = scene.vent;
       meteos[0].daily.temperature_2m_min[0] = scene.min;
       meteos[0].daily.temperature_2m_max[0] = scene.max;
+      // Toutes les scènes météo démo sont pensées de jour (ex. "Soleil") —
+      // sans ce forçage, tester ces boutons le soir/la nuit (is_day réel
+      // vient de l'API, pas du bouton) renvoyait silencieusement sceneMeteo()
+      // sur "calme" (aucune animation), rendant le bouton "Soleil" muet
+      // exactement au moment où on veut le prévisualiser.
+      meteos[0].current.is_day = 1;
     }
 
     const infosTrafic =
@@ -727,14 +704,6 @@ app.get("/", async (req, res) => {
       retardDemoActif,
       pluieDemoActif,
     );
-    const scenariosDemo = construireScenariosDemo(
-      meteoDemoActif,
-      traficDemoActif,
-      serviceDemoActif,
-      retardDemoActif,
-      pluieDemoActif,
-    );
-
     res.render("index.ejs", {
       meteos,
       creneaux: creneauxEvalues,
@@ -764,7 +733,6 @@ app.get("/", async (req, res) => {
       boutonsService,
       boutonsRetard,
       boutonsPluie,
-      scenariosDemo,
       icone,
       iconeMeteo,
       iconeVerdict,

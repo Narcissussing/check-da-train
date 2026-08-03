@@ -5,10 +5,52 @@
 // fichier au parsing sans lui — bug LL-7. Écrit en toutes lettres.
 const DUREE_AUTO_FERMETURE_MS = 10000;
 let minuterie;
+let minuteriesAcceleration = [];
+
+function nettoyerAcceleration(carte) {
+  minuteriesAcceleration.forEach(clearTimeout);
+  minuteriesAcceleration = [];
+  carte.classList.remove(
+    "pluie-vitesse-rapide",
+    "pluie-vitesse-moyenne",
+    "pluie-vitesse-douce"
+  );
+}
+
+function accelererPluie(pluie) {
+  const carte = pluie.closest(".carte-meteo");
+  if (!carte) return;
+
+  nettoyerAcceleration(carte);
+  pluie.classList.add("pluie-interaction-active");
+  pluie.setAttribute("aria-expanded", "true");
+  carte.classList.add("pluie-vitesse-rapide");
+
+  minuteriesAcceleration.push(setTimeout(() => {
+    carte.classList.remove("pluie-vitesse-rapide");
+    carte.classList.add("pluie-vitesse-moyenne");
+  }, 1200));
+
+  minuteriesAcceleration.push(setTimeout(() => {
+    carte.classList.remove("pluie-vitesse-moyenne");
+    carte.classList.add("pluie-vitesse-douce");
+  }, 2800));
+
+  minuteriesAcceleration.push(setTimeout(() => {
+    nettoyerAcceleration(carte);
+    pluie.classList.remove("pluie-interaction-active");
+    pluie.setAttribute("aria-expanded", "false");
+  }, 4800));
+}
 
 document.addEventListener("click", (event) => {
   const pluie = event.target.closest(".pluie-toggle:not([disabled])");
   if (!pluie) return;
+
+  if (pluie.classList.contains("pluie-toggle-encours")) {
+    accelererPluie(pluie);
+    return;
+  }
 
   const estOuvert = pluie.classList.toggle("ouverte");
   pluie.setAttribute("aria-expanded", String(estOuvert));

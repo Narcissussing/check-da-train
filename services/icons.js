@@ -2,7 +2,7 @@
 // (poids de trait constant, pas de remplissage, coins arrondis).
 
 const PATHS = {
-  soleil: `<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>`,
+  soleil: `<circle cx="12" cy="12" r="6"/>`,
   lune: `<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>`,
   "nuage-soleil": `<path d="M9.5 5.5a4 4 0 0 1 3.9 5"/><circle cx="9" cy="6" r="3"/><path d="M9 1.5v1.4M4.8 3.3l1 1M13.2 3.3l-1 1"/><path d="M7 20h9.5a3.5 3.5 0 0 0 .5-6.96A5 5 0 0 0 7.4 11.2 3.5 3.5 0 0 0 7 20Z"/>`,
   "nuage-lune": `<path d="M13 3.5A5.5 5.5 0 0 1 9.7 8" opacity="0"/><path d="M11.8 2.3A4 4 0 1 0 15 8.9a4.7 4.7 0 0 1-3.2-6.6Z"/><path d="M7 20h9.5a3.5 3.5 0 0 0 .5-6.96A5 5 0 0 0 7.4 11.2 3.5 3.5 0 0 0 7 20Z"/>`,
@@ -162,8 +162,19 @@ export function sceneMeteo(code, estJour = true) {
 // Animation de fond, discrète, derrière le contenu de la carte météo — pur
 // CSS (les @keyframes vivent dans main.css), donc aucun souci de
 // compatibilité iOS 12 au-delà de ce que CSS gère déjà nativement.
-export function animationMeteoFond(scene) {
+export function animationMeteoFond(scene, temperature = null) {
   if (scene === "calme") return "";
+
+  const temperatureSoleil = Number.isFinite(Number(temperature))
+    ? Number(temperature)
+    : 24;
+  const soleilTresChaud = temperatureSoleil >= 32;
+  const centreSoleilX = 338;
+  const centreSoleilY = 154;
+  const rayonSoleil = Math.round(
+    Math.max(36, Math.min(68, 36 + (temperatureSoleil - 12) * 1.25)),
+  );
+  const rayonLueurSoleil = Math.round(rayonSoleil * 2.15);
 
   // Un seul contour de nuage de base, réutilisé à différentes tailles/
   // positions via transform (translate+scale) sur un <g> englobant plutôt
@@ -197,18 +208,9 @@ export function animationMeteoFond(scene) {
     }).join("");
 
   const scenes = {
-    soleil: `<svg class="meteo-fond meteo-fond-soleil" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <circle class="soleil-lueur" cx="200" cy="100" r="160" fill="currentColor"/>
-      <g class="soleil-rayons" stroke="currentColor" stroke-width="4" stroke-linecap="round">
-        <line x1="200" y1="100" x2="200" y2="-90"/>
-        <line x1="200" y1="100" x2="340" y2="-40"/>
-        <line x1="200" y1="100" x2="400" y2="100"/>
-        <line x1="200" y1="100" x2="340" y2="240"/>
-        <line x1="200" y1="100" x2="200" y2="290"/>
-        <line x1="200" y1="100" x2="60" y2="240"/>
-        <line x1="200" y1="100" x2="0" y2="100"/>
-        <line x1="200" y1="100" x2="60" y2="-40"/>
-      </g>
+    soleil: `<svg class="meteo-fond meteo-fond-soleil${soleilTresChaud ? " meteo-fond-soleil-chaud" : ""}" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <circle class="soleil-lueur" cx="${centreSoleilX}" cy="${centreSoleilY}" r="${rayonLueurSoleil}" fill="currentColor"/>
+      <circle class="soleil-coeur" cx="${centreSoleilX}" cy="${centreSoleilY}" r="${rayonSoleil}" fill="currentColor"/>
     </svg>`,
 
     nuage: `<svg class="meteo-fond meteo-fond-nuage" viewBox="0 0 400 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">

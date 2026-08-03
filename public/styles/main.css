@@ -314,15 +314,6 @@ button {
   margin-left: auto;
 }
 
-.barre-demo-scenarios {
-  flex-basis: 100%;
-}
-
-.barre-demo-scenarios.ouvert {
-  border-top: 1px dashed var(--carte-border);
-  padding-top: 0.9rem;
-}
-
 .theme-toggle {
   background: var(--carte);
   color: var(--texte);
@@ -401,7 +392,15 @@ button {
    .alerte-clignotante/.alerte-anneau (voir refresh.js, qui groupe par
    durée d'animation et pas par nom de keyframe, justement pour que des
    formes visuelles différentes partageant le même rythme restent
-   perçues comme "elles clignotent ensemble"). */
+   perçues comme "elles clignotent ensemble").
+
+   Toutes les lueurs de carte utilisent désormais une ombre INTERNE
+   (inset), pas seulement celle de la carte trafic : `.carte-trafic` a
+   `overflow: hidden` (pour rogner le train qui glisse) et rognerait une
+   ombre qui déborde, donc un inset y est obligatoire — LOOK-22 demande
+   la même direction partout plutôt que outward sur les cartes train et
+   inset seulement sur la carte trafic, donc les cartes train sont
+   passées en inset ici aussi pour rester cohérentes. */
 .carte-glow-chaude,
 .carte-glow-alerte {
   position: relative;
@@ -409,6 +408,8 @@ button {
 
 .carte-glow-chaude::after,
 .carte-glow-alerte::after,
+.carte-trafic-info::after,
+.carte-trafic-ailleurs::after,
 .carte-trafic-alerte::after {
   content: "";
   position: absolute;
@@ -423,20 +424,22 @@ button {
 }
 
 .carte-glow-chaude::after {
-  box-shadow: 0 0 22px 4px rgba(255, 176, 82, 0.28);
+  box-shadow: inset 0 0 22px 4px rgba(255, 176, 82, 0.28);
 }
 
 .carte-glow-alerte::after {
-  box-shadow: 0 0 28px 7px rgba(255, 100, 66, 0.55);
+  box-shadow: inset 0 0 28px 7px rgba(255, 100, 66, 0.55);
 }
 
-/* `.carte-trafic` a `overflow: hidden` (pour rogner le train qui glisse) —
-   un box-shadow qui déborde serait donc rogné à son tour. Ombre interne
-   (inset) à la place : reste à l'intérieur du cadre déjà rogné, se lit
-   toujours comme "toute la carte respire", juste depuis l'intérieur du
-   bord plutôt qu'en débordant dessus. */
+/* Alerte carte trafic : rouge mais "restrained" (2026-08-03, 3e révision
+   LOOK-22) — une vraie perturbation qui touche Trilport doit rester
+   visible sans devenir aussi criante qu'un retard >10min sur une carte
+   départ/arrivée. Opacité de lueur plus basse que .carte-glow-alerte
+   (0.35 vs 0.55) et point qui respire (clignoter-restrained, creux à
+   0.5) plutôt que de presque s'éteindre (clignoter standard, creux à
+   0.25) — toujours 1.4s pour rester dans le même groupe de sync. */
 .carte-trafic-alerte::after {
-  box-shadow: inset 0 0 22px 4px rgba(255, 100, 66, 0.55);
+  box-shadow: inset 0 0 22px 4px rgba(255, 100, 66, 0.35);
 }
 
 @keyframes lueur-opacite {
@@ -553,28 +556,70 @@ button {
 
 .meteo-fond-soleil .soleil-lueur {
   opacity: 0.1;
-  animation: lueur-pulser 5s ease-in-out infinite;
+  transform-origin: 338px 154px;
+  animation: soleil-lueur-pulser 4.8s ease-in-out infinite;
 }
 
-.meteo-fond-soleil .soleil-rayons {
-  opacity: 0.18;
-  transform-origin: 200px 100px;
-  animation: rayons-tourner 50s linear infinite;
+.meteo-fond-soleil .soleil-coeur {
+  opacity: 0.2;
+  transform-origin: 338px 154px;
+  animation: soleil-coeur-pulser 4.8s ease-in-out infinite;
 }
 
-@keyframes lueur-pulser {
+.meteo-fond-soleil-chaud .soleil-lueur {
+  opacity: 0.16;
+  animation-name: soleil-lueur-chaud-pulser;
+  animation-duration: 3.8s;
+}
+
+.meteo-fond-soleil-chaud .soleil-coeur {
+  opacity: 0.3;
+  animation: soleil-chaud-rayonner 3.2s ease-in-out infinite;
+}
+
+@keyframes soleil-lueur-pulser {
   0%,
   100% {
+    transform: scale(0.94);
     opacity: 0.08;
   }
   50% {
+    transform: scale(1.08);
     opacity: 0.16;
   }
 }
 
-@keyframes rayons-tourner {
-  to {
-    transform: rotate(360deg);
+@keyframes soleil-lueur-chaud-pulser {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.12;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.24;
+  }
+}
+
+@keyframes soleil-coeur-pulser {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes soleil-chaud-rayonner {
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.26;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.36;
   }
 }
 
@@ -903,60 +948,26 @@ button {
   margin-top: 0.2rem;
 }
 
-/* "Pluie en cours" n'a pas d'heure exacte à révéler (ça tombe déjà) — un
-   tap révèle plutôt une petite pluie animée à la place, pour que le tap
-   fasse toujours quelque chose au lieu de rester inerte. Même mécanisme
-   d'ouverture que <small> ci-dessus. */
-.pluie-gouttes-mini {
-  display: flex;
-  align-items: flex-end;
-  max-height: 0;
-  overflow: hidden;
+/* Pendant l'accélération, le contrôle s'efface sans quitter le flux. */
+.pluie-toggle-encours {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.pluie-toggle-encours.pluie-interaction-active {
   opacity: 0;
-  transition:
-    max-height 0.25s ease,
-    opacity 0.2s ease;
+  transform: translateY(4px);
 }
 
-.pluie-toggle.ouverte .pluie-gouttes-mini {
-  max-height: 1.2rem;
-  opacity: 1;
-  margin-top: 0.2rem;
+.carte-meteo.pluie-vitesse-rapide .pluie-goutte {
+  animation-duration: 0.32s;
 }
 
-.pluie-gouttes-mini > * + * {
-  margin-left: 0.2rem;
+.carte-meteo.pluie-vitesse-moyenne .pluie-goutte {
+  animation-duration: 0.55s;
 }
 
-.pluie-gouttes-mini span {
-  display: block;
-  width: 2px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--info);
-  animation: goutte-mini-tomber 0.9s ease-in infinite;
-}
-
-.pluie-gouttes-mini span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.pluie-gouttes-mini span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes goutte-mini-tomber {
-  0% {
-    transform: translateY(-4px);
-    opacity: 0;
-  }
-  40% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(4px);
-    opacity: 0;
-  }
+.carte-meteo.pluie-vitesse-douce .pluie-goutte {
+  animation-duration: 0.78s;
 }
 
 /* --- Cartes train (départ / arrivée) --- */
@@ -1538,14 +1549,14 @@ button {
   background: var(--succes);
 }
 
-/* "info" (message général) et "ailleurs" (perturbation ailleurs sur la
-   ligne P, hors trajet) partagent désormais le même traitement — point
-   orange + lueur ambre discrète sur la carte (révisé 2026-08-03, via
-   LOOK-22/ChatGPT : la distinction calme/orange entre les deux ne
-   justifiait pas un système de couleur séparé). Seul "alerte" (touche
-   Trilport) reste rouge et clignotant — voir plus bas. */
-.carte-trafic-info .statut-dot,
-.carte-trafic-ailleurs .statut-dot {
+/* "info" (Perturbation générale) et "ailleurs" (perturbation hors trajet)
+   partagent le même point orange + lueur ambre discrète (révisé
+   2026-08-03, 4e révision LOOK-22 — le bleu "calme" essayé pour ailleurs
+   se lisait comme un signal positif/neutre, pas comme une échelle de
+   sévérité. Trois couleurs seulement, dans l'ordre attendu : vert
+   (fluide) → orange (info/ailleurs) → rouge (alerte)). */
+.carte-trafic-ailleurs .statut-dot,
+.carte-trafic-info .statut-dot {
   background: var(--avertissement);
 }
 
@@ -1561,27 +1572,17 @@ button {
    `.carte-trafic-alerte::after`, pas une ombre qui déborde. */
 .carte-trafic-info::after,
 .carte-trafic-ailleurs::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  border-radius: inherit;
-  opacity: 0;
-  pointer-events: none;
   /* Même durée (1.4s) que tous les autres ::after de lueur — même si
      celle-ci est calme, garder une durée commune permet à
      synchroniserAnimationsAlerte (refresh.js, qui groupe par durée) de
      la resynchroniser avec une carte départ/arrivée en retard modéré si
      les deux sont visibles en même temps. */
-  animation: lueur-opacite 1.4s ease-in-out infinite;
   box-shadow: inset 0 0 18px 3px rgba(255, 176, 82, 0.22);
 }
 
 .carte-trafic-alerte .statut-dot {
   background: var(--danger);
-  animation: clignoter 1.4s ease-in-out infinite;
+  animation: clignoter-restrained 1.4s ease-in-out infinite;
 }
 
 /* Perturbation qui touche Trilport : en plus du point qui clignote et du
@@ -1986,6 +1987,21 @@ button {
   }
   50% {
     opacity: 0.25;
+  }
+}
+
+/* Variante "restrained" du clignotement, réservée à la carte trafic en
+   alerte (LOOK-22, 3e révision) — même durée que `clignoter` (reste dans
+   le même groupe de resynchronisation, voir refresh.js) mais le creux
+   remonte à 0.5 au lieu de 0.25 : le point respire au lieu de presque
+   s'éteindre, moins criant qu'un retard de train important. */
+@keyframes clignoter-restrained {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
