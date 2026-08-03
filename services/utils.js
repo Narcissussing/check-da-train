@@ -207,6 +207,14 @@ export function extraireDeparts(data) {
           : ecartMinutes < 0
             ? "avance"
             : "a-heure",
+      // Sévérité du retard, au-delà du simple "en retard" ci-dessus — pilote
+      // la lueur de la CARTE départ/arrivée entière (.carte-glow-chaude
+      // pour "moyen", .carte-glow-alerte pour "fort" — voir main.css et
+      // views/index.ejs, pas sur l'heure elle-même). undefined tant que ce
+      // n'est pas notable (≤5 min). Bornes strictes : "moyen" est
+      // 5 < x ≤ 10, "fort" est x > 10 — elles ne se chevauchent jamais.
+      retardNiveau:
+        ecartMinutes > 10 ? "fort" : ecartMinutes > 5 ? "moyen" : undefined,
       dansXMin,
       compteAReboursFormate:
         dansXMin === undefined
@@ -264,6 +272,44 @@ export function formaterCompteARebours(minutes) {
   return `dans ${minutes} min`;
 }
 
+// Formate un delai (en minutes) + son heure de debut en {resume, dateExacte}.
+// Extrait de trouverProchainePluie pour que la barre demo (?pluie=...) puisse
+// prevoir n'importe quel delai via ce MEME formatage plutot qu'une copie —
+// sinon la demo pourrait diverger silencieusement du vrai calcul, exactement
+// le genre d'ecart que le bug LL-8 a fait remonter.
+export function formaterDelaiPluie(minutes, debut) {
+  const dateExacte = debut.toLocaleString("fr-FR", {
+    timeZone: "Europe/Paris",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (minutes < 60) {
+    return { resume: `Dans ${minutes} min`, dateExacte };
+  }
+
+  if (minutes < 24 * 60) {
+    const heures = Math.floor(minutes / 60);
+    const minutesRestantes = minutes % 60;
+    return {
+      resume:
+        minutesRestantes === 0
+          ? `Dans ${heures} h`
+          : `Dans ${heures} h ${minutesRestantes} min`,
+      dateExacte,
+    };
+  }
+
+  const jours = Math.ceil(minutes / (24 * 60));
+  return {
+    resume: `Dans ${jours} jour${jours > 1 ? "s" : ""}`,
+    dateExacte,
+  };
+}
+
 export function trouverProchainePluie(prevision, maintenant = new Date()) {
   const heures = prevision?.hourly?.time ?? [];
   const precipitations = prevision?.hourly?.precipitation ?? [];
@@ -287,30 +333,7 @@ export function trouverProchainePluie(prevision, maintenant = new Date()) {
         Math.round((debut.getTime() - maintenant.getTime()) / MINUTE_EN_MS),
       );
 
-      const dateExacte = debut.toLocaleString("fr-FR", {
-        timeZone: "Europe/Paris",
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      if (minutes < 24 * 60) {
-        return {
-          resume:
-            minutes < 60
-              ? `Dans ${minutes} min`
-              : `Dans ${Math.ceil(minutes / 60)} h`,
-          dateExacte,
-        };
-      }
-
-      const jours = Math.ceil(minutes / (24 * 60));
-      return {
-        resume: `Dans ${jours} jour${jours > 1 ? "s" : ""}`,
-        dateExacte,
-      };
+      return formaterDelaiPluie(minutes, debut);
     }
   }
 
@@ -489,15 +512,16 @@ export function formaterDatePerturbation(date) {
   });
 }
 
-// Arrêts qui concernent le trajet Trilport ↔ Meaux ↔ Paris
-const ARRETS_TRAJET = [
-  "meaux",
-  "trilport",
-  "château-thierry",
-  "la ferté-milon",
-  "paris est",
-  "gare de l'est",
-];
+// Arrêts qui concernent le trajet Trilport ↔ Meaux ↔ Paris. Volontairement
+// SANS "paris est"/"gare de l'est" : la ligne P a plusieurs branches qui
+// partagent toutes ce même terminus parisien (la mienne, mais aussi par
+// exemple la branche Provins) — les inclure faisait qu'une perturbation
+// sur une AUTRE branche (ex. "Provins ↔ Gare de l'Est", qui ne touche ni
+// Trilport ni Meaux) matchait quand même et se classait "alerte" (touche
+// mon trajet) au lieu de "ailleurs". Confirmé en production par
+// l'utilisateur : la carte trafic passait au rouge pour une perturbation
+// entre Paris-Est et Provins, sans aucun rapport avec Meaux/Trilport.
+const ARRETS_TRAJET = ["meaux", "trilport", "château-thierry", "la ferté-milon"];
 
 // Vérifier si une perturbation est active aujourd'hui
 function estActiveAujourdhui(periodes) {

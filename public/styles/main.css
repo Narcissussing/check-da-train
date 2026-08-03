@@ -77,6 +77,24 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
+/* LL-7 : sur l'iPad mural, aucun bouton/tiroir ne réagissait au tap, même
+   après LL-1/LL-4/LL-5. `touch-action: manipulation` supprime le délai de
+   ~300ms et l'ambiguïté tap-simple/double-tap-pour-zoomer que WebKit
+   applique par défaut sur du contenu tactile — combiné au
+   `user-scalable=no` du meta viewport (index.ejs), qui retire l'usage
+   légitime de ce geste sur un écran mural fixe. Bouton/lien/`[role="button"]`
+   sont nativement "cliquables" pour WebKit ; `.popup-fond` (le fond
+   assombri d'un popup, un simple <div>) ne l'est pas et n'a pas de
+   gestionnaire propre (seulement une délégation sur `document`, voir
+   disclosure.js) — `cursor: pointer` est le signal que WebKit utilise pour
+   le traiter comme tel. */
+button,
+a,
+[role="button"],
+.popup-fond {
+  touch-action: manipulation;
+}
+
 body {
   min-height: 100vh;
   background: var(--bg);
@@ -354,6 +372,52 @@ button {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Système de lueur de carte, partagé par la carte trafic (perturbation sur
+   mon trajet) et les cartes départ/arrivée (retard notable) — la lueur vit
+   sur la CARTE, jamais sur le texte/l'heure elle-même, pour rester lisible
+   et parce que c'est ce qu'on veut regarder en un coup d'œil (toute la
+   carte, pas juste un chiffre). Tons chauds délibérément — un ambre doux
+   pour "notable mais pas grave", un corail pour "ça mérite l'attention" —
+   plutôt qu'un rouge/orange froid et agressif sur un écran allumé en
+   permanence. Les DEUX animations durent exactement 1.4s (aucune n'a de
+   raison d'être plus lente que l'autre, l'urgence "forte" n'attend pas) —
+   ça les met dans le même groupe de resynchronisation que .statut-dot/
+   .alerte-clignotante/.alerte-anneau (voir refresh.js, qui groupe par durée
+   d'animation et pas par nom de keyframe, justement pour que des formes
+   visuelles différentes partageant le même rythme restent perçues comme
+   "elles clignotent ensemble"). */
+.carte-glow-chaude {
+  animation: carte-lueur-chaude 1.4s ease-in-out infinite;
+}
+
+.carte-glow-alerte {
+  animation: carte-lueur-alerte 1.4s ease-in-out infinite;
+}
+
+@keyframes carte-lueur-chaude {
+  0%,
+  100% {
+    box-shadow: var(--ombre);
+  }
+  50% {
+    box-shadow:
+      var(--ombre),
+      0 0 22px 4px rgba(255, 176, 82, 0.28);
+  }
+}
+
+@keyframes carte-lueur-alerte {
+  0%,
+  100% {
+    box-shadow: var(--ombre);
+  }
+  50% {
+    box-shadow:
+      var(--ombre),
+      0 0 28px 7px rgba(255, 100, 66, 0.55);
   }
 }
 
@@ -811,6 +875,62 @@ button {
   margin-top: 0.2rem;
 }
 
+/* "Pluie en cours" n'a pas d'heure exacte à révéler (ça tombe déjà) — un
+   tap révèle plutôt une petite pluie animée à la place, pour que le tap
+   fasse toujours quelque chose au lieu de rester inerte. Même mécanisme
+   d'ouverture que <small> ci-dessus. */
+.pluie-gouttes-mini {
+  display: flex;
+  align-items: flex-end;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.pluie-toggle.ouverte .pluie-gouttes-mini {
+  max-height: 1.2rem;
+  opacity: 1;
+  margin-top: 0.2rem;
+}
+
+.pluie-gouttes-mini > * + * {
+  margin-left: 0.2rem;
+}
+
+.pluie-gouttes-mini span {
+  display: block;
+  width: 2px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--info);
+  animation: goutte-mini-tomber 0.9s ease-in infinite;
+}
+
+.pluie-gouttes-mini span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.pluie-gouttes-mini span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes goutte-mini-tomber {
+  0% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+}
+
 /* --- Cartes train (départ / arrivée) --- */
 
 .carte-train-entete {
@@ -837,9 +957,10 @@ button {
    autour) qui clignote sur départ/arrivée quand niveauTrafic === "alerte",
    avec un anneau qui pulse derrière pour vraiment attirer l'œil (un
    simple clignotement d'opacité sur une petite icône passait trop
-   inaperçu). Décalage d'une demi-période entre les deux cartes
-   (.decalee) pour qu'elles pulsent en alternance plutôt qu'en même
-   temps.  */
+   inaperçu). Départ et arrivée pulsent volontairement EN PHASE (même
+   durée, pas de décalage) — tout ce qui clignote sur l'écran en même
+   temps doit clignoter ensemble ; resynchronisé après chaque
+   rafraîchissement 60s par refresh.js (synchroniserAnimationsAlerte). */
 .alerte-clignotante-conteneur {
   position: relative;
   display: inline-flex;
@@ -860,10 +981,6 @@ button {
   animation: anneau-pulse 1.4s ease-out infinite;
 }
 
-.alerte-anneau.decalee {
-  animation-delay: 0.7s;
-}
-
 @keyframes anneau-pulse {
   0% {
     transform: scale(0.55);
@@ -880,10 +997,6 @@ button {
   position: relative;
   color: var(--danger);
   animation: clignoter 1.4s ease-in-out infinite;
-}
-
-.alerte-clignotante.decalee {
-  animation-delay: 0.7s;
 }
 
 .countdown {
@@ -1401,13 +1514,27 @@ button {
   background: var(--avertissement);
 }
 
+/* "ailleurs" (perturbation ailleurs sur la ligne P, hors trajet) : style
+   calme/normal — bleu "info", pas d'orange ni de clignotement — l'orange
+   est réservé à une vraie perturbation (voir .carte-trafic-info ci-dessus).
+   Seul "alerte" (touche Trilport) doit alarmer. */
 .carte-trafic-ailleurs .statut-dot {
-  background: var(--avertissement);
+  background: var(--info);
 }
 
 .carte-trafic-alerte .statut-dot {
   background: var(--danger);
   animation: clignoter 1.4s ease-in-out infinite;
+}
+
+/* Perturbation qui touche Trilport : en plus du point qui clignote et du
+   train figé/tressautant (illustrationTrain), toute la carte respire dans
+   la même lueur chaude que les cartes départ/arrivée en retard important
+   (.carte-glow-alerte, voir plus haut) — même keyframe, même durée, donc
+   dans le même groupe de resynchronisation : la carte trafic et les cartes
+   train doivent visiblement clignoter ensemble. */
+.carte-trafic-alerte {
+  animation: carte-lueur-alerte 1.4s ease-in-out infinite;
 }
 
 .carte-trafic-titre {
@@ -1501,7 +1628,18 @@ button {
   height: 200%;
   width: auto;
   transform: translateY(-50%);
-  animation: traverser-train 26s linear infinite;
+  animation: traverser-train 14s linear infinite;
+}
+
+/* "info"/"ailleurs" : le train continue de rouler (pas figé comme
+   .en-panne), mais nettement plus lentement que la traversée normale
+   ci-dessus (14s) — un rapport de plus de 3x pour que le contraste se
+   voie même en un coup d'œil bref, pas seulement en regardant un cycle
+   entier. Le tressautement (.secoue, voir .secousse-legere) s'ajoute
+   par-dessus pour "ailleurs" uniquement — "info" reste lisse, juste
+   plus lent. */
+.illustration-train-conteneur.ralenti .illustration-train-glisseur {
+  animation-duration: 48s;
 }
 
 .illustration-train-img {
@@ -1688,6 +1826,7 @@ button {
   margin-top: 0;
   background: rgba(0, 0, 0, 0);
   pointer-events: none;
+  cursor: pointer;
   transition:
     background var(--transition),
     opacity var(--transition);

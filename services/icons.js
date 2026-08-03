@@ -51,11 +51,15 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
 //     train-profil.svg), immobile à droite, qui "dort" (petit Zzz qui
 //     s'échappe du haut de la cabine).
 //   - "ailleurs" (perturbation ailleurs sur la ligne P, hors trajet) :
-//     train normal, continue de traverser la carte, mais avec un léger
-//     tressautement continu — un signal plus discret qu'un vrai incident
-//     sur mon trajet.
-//   - tout le reste (fluide/info/indisponible, service actif) : traversée
-//     normale, sans secousse.
+//     traversée ralentie (comme "info" ci-dessous) et un léger
+//     tressautement continu en plus — un signal plus discret qu'un vrai
+//     incident sur mon trajet, mais qui doit quand même se voir.
+//   - "info" (message d'information général) : traversée ralentie, mais
+//     sans tressautement — le contraste de vitesse à lui seul doit
+//     suffire à distinguer "il se passe quelque chose" d'un trafic
+//     vraiment fluide, sans avoir l'air d'un vrai incident.
+//   - tout le reste (fluide/indisponible, service actif) : traversée à
+//     vitesse normale, sans secousse.
 // Structure à deux niveaux (.illustration-train-glisseur pour la
 // position/traversée, .illustration-train-img pour la secousse) plutôt
 // qu'un seul élément : une `animation` CSS remplace entièrement la
@@ -69,11 +73,16 @@ export function icone(nom, { taille = 20, classe = "" } = {}) {
 export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") {
   const enPanne = niveauTrafic === "alerte";
   const endormi = !enPanne && phaseServiceActuelle === "termine";
-  const secoue = !enPanne && !endormi && niveauTrafic === "ailleurs";
+  const ralenti =
+    !enPanne &&
+    !endormi &&
+    (niveauTrafic === "ailleurs" || niveauTrafic === "info");
+  const secoue = ralenti && niveauTrafic === "ailleurs";
 
   const classes = ["illustration-train-conteneur"];
   if (enPanne) classes.push("en-panne");
   if (endormi) classes.push("endormi");
+  if (ralenti) classes.push("ralenti");
   if (secoue) classes.push("secoue");
 
   const src = enPanne

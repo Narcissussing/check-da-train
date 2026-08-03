@@ -19,23 +19,56 @@ let miseAJourEnCours = false;
 // n'y sont pas fiables. On vérifie leur présence avant usage — sans quoi une
 // erreur ici, non rattrapée, empêcherait le setInterval plus bas de
 // s'enregistrer et casserait le rafraîchissement automatique en entier.
-function synchroniserLueursRetard(conteneur = document) {
+//
+// Tout ce qui "clignote"/"pulse" sur l'écran (lueur de carte départ/arrivée,
+// point + lueur de la carte trafic en alerte, icône+anneau départ/arrivée)
+// doit rester synchronisé entre éléments qui partagent le même rythme —
+// sinon une simple partie du DOM patchée par fusionnerNoeuds() (donc dont
+// l'animation a redémarré à zéro) se retrouve déphasée par rapport au
+// reste, qui n'a jamais arrêté de tourner depuis le chargement de la page.
+// On regroupe par DURÉE d'animation, pas par nom de keyframe : le point de
+// la carte trafic (clignoter), l'anneau départ/arrivée (anneau-pulse) et la
+// lueur de carte (carte-lueur-alerte) sont trois formes visuelles
+// différentes qui doivent malgré tout être perçues comme "elles clignotent
+// ensemble" — ce qui ne marche que si elles partagent aussi le même
+// startTime, pas juste la même durée. Un groupe "chaud" (2.4s, moins
+// urgent) et un groupe "alerte" (1.4s, urgent) n'ont eux aucune raison
+// d'être en phase l'un avec l'autre, d'où le regroupement par durée plutôt
+// que tout forcer en un seul groupe.
+const SELECTEUR_ANIMATIONS_ALERTE =
+  ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
+
+function synchroniserAnimationsAlerte(conteneur = document) {
   if (typeof document.timeline === "undefined") return;
 
-  const animations = [...conteneur.querySelectorAll(".train-heure.retard")]
+  const animations = [
+    ...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE),
+  ]
     .filter((element) => typeof element.getAnimations === "function")
     .flatMap((element) => element.getAnimations())
-    .filter((animation) => animation.animationName === "luire-retard");
+    .filter(
+      (animation) =>
+        animation.effect && typeof animation.effect.getTiming === "function",
+    );
 
-  if (animations.length < 2) return;
+  const parDuree = new Map();
+  animations.forEach((animation) => {
+    const duree = Math.round(animation.effect.getTiming().duration);
+    if (!Number.isFinite(duree)) return;
+    if (!parDuree.has(duree)) parDuree.set(duree, []);
+    parDuree.get(duree).push(animation);
+  });
 
   const debutCommun = document.timeline.currentTime;
-  animations.forEach((animation) => {
-    animation.startTime = debutCommun;
+  parDuree.forEach((groupe) => {
+    if (groupe.length < 2) return;
+    groupe.forEach((animation) => {
+      animation.startTime = debutCommun;
+    });
   });
 }
 
-synchroniserLueursRetard();
+synchroniserAnimationsAlerte();
 
 // Fusionne `nouveau` dans `actuel` en ne mutant que les différences —
 // texte et attributs — plutôt que de remplacer les nœuds. Les enfants sont
@@ -125,9 +158,10 @@ async function rafraichirTableauDeBord() {
 
     fusionnerNoeuds(tableauActuel, nouveauTableau);
 
-    // Resynchronise seulement les trains dont le retard vient de changer —
-    // les autres n'ont jamais arrêté leur animation, rien à faire pour eux.
-    synchroniserLueursRetard(tableauActuel);
+    // Resynchronise seulement les éléments dont l'animation vient de
+    // redémarrer (contenu patché par fusionnerNoeuds) — les autres n'ont
+    // jamais arrêté la leur, rien à faire pour eux.
+    synchroniserAnimationsAlerte(tableauActuel);
 
     ciblesOuvertes.forEach((id) => {
       const bouton = tableauActuel.querySelector(`[data-toggle-target="${id}"]`);
