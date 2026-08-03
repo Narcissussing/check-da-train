@@ -44,7 +44,9 @@
 - [X] Barre démo : bouton témoin "pluie" (15 min/1 h/16h58/2 jours/en cours/aucune) pour tester le texte "Pluie : dans X" sur tout délai, dont l'exemple exact du bug LL-8
 - [X] Bouton "Pluie" ne réagissait plus au tap pour "en cours" (désactivé, rien à déplier) — reste cliquable désormais et révèle une petite pluie animée à la place d'une heure exacte
 - [X] Bug LL-8 : texte "Pluie : dans X h" incohérent avec l'heure exacte affichée (arrondi à l'heure supérieure)
-- [ ] Bug LL-7 : boutons/menus non réactifs sur l'iPad Air réel (iOS 12) — 1re passe (viewport zoom + touch-action + cursor sur le fond de popup) posée, à reconfirmer sur l'appareil réel
+- [X] Bug LL-9 : une perturbation sur une autre branche de la ligne P (ex. Provins) déclenchait à tort "alerte" (touche Trilport) — `ARRETS_TRAJET` matchait sur le terminus partagé Paris-Est/Gare de l'Est
+- [X] Système de lueur de carte réécrit en `::after` + opacité (pas de `box-shadow` animé directement) et `filter: drop-shadow()` du train retiré — coût de repaint sur du matériel ancien, probablement lié au bug LL-7
+- [ ] Bug LL-7 : boutons/menus non réactifs sur l'iPad Air réel (iOS 12) — 1re passe (viewport zoom + touch-action + cursor) gardée en défensif ; 2e passe bien plus solide : séparateurs numériques (`10_000`) dans `disclosure.js`/`weather-details.js` faisaient planter le parsing de ces fichiers sur Safari 12 (aucun clic ne s'enregistrait) — corrigé (`10000`), plus `.flatMap()` remplacé dans `refresh.js` par prudence. Toujours à reconfirmer sur l'appareil réel avant de clore.
 - [ ] Migration vers React (composants, countdown temps réel)
 - [ ] Modal avec détails par créneau (température, précipitations…)
 - [ ] Bouton gym caché les dimanches (avec override possible)

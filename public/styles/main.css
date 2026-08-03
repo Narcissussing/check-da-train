@@ -382,42 +382,70 @@ button {
    carte, pas juste un chiffre). Tons chauds délibérément — un ambre doux
    pour "notable mais pas grave", un corail pour "ça mérite l'attention" —
    plutôt qu'un rouge/orange froid et agressif sur un écran allumé en
-   permanence. Les DEUX animations durent exactement 1.4s (aucune n'a de
-   raison d'être plus lente que l'autre, l'urgence "forte" n'attend pas) —
-   ça les met dans le même groupe de resynchronisation que .statut-dot/
-   .alerte-clignotante/.alerte-anneau (voir refresh.js, qui groupe par durée
-   d'animation et pas par nom de keyframe, justement pour que des formes
-   visuelles différentes partageant le même rythme restent perçues comme
-   "elles clignotent ensemble"). */
-.carte-glow-chaude {
-  animation: carte-lueur-chaude 1.4s ease-in-out infinite;
-}
+   permanence.
 
+   Performance (important sur l'iPad cible, matériel ancien) : on
+   n'anime PAS `box-shadow` directement — l'animer force le navigateur à
+   recalculer/repeindre l'ombre floutée à chaque frame, ce qui peut
+   suffire à saturer le thread principal sur du matériel faible (et,
+   plus grave, retarder le traitement des taps pendant que l'appareil est
+   occupé à repeindre — un facteur plausible dans le bug LL-7). À la
+   place : un pseudo-élément `::after` porte un `box-shadow` FIXE (calculé
+   une seule fois), et seule son OPACITÉ s'anime — comme `transform`,
+   `opacity` peut être composée par le GPU sans repeindre, donc bien
+   moins coûteux même sur un appareil ancien.
+
+   Les DEUX animations durent exactement 1.4s (aucune n'a de raison
+   d'être plus lente que l'autre, l'urgence "forte" n'attend pas) — ça
+   les met dans le même groupe de resynchronisation que .statut-dot/
+   .alerte-clignotante/.alerte-anneau (voir refresh.js, qui groupe par
+   durée d'animation et pas par nom de keyframe, justement pour que des
+   formes visuelles différentes partageant le même rythme restent
+   perçues comme "elles clignotent ensemble"). */
+.carte-glow-chaude,
 .carte-glow-alerte {
-  animation: carte-lueur-alerte 1.4s ease-in-out infinite;
+  position: relative;
 }
 
-@keyframes carte-lueur-chaude {
-  0%,
-  100% {
-    box-shadow: var(--ombre);
-  }
-  50% {
-    box-shadow:
-      var(--ombre),
-      0 0 22px 4px rgba(255, 176, 82, 0.28);
-  }
+.carte-glow-chaude::after,
+.carte-glow-alerte::after,
+.carte-trafic-alerte::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: lueur-opacite 1.4s ease-in-out infinite;
 }
 
-@keyframes carte-lueur-alerte {
+.carte-glow-chaude::after {
+  box-shadow: 0 0 22px 4px rgba(255, 176, 82, 0.28);
+}
+
+.carte-glow-alerte::after {
+  box-shadow: 0 0 28px 7px rgba(255, 100, 66, 0.55);
+}
+
+/* `.carte-trafic` a `overflow: hidden` (pour rogner le train qui glisse) —
+   un box-shadow qui déborde serait donc rogné à son tour. Ombre interne
+   (inset) à la place : reste à l'intérieur du cadre déjà rogné, se lit
+   toujours comme "toute la carte respire", juste depuis l'intérieur du
+   bord plutôt qu'en débordant dessus. */
+.carte-trafic-alerte::after {
+  box-shadow: inset 0 0 22px 4px rgba(255, 100, 66, 0.55);
+}
+
+@keyframes lueur-opacite {
   0%,
   100% {
-    box-shadow: var(--ombre);
+    opacity: 0;
   }
   50% {
-    box-shadow:
-      var(--ombre),
-      0 0 28px 7px rgba(255, 100, 66, 0.55);
+    opacity: 1;
   }
 }
 
@@ -1530,13 +1558,10 @@ button {
 /* Perturbation qui touche Trilport : en plus du point qui clignote et du
    train figé/tressautant (illustrationTrain), toute la carte respire dans
    la même lueur chaude que les cartes départ/arrivée en retard important
-   (.carte-glow-alerte, voir plus haut) — même keyframe, même durée, donc
-   dans le même groupe de resynchronisation : la carte trafic et les cartes
-   train doivent visiblement clignoter ensemble. */
-.carte-trafic-alerte {
-  animation: carte-lueur-alerte 1.4s ease-in-out infinite;
-}
-
+   — via le `::after` partagé défini plus haut (`.carte-trafic-alerte::after`),
+   pas une animation de box-shadow directe (coûteux à repeindre, voir la
+   note perf plus haut). `.carte-trafic` a déjà `position: relative`, pas
+   besoin de le redéclarer ici comme pour `.carte-glow-chaude/alerte`. */
 .carte-trafic-titre {
   font-weight: 600;
   font-size: 0.95rem;
@@ -1648,7 +1673,16 @@ button {
   width: auto;
   object-fit: contain;
   opacity: 0.8;
-  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.35));
+  /* Pas de filter: drop-shadow() ici (retiré) : cet élément est TOUJOURS
+     en mouvement (glisse, tressaute, ou les deux) tant que la carte
+     trafic est visible — donc quasiment en permanence. Un filter statique
+     sur un élément qui bouge en continu force souvent un nouveau rendu
+     logiciel du filtre à chaque frame sur WebKit ancien (contrairement à
+     `transform`/`opacity` seuls, qui restent composables par le GPU) :
+     un coût constant, pas juste pendant une alerte/un retard comme les
+     lueurs de carte. Perte visuelle mineure (le train est un peu plus
+     "plat"), gain de performance probablement bien plus important sur
+     l'iPad cible. */
 }
 
 .illustration-train-conteneur.en-panne .illustration-train-glisseur {
