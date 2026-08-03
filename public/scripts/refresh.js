@@ -41,15 +41,27 @@ const SELECTEUR_ANIMATIONS_ALERTE =
 function synchroniserAnimationsAlerte(conteneur = document) {
   if (typeof document.timeline === "undefined") return;
 
-  const animations = [
-    ...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE),
-  ]
+  // Pas de .flatMap() ici, par prudence pour Safari 12 (getAnimations()
+  // lui-même n'est déjà pas fiable avant Safari 13.1, voir le garde-fou
+  // ci-dessus — pas la peine d'empiler un deuxième doute). { subtree: true }
+  // est nécessaire : la lueur de carte
+  // (.carte-glow-chaude/.carte-glow-alerte/.carte-trafic-alerte) anime un
+  // pseudo-élément ::after, pas l'élément sélectionné lui-même — sans cette
+  // option, getAnimations() ne renvoie que les animations de l'élément
+  // exact, jamais celles de son ::after.
+  const animations = [];
+  [...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE)]
     .filter((element) => typeof element.getAnimations === "function")
-    .flatMap((element) => element.getAnimations())
-    .filter(
-      (animation) =>
-        animation.effect && typeof animation.effect.getTiming === "function",
-    );
+    .forEach((element) => {
+      element.getAnimations({ subtree: true }).forEach((animation) => {
+        if (
+          animation.effect &&
+          typeof animation.effect.getTiming === "function"
+        ) {
+          animations.push(animation);
+        }
+      });
+    });
 
   const parDuree = new Map();
   animations.forEach((animation) => {

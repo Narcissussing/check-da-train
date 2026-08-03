@@ -3,7 +3,11 @@
 // ouvre/ferme l'élément #id correspondant via la classe .ouvert.
 // Un panneau ouvert se referme tout seul après 10 secondes, pour ne pas
 // laisser l'écran encombré sur l'affichage toujours allumé (iPad mural).
-const DUREE_AUTO_FERMETURE_MS = 10_000;
+// Pas de séparateur numérique (10_000) : Safari 12 ne le comprend pas et
+// rejette TOUT le fichier au parsing (SyntaxError avant même l'exécution),
+// donc aucun des écouteurs de clic ci-dessous ne s'enregistre — bug LL-7
+// (boutons/menus non réactifs sur iPad). Écrit en toutes lettres.
+const DUREE_AUTO_FERMETURE_MS = 10000;
 const minuteries = new WeakMap();
 
 function fermer(bouton, cible) {
