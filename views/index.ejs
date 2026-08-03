@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>LookuLooku</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚆</text></svg>">
 
@@ -70,8 +70,27 @@
       </li>
       <% }) %>
     </ul>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsRetard.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsPluie.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%- icone("goutte", { taille: 14 }) %>
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
     <button class="barre-demo-bouton" type="button" data-toggle-target="barre-demo-scenarios" aria-expanded="false">Scénarios (<%= locals.scenariosDemo.length %>)</button>
-    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif) { %>
+    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif) { %>
     <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
     <% } %>
     <div class="disclosure barre-demo-scenarios" id="barre-demo-scenarios">
@@ -126,18 +145,25 @@
       </div>
 
       <% if (prochainePluieTrilport) { %>
-      <button class="pluie-toggle" type="button" aria-expanded="false" <%= prochainePluieTrilport.dateExacte ? '' : 'disabled' %>>
+      <% const pluieEnCours = prochainePluieTrilport.resume === "Pluie en cours"; %>
+      <button class="pluie-toggle" type="button" aria-expanded="false" <%= (prochainePluieTrilport.dateExacte || pluieEnCours) ? '' : 'disabled' %>>
         <%- icone("goutte", { taille: 14 }) %>
         <span>Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
         <% if (prochainePluieTrilport.dateExacte) { %>
         <small><%= prochainePluieTrilport.dateExacte %></small>
+        <% } else if (pluieEnCours) { %>
+        <span class="pluie-gouttes-mini" aria-hidden="true"><span></span><span></span><span></span></span>
         <% } %>
       </button>
       <% } %>
     </article>
 
     <%# --- Carte prochain départ --- %>
-    <article class="carte carte-train carte-depart">
+    <%# La lueur vit sur la carte entière, pas sur l'heure elle-même : rouge
+        chaud si le trafic touche mon trajet OU si ce train a >10 min de
+        retard, ambre si "juste" >5 min. %>
+    <% const departGlow = niveauTrafic === "alerte" || (departsTrilportDepart[0] && departsTrilportDepart[0].retardNiveau === "fort") ? " carte-glow-alerte" : (departsTrilportDepart[0] && departsTrilportDepart[0].retardNiveau === "moyen") ? " carte-glow-chaude" : ""; %>
+    <article class="carte carte-train carte-depart<%= departGlow %>">
       <div class="carte-train-entete">
         <span class="carte-train-entete-gauche">
           <span class="eyebrow">Départ</span>
@@ -182,14 +208,15 @@
     </article>
 
     <%# --- Carte prochaine arrivée --- %>
-    <article class="carte carte-train carte-arrivee">
+    <% const arriveeGlow = niveauTrafic === "alerte" || (arrivesTrilport[0] && arrivesTrilport[0].retardNiveau === "fort") ? " carte-glow-alerte" : (arrivesTrilport[0] && arrivesTrilport[0].retardNiveau === "moyen") ? " carte-glow-chaude" : ""; %>
+    <article class="carte carte-train carte-arrivee<%= arriveeGlow %>">
       <div class="carte-train-entete">
         <span class="carte-train-entete-gauche">
           <span class="eyebrow">Arrivée</span>
           <% if (niveauTrafic === "alerte") { %>
           <span class="alerte-clignotante-conteneur">
-            <span class="alerte-anneau decalee"></span>
-            <%- icone("alerte", { taille: 18, classe: "alerte-clignotante decalee" }) %>
+            <span class="alerte-anneau"></span>
+            <%- icone("alerte", { taille: 18, classe: "alerte-clignotante" }) %>
           </span>
           <% } %>
         </span>

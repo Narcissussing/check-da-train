@@ -36,6 +36,15 @@
 - [X] Bug LL-1 : `gap` sur flexbox non supporté par Safari iOS 12 — 13 règles corrigées (marges à la place)
 - [X] Bug LL-5 : surlignage `:hover` restait collé après un tap sur l'iPad — 9 règles passées dans `@media (hover: hover)`
 - [X] Phase de service (actif/bientôt/fin de service) : libellés plus clairs + train garé et endormi (Zzz) la nuit, boutons démo pour prévisualiser
+- [X] Alerte "ailleurs" recolorée en bleu calme (normal), "info" reste orange, "alerte" (touche Trilport) fait clignoter toute la carte trafic en rouge (halo discret)
+- [X] Train "info"/"ailleurs" : traversée nettement ralentie par rapport au trafic fluide (14s vs 48s — le premier passage avait "ailleurs" quasi impossible à distinguer de "fluide" à l'œil, corrigé en creusant l'écart ; "info" ralenti lui aussi, mais sans le tressautement réservé à "ailleurs")
+- [X] Lueur/clignotement de retard déplacé de l'heure elle-même vers la CARTE départ/arrivée entière (>5 min = ambre doux et discret, >10 min = corail chaud) — la carte trafic en alerte partage désormais le même système visuel
+- [X] Toutes les animations "clignotantes" (point + lueur carte trafic, icône+anneau départ/arrivée, lueur de carte) resynchronisées par durée d'animation (pas par nom de keyframe) — des formes différentes partageant le même rythme restent maintenant perçues comme "elles clignotent ensemble", pas seulement synchronisées en théorie
+- [X] Barre démo : bouton témoin "retard" (léger/>5 min/>10 min) pour prévisualiser la lueur/le clignotement sans attendre un vrai retard
+- [X] Barre démo : bouton témoin "pluie" (15 min/1 h/16h58/2 jours/en cours/aucune) pour tester le texte "Pluie : dans X" sur tout délai, dont l'exemple exact du bug LL-8
+- [X] Bouton "Pluie" ne réagissait plus au tap pour "en cours" (désactivé, rien à déplier) — reste cliquable désormais et révèle une petite pluie animée à la place d'une heure exacte
+- [X] Bug LL-8 : texte "Pluie : dans X h" incohérent avec l'heure exacte affichée (arrondi à l'heure supérieure)
+- [ ] Bug LL-7 : boutons/menus non réactifs sur l'iPad Air réel (iOS 12) — 1re passe (viewport zoom + touch-action + cursor sur le fond de popup) posée, à reconfirmer sur l'appareil réel
 - [ ] Migration vers React (composants, countdown temps réel)
 - [ ] Modal avec détails par créneau (température, précipitations…)
 - [ ] Bouton gym caché les dimanches (avec override possible)

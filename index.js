@@ -15,6 +15,7 @@ import {
   evaluerCreneau,
   formaterDatePerturbation,
   trouverProchainePluie,
+  formaterDelaiPluie,
   traduireCodeMeteo,
 } from "./services/utils.js";
 import {
@@ -208,6 +209,14 @@ const NIVEAUX_TRAFIC_DEMO = ["fluide", "info", "ailleurs", "alerte"];
 
 const PHASES_SERVICE_DEMO = ["actif", "bientot", "termine"];
 
+// Niveaux de retard "boutons témoins" — pour prévisualiser la lueur orange
+// (>5 min, "moyen") et le clignotement rouge (>10 min, "fort") sur l'heure
+// principale des cartes départ/arrivée sans attendre un vrai retard.
+// "leger" reproduit le comportement par défaut (juste le texte "retard",
+// sans lueur ni clignotement) — utile pour vérifier qu'on repasse bien en
+// dessous du seuil.
+const NIVEAUX_RETARD_DEMO = ["leger", "moyen", "fort"];
+
 const LABELS_METEO_DEMO = {
   soleil: "Soleil",
   nuage: "Nuageux",
@@ -230,18 +239,70 @@ const LABELS_SERVICE_DEMO = {
   termine: "Fin de service",
 };
 
+const LABELS_RETARD_DEMO = {
+  leger: "Retard léger",
+  moyen: "Retard >5 min",
+  fort: "Retard >10 min",
+};
+
+// Scènes "prochaine pluie" — pour tester le texte "Pluie : dans X" sur
+// différents délais sans attendre qu'ils arrivent réellement (bug LL-8 :
+// "longue" est exactement le cas qui posait problème, un délai en heures ET
+// minutes). Chaque scène (sauf les deux cas spéciaux) passe par
+// `formaterDelaiPluie()` — la MÊME fonction que le vrai calcul — pour que la
+// démo ne puisse jamais afficher un texte que le vrai code ne produirait pas.
+const SCENES_PLUIE_DEMO = {
+  bientot: { minutes: 15 },
+  ronde: { minutes: 60 },
+  longue: { minutes: 1018 },
+  lointaine: { minutes: 2500 },
+  cours: { special: "cours" },
+  aucune: { special: "aucune" },
+};
+
+const NIVEAUX_PLUIE_DEMO = Object.keys(SCENES_PLUIE_DEMO);
+
+const LABELS_PLUIE_DEMO = {
+  bientot: "Dans 15 min",
+  ronde: "Dans 1 h",
+  longue: "16 h 58 (LL-8)",
+  lointaine: "Dans 2 jours",
+  cours: "En cours",
+  aucune: "Aucune pluie",
+};
+
+function creerPluieDemo(cle) {
+  const scene = SCENES_PLUIE_DEMO[cle];
+  if (scene.special === "cours") {
+    return { resume: "Pluie en cours", dateExacte: null };
+  }
+  if (scene.special === "aucune") {
+    return { resume: "Pas de pluie prévue", dateExacte: null };
+  }
+  const debut = new Date(Date.now() + scene.minutes * 60_000);
+  return formaterDelaiPluie(scene.minutes, debut);
+}
+
 // Construit les listes de boutons de la barre démo : chaque bouton pointe
 // vers l'URL qui active/désactive UNIQUEMENT sa propre valeur, en
 // préservant celle de l'autre axe (météo / trafic) déjà active — pour
 // pouvoir combiner les deux librement. Re-cliquer un bouton déjà actif
 // retire son paramètre (retour à l'état réel).
-function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif) {
+function construireBoutonsDemo(
+  meteoDemoActif,
+  traficDemoActif,
+  serviceDemoActif,
+  retardDemoActif,
+  pluieDemoActif,
+) {
   const boutonsMeteo = Object.keys(SCENES_METEO_DEMO).map((cle) => {
     const actif = meteoDemoActif === cle;
     const params = new URLSearchParams({ demo: "1" });
     if (!actif) params.set("meteo", cle);
     if (traficDemoActif) params.set("trafic", traficDemoActif);
     if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     return {
       cle,
       label: LABELS_METEO_DEMO[cle],
@@ -257,6 +318,8 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif
     if (meteoDemoActif) params.set("meteo", meteoDemoActif);
     if (!actif) params.set("trafic", cle);
     if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     return {
       cle,
       label: LABELS_TRAFIC_DEMO[cle],
@@ -271,6 +334,8 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif
     if (meteoDemoActif) params.set("meteo", meteoDemoActif);
     if (traficDemoActif) params.set("trafic", traficDemoActif);
     if (!actif) params.set("service", cle);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     return {
       cle,
       label: LABELS_SERVICE_DEMO[cle],
@@ -279,7 +344,45 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif
     };
   });
 
-  return { boutonsMeteo, boutonsTrafic, boutonsService };
+  const boutonsRetard = NIVEAUX_RETARD_DEMO.map((cle) => {
+    const actif = retardDemoActif === cle;
+    const params = new URLSearchParams({ demo: "1" });
+    if (meteoDemoActif) params.set("meteo", meteoDemoActif);
+    if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (!actif) params.set("retard", cle);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    return {
+      cle,
+      label: LABELS_RETARD_DEMO[cle],
+      href: `/?${params.toString()}`,
+      actif,
+    };
+  });
+
+  const boutonsPluie = NIVEAUX_PLUIE_DEMO.map((cle) => {
+    const actif = pluieDemoActif === cle;
+    const params = new URLSearchParams({ demo: "1" });
+    if (meteoDemoActif) params.set("meteo", meteoDemoActif);
+    if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (!actif) params.set("pluie", cle);
+    return {
+      cle,
+      label: LABELS_PLUIE_DEMO[cle],
+      href: `/?${params.toString()}`,
+      actif,
+    };
+  });
+
+  return {
+    boutonsMeteo,
+    boutonsTrafic,
+    boutonsService,
+    boutonsRetard,
+    boutonsPluie,
+  };
 }
 
 // Boutons "scénario" : un clic force météo + trafic en une fois, pour
@@ -288,12 +391,20 @@ function construireBoutonsDemo(meteoDemoActif, traficDemoActif, serviceDemoActif
 // service démo actif (3e axe) — sinon cliquer un scénario le réinitialisait
 // silencieusement, contrairement aux boutons météo/trafic/service qui se
 // préservent tous mutuellement.
-function construireScenariosDemo(meteoDemoActif, traficDemoActif, serviceDemoActif) {
+function construireScenariosDemo(
+  meteoDemoActif,
+  traficDemoActif,
+  serviceDemoActif,
+  retardDemoActif,
+  pluieDemoActif,
+) {
   const scenarios = [];
   Object.keys(SCENES_METEO_DEMO).forEach((meteo) => {
     NIVEAUX_TRAFIC_DEMO.forEach((trafic) => {
       const params = new URLSearchParams({ demo: "1", meteo, trafic });
       if (serviceDemoActif) params.set("service", serviceDemoActif);
+      if (retardDemoActif) params.set("retard", retardDemoActif);
+      if (pluieDemoActif) params.set("pluie", pluieDemoActif);
       scenarios.push({
         cle: `${meteo}-${trafic}`,
         label: `${LABELS_METEO_DEMO[meteo]} · ${LABELS_TRAFIC_DEMO[trafic]}`,
@@ -305,7 +416,21 @@ function construireScenariosDemo(meteoDemoActif, traficDemoActif, serviceDemoAct
   return scenarios;
 }
 
-function creerTrainsDemo() {
+// Écarts (minutes de retard) associés à chaque bouton témoin "retard" —
+// leger reproduit l'écart par défaut (3 min, juste le texte "retard", pas
+// de lueur/clignotement) ; moyen et fort dépassent les seuils de
+// evaluerCreneau/extraireDeparts (>5 puis >10) pour prévisualiser la lueur
+// orange puis le clignotement rouge.
+const ECARTS_RETARD_DEMO = { leger: 3, moyen: 7, fort: 13 };
+
+function creerTrainsDemo(retardDemoActif) {
+  const ecartPrincipal = ECARTS_RETARD_DEMO[retardDemoActif] ?? 3;
+  // Sans bouton "retard" actif, l'arrivée témoin reste "à l'heure" comme
+  // avant (comportement par défaut inchangé) — le bouton l'aligne sur le
+  // même écart que le départ, pour vérifier au passage que les deux cartes
+  // clignotent bien en phase (voir synchroniserAnimationsAlerte).
+  const ecartArrivee = retardDemoActif ? ecartPrincipal : 0;
+
   const creerVisite = (destination, dansMinutes, ecartMinutes, type) => {
     const heure = new Date(Date.now() + dansMinutes * 60_000);
     const heurePrevue = new Date(heure.getTime() - ecartMinutes * 60_000);
@@ -339,12 +464,12 @@ function creerTrainsDemo() {
 
   return {
     departs: convertir([
-      creerVisite("Paris Est", 8, 3, "depart"),
+      creerVisite("Paris Est", 8, ecartPrincipal, "depart"),
       creerVisite("Meaux", 28, 0, "depart"),
       creerVisite("Paris Est", 58, 0, "depart"),
     ]),
     arrivees: convertir([
-      creerVisite("Château-Thierry", 12, 0, "arrivee"),
+      creerVisite("Château-Thierry", 12, ecartArrivee, "arrivee"),
       creerVisite("La Ferté-Milon", 34, -1, "arrivee"),
       creerVisite("Château-Thierry", 64, 0, "arrivee"),
     ]),
@@ -380,8 +505,15 @@ app.get("/", async (req, res) => {
       ["Château-Thierry", "La Ferté-Milon"],
       3,
     );
+    // Bouton témoin retard (démo uniquement) : force l'écart du train
+    // "vitrine" départ/arrivée pour prévisualiser la lueur orange (>5 min)
+    // et le clignotement rouge (>10 min) sans attendre un vrai retard.
+    const retardDemoActif =
+      modeDemo && NIVEAUX_RETARD_DEMO.includes(req.query.retard)
+        ? req.query.retard
+        : null;
     if (modeDemo) {
-      const trainsDemo = creerTrainsDemo();
+      const trainsDemo = creerTrainsDemo(retardDemoActif);
       departsTrilportDepart = trainsDemo.departs;
       arrivesTrilport = trainsDemo.arrivees;
     }
@@ -444,9 +576,20 @@ app.get("/", async (req, res) => {
         ? resultatTrafic.value
         : { disruptions: [] };
     const messages = extraireMessages(infosTrafic);
-    const prochainePluieTrilport = meteos[0]
+    let prochainePluieTrilport = meteos[0]
       ? trouverProchainePluie(meteos[0])
       : null;
+
+    // Bouton témoin pluie (démo uniquement) : force le résumé "Pluie : dans
+    // X" sur un délai choisi, pour tester le texte (dont le cas exact du bug
+    // LL-8 : un délai en heures ET minutes) sans attendre la vraie prévision.
+    const pluieDemoActif =
+      modeDemo && NIVEAUX_PLUIE_DEMO.includes(req.query.pluie)
+        ? req.query.pluie
+        : null;
+    if (pluieDemoActif) {
+      prochainePluieTrilport = creerPluieDemo(pluieDemoActif);
+    }
 
     // Déterminer le niveau d'alerte trafic — deux tiers de perturbation
     // selon qu'elle touche MON trajet (Trilport↔Meaux/Paris) ou non :
@@ -571,15 +714,25 @@ app.get("/", async (req, res) => {
       travaux.dateFin = travaux.fin.slice(6, 8) + "/" + travaux.fin.slice(4, 6);
     });
 
-    const { boutonsMeteo, boutonsTrafic, boutonsService } = construireBoutonsDemo(
+    const {
+      boutonsMeteo,
+      boutonsTrafic,
+      boutonsService,
+      boutonsRetard,
+      boutonsPluie,
+    } = construireBoutonsDemo(
       meteoDemoActif,
       traficDemoActif,
       serviceDemoActif,
+      retardDemoActif,
+      pluieDemoActif,
     );
     const scenariosDemo = construireScenariosDemo(
       meteoDemoActif,
       traficDemoActif,
       serviceDemoActif,
+      retardDemoActif,
+      pluieDemoActif,
     );
 
     res.render("index.ejs", {
@@ -604,9 +757,13 @@ app.get("/", async (req, res) => {
       meteoDemoActif,
       traficDemoActif,
       serviceDemoActif,
+      retardDemoActif,
+      pluieDemoActif,
       boutonsMeteo,
       boutonsTrafic,
       boutonsService,
+      boutonsRetard,
+      boutonsPluie,
       scenariosDemo,
       icone,
       iconeMeteo,
