@@ -1386,6 +1386,15 @@ button {
   border-top: 1px solid var(--carte-border);
 }
 
+.gym-indisponible {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--carte-border);
+  color: var(--texte-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .gym-colonnes .gym-col:last-child {
   text-align: right;
 }
