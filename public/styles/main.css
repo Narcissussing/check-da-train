@@ -924,11 +924,41 @@ button {
   pointer-events: none;
 }
 
-.orage-flash.orage-flash-actif {
-  animation: orage-coup-de-foudre 0.7s ease-out;
+/* Deux copies du même éclair, sous deux noms différents : on alterne
+   entre elles à chaque tap plutôt que de forcer un reflow (void
+   el.offsetWidth) pour redémarrer la même animation — plus fiable sur
+   du vieux WebKit, où forcer un reflow peut avoir des effets de bord
+   imprévisibles. */
+.orage-flash.orage-flash-actif-a {
+  animation: orage-coup-de-foudre-a 0.7s ease-out;
 }
 
-@keyframes orage-coup-de-foudre {
+.orage-flash.orage-flash-actif-b {
+  animation: orage-coup-de-foudre-b 0.7s ease-out;
+}
+
+@keyframes orage-coup-de-foudre-a {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.5;
+  }
+  14% {
+    opacity: 0.05;
+  }
+  22% {
+    opacity: 0.35;
+  }
+  35% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes orage-coup-de-foudre-b {
   0% {
     opacity: 0;
   }
@@ -972,6 +1002,44 @@ button {
   animation: orage-secousse 0.35s ease-out;
 }
 
+.carte-meteo.brouillard-flou-a {
+  animation: brouillard-flou-a 1.35s ease-in-out;
+}
+
+.carte-meteo.brouillard-flou-b {
+  animation: brouillard-flou-b 1.35s ease-in-out;
+}
+
+@keyframes brouillard-flou-a {
+  0%,
+  100% {
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  45%,
+  65% {
+    -webkit-filter: blur(3px);
+    filter: blur(3px);
+    opacity: 0.88;
+  }
+}
+
+@keyframes brouillard-flou-b {
+  0%,
+  100% {
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  45%,
+  65% {
+    -webkit-filter: blur(3px);
+    filter: blur(3px);
+    opacity: 0.88;
+  }
+}
+
 /* "calme" (nuit claire) n'a pas de fond animé — la réaction porte sur la
    carte elle-même plutôt que sur un élément météo spécifique. Opacité
    plutôt que filter() : moins coûteux à repeindre sur l'iPad. */
@@ -987,11 +1055,25 @@ button {
   pointer-events: none;
 }
 
-.calme-flash.calme-flash-actif {
-  animation: calme-reaction 1.2s ease-in-out;
+.calme-flash.calme-flash-actif-a {
+  animation: calme-reaction-a 1.2s ease-in-out;
 }
 
-@keyframes calme-reaction {
+.calme-flash.calme-flash-actif-b {
+  animation: calme-reaction-b 1.2s ease-in-out;
+}
+
+@keyframes calme-reaction-a {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+
+@keyframes calme-reaction-b {
   0%,
   100% {
     opacity: 0;
@@ -1596,7 +1678,10 @@ button {
   animation-delay: -2.13s;
 }
 
-@keyframes gym-secousse {
+/* Deux copies (mêmes keyframes, noms distincts) : on alterne entre elles
+   au lieu de forcer un reflow (void el.offsetWidth) pour redémarrer la
+   même animation — plus fiable sur du vieux WebKit. */
+@keyframes gym-secousse-a {
   0%,
   100% {
     transform: translateX(0);
@@ -1615,8 +1700,31 @@ button {
   }
 }
 
-.gym-secousse {
-  animation: gym-secousse 0.4s ease;
+@keyframes gym-secousse-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.gym-secousse-a {
+  animation: gym-secousse-a 0.4s ease;
+}
+
+.gym-secousse-b {
+  animation: gym-secousse-b 0.4s ease;
 }
 
 /* ──────────────────────────────────────────

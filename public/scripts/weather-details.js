@@ -33,6 +33,18 @@ function obtenirCalque(carte, classe) {
   return calque;
 }
 
+// Alterne entre deux noms de classe (animations identiques mais
+// distinctes) pour redémarrer l'effet à chaque tap sans jamais forcer
+// de reflow (void el.offsetWidth) — ce dernier a des effets de bord
+// imprévisibles sur du vieux WebKit.
+function declencherFlash(calque, prefixe) {
+  const classeA = prefixe + "-a";
+  const classeB = prefixe + "-b";
+  const suivante = calque.classList.contains(classeA) ? classeB : classeA;
+  calque.classList.remove(classeA, classeB);
+  calque.classList.add(suivante);
+}
+
 function accelererPluie(pluie) {
   const carte = pluie.closest(".carte-meteo");
   if (!carte) return;
@@ -56,13 +68,7 @@ function reagirMeteo(carte) {
   accelererScene(carte);
 
   if (scene === "orage") {
-    // Reflow forcé uniquement sur le petit calque isolé (pas sur toute
-    // la carte, qui contient les animations météo en cours — coûteux
-    // à recalculer sur du matériel ancien).
-    const flash = obtenirCalque(carte, "orage-flash");
-    flash.classList.remove("orage-flash-actif");
-    void flash.offsetWidth;
-    flash.classList.add("orage-flash-actif");
+    declencherFlash(obtenirCalque(carte, "orage-flash"), "orage-flash-actif");
 
     clearTimeout(carte._minuterieSecousse);
     carte.classList.add("orage-secousse");
@@ -72,11 +78,13 @@ function reagirMeteo(carte) {
     return;
   }
 
+  if (scene === "brouillard") {
+    declencherFlash(carte, "brouillard-flou");
+    return;
+  }
+
   if (scene === "calme") {
-    const flash = obtenirCalque(carte, "calme-flash");
-    flash.classList.remove("calme-flash-actif");
-    void flash.offsetWidth;
-    flash.classList.add("calme-flash-actif");
+    declencherFlash(obtenirCalque(carte, "calme-flash"), "calme-flash-actif");
   }
 }
 

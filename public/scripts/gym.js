@@ -158,9 +158,14 @@ function configurerBoutonTermine() {
   if (!bouton || !carte) return;
 
   bouton.addEventListener("click", function () {
-    carte.classList.remove("gym-secousse");
-    void carte.offsetWidth; // relance l'animation même si elle vient de jouer
-    carte.classList.add("gym-secousse");
+    // Alterne entre deux noms de classe (mêmes keyframes) pour relancer
+    // la secousse à chaque tap sans forcer de reflow (void offsetWidth),
+    // peu fiable sur du vieux WebKit.
+    const suivante = carte.classList.contains("gym-secousse-a")
+      ? "gym-secousse-b"
+      : "gym-secousse-a";
+    carte.classList.remove("gym-secousse-a", "gym-secousse-b");
+    carte.classList.add(suivante);
 
     const estDimanche = bouton.dataset.estDimanche === "true";
     const dejaCache = carte.classList.contains("gym-termine");
