@@ -64,8 +64,11 @@ function reagirMeteo(carte) {
     void flash.offsetWidth;
     flash.classList.add("orage-flash-actif");
 
-    carte.classList.remove("orage-secousse");
+    clearTimeout(carte._minuterieSecousse);
     carte.classList.add("orage-secousse");
+    carte._minuterieSecousse = setTimeout(() => {
+      carte.classList.remove("orage-secousse");
+    }, 400);
     return;
   }
 

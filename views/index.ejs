@@ -295,7 +295,7 @@
                   <span>Départ Trilport</span>
                   <strong><%= s.depart.heureFormatee %><% if (s.depart.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
                   <small class="gym-col-train">
-                    <%- icone("train", { taille: 13 }) %><%= s.aller.heureFormatee %><% if (s.aller.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.aller.ecartMinutes %>min</span><% } %>
+                    <%= s.aller.heureFormatee %><% if (s.aller.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.aller.ecartMinutes %>min</span><% } %><%- icone("train", { taille: 13 }) %>
                   </small>
                 </div>
                 <% }) %>
@@ -315,7 +315,7 @@
                 <% t.sousCreneaux.forEach((s, j) => { %>
                 <div class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %>">
                   <span><%= s.procheDuMax ? "Partir avant" : "Retour conseillé" %></span>
-                  <strong><%= s.departSalleFormatee %><% if (s.retour.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
+                  <strong><% if (s.retour.estime) { %><small class="gym-estime">estimé</small> <% } %><%= s.departSalleFormatee %></strong>
                   <small class="gym-col-train">
                     <%- icone("train", { taille: 13 }) %><%= s.retour.heureFormatee %><% if (s.retour.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.retour.ecartMinutes %>min</span><% } %>
                   </small>
@@ -334,7 +334,7 @@
         <li class="gym-alternative<%= i === 0 ? " gym-alternative-cachee" : "" %>" data-index="<%= i %>">
           <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
           <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
-          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %><% if (t.estime) { %> <span class="gym-estime">estimé</span><% } %></span>
+          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %></span>
           <span class="gym-alternative-duree"><%= t.dureeFormatee %></span>
         </li>
         <% }) %>
@@ -356,7 +356,7 @@
         <li class="gym-alternative">
           <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
           <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
-          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %><% if (t.estime) { %> <span class="gym-estime">estimé</span><% } %></span>
+          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %></span>
           <span class="gym-alternative-duree"><%= t.dureeFormatee %></span>
         </li>
         <% }) }) %>
