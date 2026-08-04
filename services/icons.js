@@ -87,12 +87,12 @@ export function icone(nom, { taille = 20, classe = "", temperature } = {}) {
   return `<svg class="icone ${classe}" width="${taille}" height="${taille}" viewBox="${viewBox}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${styleCouleur}>${contenu}</svg>`;
 }
 
-// Priorité : alerte, fin de service, information, trafic normal.
+// Priorité : fin de service, alerte, information, trafic normal.
 // Deux niveaux séparent déplacement et secousse sur `transform`.
 // Les trains restent en PNG pour préserver les performances de l'iPad.
 export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") {
-  const enPanne = niveauTrafic === "alerte";
-  const endormi = !enPanne && phaseServiceActuelle === "termine";
+  const endormi = phaseServiceActuelle === "termine";
+  const enPanne = !endormi && niveauTrafic === "alerte";
   const ralenti =
     !enPanne &&
     !endormi &&

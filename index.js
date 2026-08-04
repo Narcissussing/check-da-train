@@ -365,8 +365,13 @@ function construireBoutonsDemo(
     const actif = traficDemoActif === cle;
     const params = new URLSearchParams({ demo: "1" });
     if (meteoDemoActif) params.set("meteo", meteoDemoActif);
-    if (!actif) params.set("trafic", cle);
-    if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (!actif) {
+      params.set("trafic", cle);
+      // Un scénario trafic explicitement choisi doit rester visible la nuit.
+      params.set("service", "actif");
+    } else if (serviceDemoActif) {
+      params.set("service", serviceDemoActif);
+    }
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (gymDemoActif) params.set("gym", gymDemoActif);

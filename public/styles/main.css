@@ -1919,6 +1919,7 @@ button {
 
 .illustration-train-conteneur.en-panne .illustration-train-glisseur {
   left: 50%;
+  opacity: 1;
   transform: translate(-50%, -50%);
   animation: none;
 }
@@ -1935,6 +1936,7 @@ button {
 /* Train garé à droite hors service. */
 .illustration-train-conteneur.endormi .illustration-train-glisseur {
   left: 100%;
+  opacity: 1;
   transform: translate(-100%, -50%);
   animation: none;
 }
