@@ -56,13 +56,15 @@ function reagirMeteo(carte) {
   accelererScene(carte);
 
   if (scene === "orage") {
+    // Reflow forcé uniquement sur le petit calque isolé (pas sur toute
+    // la carte, qui contient les animations météo en cours — coûteux
+    // à recalculer sur du matériel ancien).
     const flash = obtenirCalque(carte, "orage-flash");
     flash.classList.remove("orage-flash-actif");
     void flash.offsetWidth;
     flash.classList.add("orage-flash-actif");
 
     carte.classList.remove("orage-secousse");
-    void carte.offsetWidth;
     carte.classList.add("orage-secousse");
     return;
   }
