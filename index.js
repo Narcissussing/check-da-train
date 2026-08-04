@@ -9,14 +9,14 @@ import {
 import {
   extraireDeparts,
   extraireMessages,
-  construireDonneesMeteo,
-  enrichirCreneaux,
+  construireTrajetsGym,
   filtrerDeparts,
-  evaluerCreneau,
   formaterDatePerturbation,
   trouverProchainePluie,
   formaterDelaiPluie,
   traduireCodeMeteo,
+  dateAujourdhuiParis,
+  estDimancheParis,
 } from "./services/utils.js";
 import {
   icone,
@@ -31,6 +31,30 @@ import {
 const app = express();
 const port = process.env.PORT || 3000;
 const MODE_DEMO_AUTORISE = process.env.ENABLE_DEMO_MODE === "true";
+
+let gymTermineDate = null;
+
+app.post("/gym/terminer", express.json(), (req, res) => {
+  const gymDemoActif =
+    MODE_DEMO_AUTORISE &&
+    req.query.demo === "1" &&
+    NIVEAUX_GYM_DEMO.includes(req.query.gym)
+      ? req.query.gym
+      : null;
+
+  if (gymDemoActif && gymDemoActif !== "dimanche") {
+    res.json({ termine: false });
+    return;
+  }
+
+  const aujourdhui = dateAujourdhuiParis();
+  gymTermineDate = gymTermineDate === aujourdhui ? null : aujourdhui;
+  const bascule = gymTermineDate === aujourdhui;
+  const estDimanche =
+    gymDemoActif === "dimanche" || (!gymDemoActif && estDimancheParis());
+  const cache = estDimanche ? !bascule : bascule;
+  res.json({ termine: cache });
+});
 
 if (!process.env.IDFM_API_KEY) {
   throw new Error("La variable d'environnement IDFM_API_KEY est requise.");
@@ -49,72 +73,14 @@ const villes = [
     longitude: 2.8789,
   },
 ];
-const heuresRecherchees = [
-  // Aller
-  {
-    realHeure: "17h30",
-    forecastHeure: "T18:00",
-    villeIndex: 0,
-    direction: "aller",
-  },
-  {
-    realHeure: "18h30",
-    forecastHeure: "T19:00",
-    villeIndex: 0,
-    direction: "aller",
-  },
-  {
-    realHeure: "19h30",
-    forecastHeure: "T20:00",
-    villeIndex: 0,
-    direction: "aller",
-  },
-  {
-    realHeure: "20h30",
-    forecastHeure: "T21:00",
-    villeIndex: 0,
-    direction: "aller",
-  },
-
-  // Retour
-  {
-    realHeure: "19h30",
-    forecastHeure: "T20:00",
-    villeIndex: 1,
-    direction: "retour",
-    prochainCreneau: "20h05",
-  },
-  {
-    realHeure: "20h05",
-    forecastHeure: "T20:00",
-    villeIndex: 1,
-    direction: "retour",
-    prochainCreneau: "20h30",
-  },
-  {
-    realHeure: "20h30",
-    forecastHeure: "T21:00",
-    villeIndex: 1,
-    direction: "retour",
-    prochainCreneau: "21h05",
-  },
-  {
-    realHeure: "21h05",
-    forecastHeure: "T21:00",
-    villeIndex: 1,
-    direction: "retour",
-    prochainCreneau: null,
-  },
-];
-
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
-// Construire les données météo pour les créneaux
+// Cache météo partagé pendant 10 minutes.
 let cacheMeteo = null;
 let dernierAppelMeteo = null;
 let requeteMeteoEnCours = null;
-const DUREE_CACHE = 15 * 60 * 1000;
+const DUREE_CACHE = 10 * 60 * 1000;
 
 async function obtenirMeteo() {
   const maintenant = Date.now();
@@ -159,13 +125,7 @@ function heureActuelleParis() {
   );
 }
 
-// Phase de service Ligne P, purement horaire (pas de vraie grille horaire
-// disponible côté API, seulement les prochains passages en temps réel) :
-//   - "termine" : nuit, plus de train avant le lendemain matin.
-//   - "bientot" : juste avant la reprise, le premier train ne va pas
-//     tarder à apparaître dans les prochains passages.
-//   - "actif" : heures de service normales (même si un creux ponctuel
-//     fait que `departs` est vide à cet instant précis).
+// Estimation horaire faute de grille complète dans l'API.
 function phaseService(heureParis) {
   if (heureParis >= 23 || heureParis < 4) return "termine";
   if (heureParis < 5) return "bientot";
@@ -191,11 +151,7 @@ function dateAffichee() {
   return texte.split(" à ")[0].replace(/^./, c => c.toUpperCase());
 }
 
-// Scènes météo "boutons témoins" — uniquement utilisables en mode démo
-// (?demo=1), pour prévisualiser chaque état sans attendre que la vraie
-// météo corresponde. Un jeu de valeurs cohérent par scène (pas juste le
-// code météo) pour que la carte entière (icône, températures, humidité,
-// vent, dégradé de couleur) ait l'air réelle, pas juste l'icône qui change.
+// Valeurs cohérentes pour chaque scène météo de démonstration.
 const SCENES_METEO_DEMO = {
   soleil: { code: 0, temp: 24, ressenti: 25, min: 16, max: 27, humidite: 40, vent: 8 },
   "soleil-chaud": { code: 0, temp: 38, ressenti: 41, min: 24, max: 40, humidite: 28, vent: 6 },
@@ -210,13 +166,8 @@ const NIVEAUX_TRAFIC_DEMO = ["fluide", "info", "ailleurs", "alerte"];
 
 const PHASES_SERVICE_DEMO = ["actif", "bientot", "termine"];
 
-// Niveaux de retard "boutons témoins" — pour prévisualiser la lueur orange
-// (>5 min, "moyen") et le clignotement rouge (>10 min, "fort") sur l'heure
-// principale des cartes départ/arrivée sans attendre un vrai retard.
-// "leger" reproduit le comportement par défaut (juste le texte "retard",
-// sans lueur ni clignotement) — utile pour vérifier qu'on repasse bien en
-// dessous du seuil.
-const NIVEAUX_RETARD_DEMO = ["leger", "moyen", "fort"];
+// Retards de démonstration pour les deux seuils visuels.
+const NIVEAUX_RETARD_DEMO = ["leger", "fort"];
 
 const LABELS_METEO_DEMO = {
   soleil: "Soleil",
@@ -242,17 +193,11 @@ const LABELS_SERVICE_DEMO = {
 };
 
 const LABELS_RETARD_DEMO = {
-  leger: "Retard léger",
-  moyen: "Retard >5 min",
-  fort: "Retard >10 min",
+  leger: "Retard léger · 5 min",
+  fort: "Retard rouge · 10 min+",
 };
 
-// Scènes "prochaine pluie" — pour tester le texte "Pluie : dans X" sur
-// différents délais sans attendre qu'ils arrivent réellement (bug LL-8 :
-// "longue" est exactement le cas qui posait problème, un délai en heures ET
-// minutes). Chaque scène (sauf les deux cas spéciaux) passe par
-// `formaterDelaiPluie()` — la MÊME fonction que le vrai calcul — pour que la
-// démo ne puisse jamais afficher un texte que le vrai code ne produirait pas.
+// Délais de démonstration utilisant le formatage réel.
 const SCENES_PLUIE_DEMO = {
   bientot: { minutes: 15 },
   ronde: { minutes: 60 },
@@ -285,17 +230,117 @@ function creerPluieDemo(cle) {
   return formaterDelaiPluie(scene.minutes, debut);
 }
 
-// Construit les listes de boutons de la barre démo : chaque bouton pointe
-// vers l'URL qui active/désactive UNIQUEMENT sa propre valeur, en
-// préservant celle de l'autre axe (météo / trafic) déjà active — pour
-// pouvoir combiner les deux librement. Re-cliquer un bouton déjà actif
-// retire son paramètre (retour à l'état réel).
+// États gym synthétiques, testables à toute heure.
+const NIVEAUX_GYM_DEMO = ["plein", "un", "indisponible", "dimanche", "retard"];
+
+const LABELS_GYM_DEMO = {
+  plein: "Gym : 3 trajets",
+  un: "Gym : dernier trajet",
+  indisponible: "Gym : Meaux HS",
+  dimanche: "Gym : dimanche",
+  retard: "Gym : retard",
+};
+
+function creerTrainsGymDemo(scenario) {
+  const visite = (destination, dansMinutes, ecartMinutes = 0) => {
+    const heure = new Date(Date.now() + dansMinutes * 60_000);
+    const heurePrevue = new Date(heure.getTime() - ecartMinutes * 60_000);
+    return {
+      MonitoredVehicleJourney: {
+        DestinationName: [{ value: destination }],
+        MonitoredCall: {
+          ExpectedDepartureTime: heure.toISOString(),
+          AimedDepartureTime: heurePrevue.toISOString(),
+        },
+      },
+    };
+  };
+
+  const convertir = (visites) =>
+    extraireDeparts({
+      Siri: {
+        ServiceDelivery: {
+          StopMonitoringDelivery: [{ MonitoredStopVisit: visites }],
+        },
+      },
+    });
+
+  if (scenario === "indisponible") {
+    return {
+      departsAller: convertir([visite("Meaux", 12)]),
+      departsRetour: [],
+    };
+  }
+
+  if (scenario === "un") {
+    return {
+      departsAller: convertir([visite("Meaux", 6)]),
+      departsRetour: convertir([visite("Château-Thierry", 90)]),
+    };
+  }
+
+  if (scenario === "retard") {
+    return {
+      departsAller: convertir([visite("Meaux", 12, 6)]),
+      departsRetour: convertir([visite("Château-Thierry", 100, 4)]),
+    };
+  }
+
+  return {
+    departsAller: convertir([
+      visite("Meaux", 12),
+      visite("Paris Est", 72),
+      visite("Meaux", 132),
+    ]),
+    departsRetour: convertir([
+      visite("Château-Thierry", 100),
+      visite("La Ferté-Milon", 170),
+      visite("Château-Thierry", 230),
+    ]),
+  };
+}
+
+// Le deuxième trajet est pluvieux pour vérifier le classement météo.
+function creerMeteoGymDemo() {
+  const maintenant = new Date();
+  const heurePluie = new Date(maintenant.getTime() + 72 * 60_000).getHours();
+  const pad = (n) => String(n).padStart(2, "0");
+  const hourly = {
+    time: [],
+    temperature_2m: [],
+    precipitation: [],
+    cloud_cover: [],
+    weather_code: [],
+  };
+
+  for (let h = 0; h < 24; h += 1) {
+    const d = new Date(maintenant);
+    d.setHours(h, 0, 0, 0);
+    const pluvieux = h === heurePluie;
+    hourly.time.push(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(h)}:00`,
+    );
+    hourly.temperature_2m.push(pluvieux ? 14 : 21);
+    hourly.precipitation.push(pluvieux ? 3 : 0);
+    hourly.cloud_cover.push(pluvieux ? 90 : 15);
+    hourly.weather_code.push(pluvieux ? 61 : 0);
+  }
+
+  return {
+    prevision: { hourly },
+    sunrise: maintenant.getTime() / 1000 - 6 * 3600,
+    sunset: maintenant.getTime() / 1000 + 6 * 3600,
+  };
+}
+
+// Chaque filtre de démonstration conserve les autres paramètres actifs.
 function construireBoutonsDemo(
   meteoDemoActif,
   traficDemoActif,
   serviceDemoActif,
   retardDemoActif,
   pluieDemoActif,
+  gymDemoActif,
 ) {
   const boutonsMeteo = Object.keys(SCENES_METEO_DEMO).map((cle) => {
     const actif = meteoDemoActif === cle;
@@ -305,10 +350,12 @@ function construireBoutonsDemo(
     if (serviceDemoActif) params.set("service", serviceDemoActif);
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
     return {
       cle,
       label: LABELS_METEO_DEMO[cle],
       code: SCENES_METEO_DEMO[cle].code,
+      temp: SCENES_METEO_DEMO[cle].temp,
       href: `/?${params.toString()}`,
       actif,
     };
@@ -322,6 +369,7 @@ function construireBoutonsDemo(
     if (serviceDemoActif) params.set("service", serviceDemoActif);
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
     return {
       cle,
       label: LABELS_TRAFIC_DEMO[cle],
@@ -338,6 +386,7 @@ function construireBoutonsDemo(
     if (!actif) params.set("service", cle);
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
     return {
       cle,
       label: LABELS_SERVICE_DEMO[cle],
@@ -354,6 +403,7 @@ function construireBoutonsDemo(
     if (serviceDemoActif) params.set("service", serviceDemoActif);
     if (!actif) params.set("retard", cle);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
     return {
       cle,
       label: LABELS_RETARD_DEMO[cle],
@@ -370,9 +420,27 @@ function construireBoutonsDemo(
     if (serviceDemoActif) params.set("service", serviceDemoActif);
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (!actif) params.set("pluie", cle);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
     return {
       cle,
       label: LABELS_PLUIE_DEMO[cle],
+      href: `/?${params.toString()}`,
+      actif,
+    };
+  });
+
+  const boutonsGym = NIVEAUX_GYM_DEMO.map((cle) => {
+    const actif = gymDemoActif === cle;
+    const params = new URLSearchParams({ demo: "1" });
+    if (meteoDemoActif) params.set("meteo", meteoDemoActif);
+    if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (!actif) params.set("gym", cle);
+    return {
+      cle,
+      label: LABELS_GYM_DEMO[cle],
       href: `/?${params.toString()}`,
       actif,
     };
@@ -384,22 +452,15 @@ function construireBoutonsDemo(
     boutonsService,
     boutonsRetard,
     boutonsPluie,
+    boutonsGym,
   };
 }
 
-// Écarts (minutes de retard) associés à chaque bouton témoin "retard" —
-// leger reproduit l'écart par défaut (3 min, juste le texte "retard", pas
-// de lueur/clignotement) ; moyen et fort dépassent les seuils de
-// evaluerCreneau/extraireDeparts (>5 puis >10) pour prévisualiser la lueur
-// orange puis le clignotement rouge.
-const ECARTS_RETARD_DEMO = { leger: 3, moyen: 7, fort: 13 };
+const ECARTS_RETARD_DEMO = { leger: 5, fort: 10 };
 
 function creerTrainsDemo(retardDemoActif) {
   const ecartPrincipal = ECARTS_RETARD_DEMO[retardDemoActif] ?? 3;
-  // Sans bouton "retard" actif, l'arrivée témoin reste "à l'heure" comme
-  // avant (comportement par défaut inchangé) — le bouton l'aligne sur le
-  // même écart que le départ, pour vérifier au passage que les deux cartes
-  // clignotent bien en phase (voir synchroniserAnimationsAlerte).
+  // Le mode retard aligne départ et arrivée.
   const ecartArrivee = retardDemoActif ? ecartPrincipal : 0;
 
   const creerVisite = (destination, dansMinutes, ecartMinutes, type) => {
@@ -476,9 +537,7 @@ app.get("/", async (req, res) => {
       ["Château-Thierry", "La Ferté-Milon"],
       3,
     );
-    // Bouton témoin retard (démo uniquement) : force l'écart du train
-    // "vitrine" départ/arrivée pour prévisualiser la lueur orange (>5 min)
-    // et le clignotement rouge (>10 min) sans attendre un vrai retard.
+    // Force le retard du train principal en démonstration.
     const retardDemoActif =
       modeDemo && NIVEAUX_RETARD_DEMO.includes(req.query.retard)
         ? req.query.retard
@@ -489,10 +548,7 @@ app.get("/", async (req, res) => {
       arrivesTrilport = trainsDemo.arrivees;
     }
 
-    // Bouton témoin phase de service (démo uniquement) : pour "bientot"/
-    // "termine", vide aussi les trains synthétiques ci-dessus — sinon la
-    // démo contredirait sa propre prévisualisation (des trains "présents"
-    // alors qu'on prévisualise justement "plus de train").
+    // Une phase inactive masque aussi les trains synthétiques.
     const serviceDemoActif =
       modeDemo && PHASES_SERVICE_DEMO.includes(req.query.service)
         ? req.query.service
@@ -508,19 +564,12 @@ app.get("/", async (req, res) => {
         ? resultatMeteo.value
         : { meteos: [], previsions: [] };
 
-    // Bouton témoin météo (démo uniquement) : ne touche que la carte météo
-    // actuelle (icône/températures/humidité/vent) — les prévisions horaires
-    // utilisées pour "prochaine pluie" et les créneaux gym restent réelles,
-    // volontairement, ce n'est pas ce que ces boutons prévisualisent.
+    // Le filtre météo ne modifie pas les prévisions horaires.
     const meteoDemoActif =
       modeDemo && SCENES_METEO_DEMO[req.query.meteo] ? req.query.meteo : null;
     if (meteoDemoActif && meteos[0]) {
       const scene = SCENES_METEO_DEMO[meteoDemoActif];
-      // obtenirMeteo() renvoie le MÊME objet en cache à toutes les requêtes
-      // pendant 15 min (voir DUREE_CACHE) — muter meteos[0] en place
-      // corromprait la météo réelle affichée à tout le monde jusqu'à
-      // expiration du cache. On clone donc (tableau + current + daily,
-      // dont les tableaux min/max) avant de surcharger, uniquement ici.
+      // Clone le cache avant toute surcharge de démonstration.
       meteos = [
         {
           ...meteos[0],
@@ -540,11 +589,7 @@ app.get("/", async (req, res) => {
       meteos[0].current.wind_speed_10m = scene.vent;
       meteos[0].daily.temperature_2m_min[0] = scene.min;
       meteos[0].daily.temperature_2m_max[0] = scene.max;
-      // Toutes les scènes météo démo sont pensées de jour (ex. "Soleil") —
-      // sans ce forçage, tester ces boutons le soir/la nuit (is_day réel
-      // vient de l'API, pas du bouton) renvoyait silencieusement sceneMeteo()
-      // sur "calme" (aucune animation), rendant le bouton "Soleil" muet
-      // exactement au moment où on veut le prévisualiser.
+      // Les scènes de démonstration représentent le jour.
       meteos[0].current.is_day = 1;
     }
 
@@ -557,9 +602,7 @@ app.get("/", async (req, res) => {
       ? trouverProchainePluie(meteos[0])
       : null;
 
-    // Bouton témoin pluie (démo uniquement) : force le résumé "Pluie : dans
-    // X" sur un délai choisi, pour tester le texte (dont le cas exact du bug
-    // LL-8 : un délai en heures ET minutes) sans attendre la vraie prévision.
+    // Force le résumé de pluie en démonstration.
     const pluieDemoActif =
       modeDemo && NIVEAUX_PLUIE_DEMO.includes(req.query.pluie)
         ? req.query.pluie
@@ -568,14 +611,12 @@ app.get("/", async (req, res) => {
       prochainePluieTrilport = creerPluieDemo(pluieDemoActif);
     }
 
-    // Déterminer le niveau d'alerte trafic — deux tiers de perturbation
-    // selon qu'elle touche MON trajet (Trilport↔Meaux/Paris) ou non :
-    //   - "alerte" : perturbation sur le trajet → train en panne, figé.
-    //   - "ailleurs" : perturbation ailleurs sur la ligne P (avant, cette
-    //     catégorie était juste ignorée si ce n'était pas aussi une
-    //     INFORMATION — maintenant elle reste visible, mais avec un signal
-    //     plus discret (train qui roule mais tressaute) plutôt que la
-    //     panne complète, réservée à ce qui affecte vraiment mon trajet.
+    const gymDemoActif =
+      modeDemo && NIVEAUX_GYM_DEMO.includes(req.query.gym)
+        ? req.query.gym
+        : null;
+
+    // Distingue les incidents du trajet de ceux du reste de la ligne.
     const perturbations = messages.filter(
       (m) =>
         m.cause === "PERTURBATION" && m.estAujourdhui && m.concerneMonTrajet,
@@ -602,11 +643,11 @@ app.get("/", async (req, res) => {
       detailAlerte = perturbationsAilleurs[0];
     } else if (informations.length > 0) {
       niveauTrafic = "info";
+      texteAlerte = informations[0].texte;
+      detailAlerte = informations[0];
     }
 
-    // Bouton témoin trafic (démo uniquement) : force niveauTrafic, et pour
-    // "alerte"/"ailleurs" fabrique un texte/detailAlerte plausible pour
-    // que la carte (et le popup "i") aient un contenu cohérent à afficher.
+    // Ajoute un message cohérent aux alertes de démonstration.
     const traficDemoActif =
       modeDemo && NIVEAUX_TRAFIC_DEMO.includes(req.query.trafic)
         ? req.query.trafic
@@ -633,6 +674,16 @@ app.get("/", async (req, res) => {
           debut: null,
           fin: null,
         };
+      } else if (traficDemoActif === "info") {
+        texteAlerte = "Information voyageurs sur la ligne P";
+        detailAlerte = {
+          texte: texteAlerte,
+          details:
+            "Message d'information destiné aux voyageurs de la ligne P. (Aperçu démo — aucune information réelle.)",
+          trajet: "Ligne P",
+          debut: null,
+          fin: null,
+        };
       }
     }
 
@@ -648,10 +699,6 @@ app.get("/", async (req, res) => {
       "Paris Est",
     ]);
 
-    const donneesMeteo =
-      meteos.length === villes.length && previsions.length === villes.length
-        ? construireDonneesMeteo(previsions, meteos, villes, heuresRecherchees)
-        : [];
     const statutDeparts = statutService(
       departsTrilportDepart,
       modeDemo || trilportDisponible,
@@ -663,20 +710,42 @@ app.get("/", async (req, res) => {
       phaseServiceActuelle,
     );
 
-    // On enrichit chaque créneau avec verdicts, score et résumé
-    const creneauxEvalues = enrichirCreneaux(
-      donneesMeteo.map(evaluerCreneau),
-      departsAller,
-      departsRetour,
-    );
-    for (const creneau of creneauxEvalues) {
-      if (
-        (creneau.direction === "aller" && !trilportDisponible) ||
-        (creneau.direction === "retour" && !meauxDisponible)
-      ) {
-        creneau.statutTrain = "indisponible";
-      }
+    let departsAllerGym = departsAller;
+    let departsRetourGym = departsRetour;
+    let meteoMeauxGym = previsions[1]
+      ? {
+          prevision: previsions[1],
+          sunrise: new Date(meteos[1].daily.sunrise[0]).getTime() / 1000,
+          sunset: new Date(meteos[1].daily.sunset[0]).getTime() / 1000,
+        }
+      : null;
+    let gymDonneesDisponibles = trilportDisponible && meauxDisponible;
+    let bornesGym = {};
+    if (gymDemoActif) {
+      const donneesDemo = creerTrainsGymDemo(gymDemoActif);
+      departsAllerGym = donneesDemo.departsAller;
+      departsRetourGym = donneesDemo.departsRetour;
+      meteoMeauxGym = creerMeteoGymDemo();
+      gymDonneesDisponibles = gymDemoActif !== "indisponible";
+      bornesGym = { heureMin: "0h00", heureMax: "23h59", avecAttendus: false };
     }
+    const trajetsGymTous = gymDonneesDisponibles
+      ? construireTrajetsGym(
+          departsAllerGym,
+          departsRetourGym,
+          meteoMeauxGym,
+          bornesGym,
+        )
+      : [];
+    const trajetsGym = trajetsGymTous.slice(0, 3);
+    const bascauleIgnoree = gymDemoActif && gymDemoActif !== "dimanche";
+    const gymBasculeAujourdhui =
+      !bascauleIgnoree && gymTermineDate === dateAujourdhuiParis();
+    const estDimancheAujourdhui =
+      gymDemoActif === "dimanche" || (!gymDemoActif && estDimancheParis());
+    const gymCacheAujourdhui = estDimancheAujourdhui
+      ? !gymBasculeAujourdhui
+      : gymBasculeAujourdhui;
     const travauxFuturs = messages
       .filter((m) => m.cause === "TRAVAUX" && m.concerneMonTrajet)
       .sort((a, b) => a.debut.localeCompare(b.debut))
@@ -697,17 +766,21 @@ app.get("/", async (req, res) => {
       boutonsService,
       boutonsRetard,
       boutonsPluie,
+      boutonsGym,
     } = construireBoutonsDemo(
       meteoDemoActif,
       traficDemoActif,
       serviceDemoActif,
       retardDemoActif,
       pluieDemoActif,
+      gymDemoActif,
     );
     res.render("index.ejs", {
       meteos,
-      creneaux: creneauxEvalues,
-      departsRetour,
+      trajetsGym,
+      trajetsGymTous,
+      gymCacheAujourdhui,
+      estDimancheAujourdhui,
       departsTrilportDepart,
       arrivesTrilport,
       texteAlerte,
@@ -728,11 +801,13 @@ app.get("/", async (req, res) => {
       serviceDemoActif,
       retardDemoActif,
       pluieDemoActif,
+      gymDemoActif,
       boutonsMeteo,
       boutonsTrafic,
       boutonsService,
       boutonsRetard,
       boutonsPluie,
+      boutonsGym,
       icone,
       iconeMeteo,
       iconeVerdict,
@@ -752,7 +827,10 @@ app.get("/", async (req, res) => {
 
     res.render("index.ejs", {
       meteos: [],
-      creneaux: [],
+      trajetsGym: [],
+      trajetsGymTous: [],
+      gymCacheAujourdhui: false,
+      estDimancheAujourdhui: false,
       texteAlerte: null,
       detailAlerte: null,
       erreur: error.message,

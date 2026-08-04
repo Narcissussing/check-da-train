@@ -1,54 +1,14 @@
-// Met à jour le tableau de bord toutes les 60 secondes sans recharger l'iPad
-// — et sans que ça se voie. `fusionnerNoeuds` compare l'ancien DOM au HTML
-// fraîchement reçu et ne touche que ce qui a réellement changé (texte,
-// attributs), au lieu de tout détruire/recréer via un simple replaceChild.
-// Deux raisons concrètes à ça, pas juste "plus propre" :
-//   1. `.carte { animation: apparition ... }` (fondu d'entrée) se rejoue à
-//      chaque création d'élément — un replaceChild recrée TOUTES les cartes
-//      toutes les 60s, donc elles se refondaient visiblement à chaque fois.
-//   2. Le train qui glisse et le fond météo animé sont de longues animations
-//      CSS en boucle ; les recréer les fait sauter à leur position de départ
-//      à chaque rafraîchissement, ce qui est le genre de saccade qu'on
-//      cherche justement à éviter.
-// En ne mutant que les nœuds qui diffèrent, les éléments inchangés (la
-// plupart, la majeure partie du temps) restent le même nœud DOM et leurs
-// animations continuent sans interruption.
+// Fusion DOM ciblée pour préserver les animations entre deux actualisations.
 let miseAJourEnCours = false;
 
-// L'iPad cible tourne en iOS 12 : Element.getAnimations()/document.timeline
-// n'y sont pas fiables. On vérifie leur présence avant usage — sans quoi une
-// erreur ici, non rattrapée, empêcherait le setInterval plus bas de
-// s'enregistrer et casserait le rafraîchissement automatique en entier.
-//
-// Tout ce qui "clignote"/"pulse" sur l'écran (lueur de carte départ/arrivée,
-// point + lueur de la carte trafic en alerte, icône+anneau départ/arrivée)
-// doit rester synchronisé entre éléments qui partagent le même rythme —
-// sinon une simple partie du DOM patchée par fusionnerNoeuds() (donc dont
-// l'animation a redémarré à zéro) se retrouve déphasée par rapport au
-// reste, qui n'a jamais arrêté de tourner depuis le chargement de la page.
-// On regroupe par DURÉE d'animation, pas par nom de keyframe : le point de
-// la carte trafic (clignoter), l'anneau départ/arrivée (anneau-pulse) et la
-// lueur de carte (carte-lueur-alerte) sont trois formes visuelles
-// différentes qui doivent malgré tout être perçues comme "elles clignotent
-// ensemble" — ce qui ne marche que si elles partagent aussi le même
-// startTime, pas juste la même durée. Un groupe "chaud" (2.4s, moins
-// urgent) et un groupe "alerte" (1.4s, urgent) n'ont eux aucune raison
-// d'être en phase l'un avec l'autre, d'où le regroupement par durée plutôt
-// que tout forcer en un seul groupe.
+// Synchronise les alertes de même durée si Web Animations est disponible.
 const SELECTEUR_ANIMATIONS_ALERTE =
   ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-info, .carte-trafic-ailleurs, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
 
 function synchroniserAnimationsAlerte(conteneur = document) {
   if (typeof document.timeline === "undefined") return;
 
-  // Pas de .flatMap() ici, par prudence pour Safari 12 (getAnimations()
-  // lui-même n'est déjà pas fiable avant Safari 13.1, voir le garde-fou
-  // ci-dessus — pas la peine d'empiler un deuxième doute). { subtree: true }
-  // est nécessaire : la lueur de carte
-  // (.carte-glow-chaude/.carte-glow-alerte/.carte-trafic-alerte) anime un
-  // pseudo-élément ::after, pas l'élément sélectionné lui-même — sans cette
-  // option, getAnimations() ne renvoie que les animations de l'élément
-  // exact, jamais celles de son ::after.
+  // `subtree` inclut les pseudo-éléments lumineux.
   const animations = [];
   [...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE)]
     .filter((element) => typeof element.getAnimations === "function")
@@ -82,11 +42,7 @@ function synchroniserAnimationsAlerte(conteneur = document) {
 
 synchroniserAnimationsAlerte();
 
-// Fusionne `nouveau` dans `actuel` en ne mutant que les différences —
-// texte et attributs — plutôt que de remplacer les nœuds. Les enfants sont
-// alignés par position : cette appli ne réordonne jamais son contenu (même
-// gabarit EJS à chaque fois), donc un alignement positionnel simple suffit,
-// pas besoin d'un diff par clé façon virtual-DOM.
+// Fusion positionnelle : le gabarit EJS ne réordonne pas ses nœuds.
 function fusionnerNoeuds(actuel, nouveau) {
   if (actuel.nodeType !== nouveau.nodeType) {
     actuel.replaceWith(nouveau.cloneNode(true));
@@ -107,11 +63,7 @@ function fusionnerNoeuds(actuel, nouveau) {
     return;
   }
 
-  // Attributs : applique ceux du nouveau, retire ceux qui ont disparu.
-  // (Écrase aussi `class`/`aria-expanded` sur les panneaux "tucked away" —
-  // volontaire, rafraichirTableauDeBord() les rouvre juste après en
-  // s'appuyant sur son propre relevé pré-fusion, donc l'état visible par
-  // l'utilisateur reste correct malgré cet aller-retour.)
+  // Aligne les attributs; les panneaux ouverts sont restaurés ensuite.
   const nomsNouveaux = nouveau.getAttributeNames();
   nomsNouveaux.forEach((nom) => {
     const valeur = nouveau.getAttribute(nom);
@@ -146,16 +98,13 @@ async function rafraichirTableauDeBord() {
 
   miseAJourEnCours = true;
 
-  // Retient les panneaux "tucked away" ouverts (départs, arrivées, gym,
-  // trafic, travaux) pour les rouvrir après la fusion.
+  // Mémorise les panneaux ouverts.
   const ciblesOuvertes = [
     ...tableauActuel.querySelectorAll("[data-toggle-target].ouvert"),
   ].map((bouton) => bouton.dataset.toggleTarget);
 
   try {
-    // Préserve la query string actuelle (ex. `?demo=1&meteo=orage`) : sans
-    // ça, un état forcé par la barre démo reviendrait silencieusement aux
-    // données réelles au premier cycle de rafraîchissement, 60s plus tard.
+    // Préserve les filtres du mode démo.
     const response = await fetch(location.pathname + location.search, {
       cache: "no-store",
     });
@@ -170,20 +119,20 @@ async function rafraichirTableauDeBord() {
 
     fusionnerNoeuds(tableauActuel, nouveauTableau);
 
-    // Resynchronise seulement les éléments dont l'animation vient de
-    // redémarrer (contenu patché par fusionnerNoeuds) — les autres n'ont
-    // jamais arrêté la leur, rien à faire pour eux.
+    // Resynchronise les animations touchées par la fusion.
     synchroniserAnimationsAlerte(tableauActuel);
 
     ciblesOuvertes.forEach((id) => {
       const bouton = tableauActuel.querySelector(`[data-toggle-target="${id}"]`);
       const cible = document.getElementById(id);
       if (!bouton || !cible) return;
-      // Passe par disclosure.js pour repartir sur une minuterie de 10s
-      // fraîche, plutôt que de rouvrir le panneau indéfiniment.
-      // (pas de "?." — non supporté par Safari sur iOS 12, l'appareil cible)
+      // Relance aussi la minuterie du panneau.
       if (window.disclosure) window.disclosure.ouvrir(bouton, cible);
     });
+
+    // La fusion remet .gym-fenetre-active sur la 1ère fenêtre (valeur du
+    // rendu serveur) : on relance la rotation plutôt que de la laisser figée.
+    if (window.gymRotation) window.gymRotation.redemarrer();
   } catch (error) {
     console.warn("Mise à jour du tableau de bord impossible :", error.message);
   } finally {

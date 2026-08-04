@@ -1,65 +1,101 @@
-// Comme les autres panneaux "tucked away", la date exacte de pluie se
-// referme toute seule après 10 secondes si elle n'a pas été refermée à la
-// main.
-// Pas de séparateur numérique (10_000) : Safari 12 rejette tout le
-// fichier au parsing sans lui — bug LL-7. Écrit en toutes lettres.
+// Délai sans séparateur numérique pour Safari iOS 12.
 const DUREE_AUTO_FERMETURE_MS = 10000;
+const DUREE_REACTION_MS = 3000;
 let minuterie;
-let minuteriesAcceleration = [];
+let minuterieAcceleration;
 
 function nettoyerAcceleration(carte) {
-  minuteriesAcceleration.forEach(clearTimeout);
-  minuteriesAcceleration = [];
-  carte.classList.remove(
-    "pluie-vitesse-rapide",
-    "pluie-vitesse-moyenne",
-    "pluie-vitesse-douce"
-  );
+  clearTimeout(minuterieAcceleration);
+  carte.classList.remove("vitesse-active");
+}
+
+// Un seul multiplicateur (--vitesse-meteo, lu par toutes les animations
+// météo en CSS) accélère la scène affichée sans en démarrer une autre.
+// Un seul palier (pas de décroissance en plusieurs étapes) : chaque
+// changement de --vitesse-meteo force le recalcul de toutes les
+// animations qui en dépendent (gouttes, flocons, nuages…) — moins de
+// changements = moins d'à-coups sur du matériel ancien.
+function accelererScene(carte) {
+  nettoyerAcceleration(carte);
+  carte.classList.add("vitesse-active");
+  minuterieAcceleration = setTimeout(() => {
+    nettoyerAcceleration(carte);
+  }, DUREE_REACTION_MS);
+}
+
+function obtenirCalque(carte, classe) {
+  let calque = carte.querySelector("." + classe);
+  if (!calque) {
+    calque = document.createElement("div");
+    calque.className = classe;
+    carte.appendChild(calque);
+  }
+  return calque;
 }
 
 function accelererPluie(pluie) {
   const carte = pluie.closest(".carte-meteo");
   if (!carte) return;
 
-  nettoyerAcceleration(carte);
   pluie.classList.add("pluie-interaction-active");
   pluie.setAttribute("aria-expanded", "true");
-  carte.classList.add("pluie-vitesse-rapide");
+  accelererScene(carte);
 
-  minuteriesAcceleration.push(setTimeout(() => {
-    carte.classList.remove("pluie-vitesse-rapide");
-    carte.classList.add("pluie-vitesse-moyenne");
-  }, 1200));
-
-  minuteriesAcceleration.push(setTimeout(() => {
-    carte.classList.remove("pluie-vitesse-moyenne");
-    carte.classList.add("pluie-vitesse-douce");
-  }, 2800));
-
-  minuteriesAcceleration.push(setTimeout(() => {
-    nettoyerAcceleration(carte);
+  clearTimeout(pluie._minuterieRestauration);
+  pluie._minuterieRestauration = setTimeout(() => {
     pluie.classList.remove("pluie-interaction-active");
     pluie.setAttribute("aria-expanded", "false");
-  }, 4800));
+  }, DUREE_REACTION_MS);
+}
+
+// Réaction au toucher de la carte entière : la scène affichée accélère ;
+// l'orage ajoute en plus un vrai coup de foudre, le calme (pas de fond
+// animé) un éclat bref sur la carte elle-même.
+function reagirMeteo(carte) {
+  const scene = carte.dataset.scene;
+  accelererScene(carte);
+
+  if (scene === "orage") {
+    const flash = obtenirCalque(carte, "orage-flash");
+    flash.classList.remove("orage-flash-actif");
+    void flash.offsetWidth;
+    flash.classList.add("orage-flash-actif");
+
+    carte.classList.remove("orage-secousse");
+    void carte.offsetWidth;
+    carte.classList.add("orage-secousse");
+    return;
+  }
+
+  if (scene === "calme") {
+    const flash = obtenirCalque(carte, "calme-flash");
+    flash.classList.remove("calme-flash-actif");
+    void flash.offsetWidth;
+    flash.classList.add("calme-flash-actif");
+  }
 }
 
 document.addEventListener("click", (event) => {
   const pluie = event.target.closest(".pluie-toggle:not([disabled])");
-  if (!pluie) return;
+  if (pluie) {
+    if (pluie.classList.contains("pluie-toggle-encours")) {
+      accelererPluie(pluie);
+      return;
+    }
 
-  if (pluie.classList.contains("pluie-toggle-encours")) {
-    accelererPluie(pluie);
+    const estOuvert = pluie.classList.toggle("ouverte");
+    pluie.setAttribute("aria-expanded", String(estOuvert));
+
+    clearTimeout(minuterie);
+    if (estOuvert) {
+      minuterie = setTimeout(() => {
+        pluie.classList.remove("ouverte");
+        pluie.setAttribute("aria-expanded", "false");
+      }, DUREE_AUTO_FERMETURE_MS);
+    }
     return;
   }
 
-  const estOuvert = pluie.classList.toggle("ouverte");
-  pluie.setAttribute("aria-expanded", String(estOuvert));
-
-  clearTimeout(minuterie);
-  if (estOuvert) {
-    minuterie = setTimeout(() => {
-      pluie.classList.remove("ouverte");
-      pluie.setAttribute("aria-expanded", "false");
-    }, DUREE_AUTO_FERMETURE_MS);
-  }
+  const carte = event.target.closest(".carte-meteo");
+  if (carte) reagirMeteo(carte);
 });

@@ -77,17 +77,7 @@ html {
   font-variant-numeric: tabular-nums;
 }
 
-/* LL-7 : sur l'iPad mural, aucun bouton/tiroir ne réagissait au tap, même
-   après LL-1/LL-4/LL-5. `touch-action: manipulation` supprime le délai de
-   ~300ms et l'ambiguïté tap-simple/double-tap-pour-zoomer que WebKit
-   applique par défaut sur du contenu tactile — combiné au
-   `user-scalable=no` du meta viewport (index.ejs), qui retire l'usage
-   légitime de ce geste sur un écran mural fixe. Bouton/lien/`[role="button"]`
-   sont nativement "cliquables" pour WebKit ; `.popup-fond` (le fond
-   assombri d'un popup, un simple <div>) ne l'est pas et n'a pas de
-   gestionnaire propre (seulement une délégation sur `document`, voir
-   disclosure.js) — `cursor: pointer` est le signal que WebKit utilise pour
-   le traiter comme tel. */
+/* Supprime le délai tactile de WebKit sur l'iPad mural. */
 button,
 a,
 [role="button"],
@@ -140,12 +130,7 @@ button {
   margin-bottom: 24px;
 }
 
-/* `gap` sur flexbox n'est pas supporté avant Safari 14.1 (bug LL-1) — sur
-   les conteneurs flex de ce fichier, l'espacement passe donc par des
-   marges sur les enfants plutôt que `gap`. `> * + *` reproduit fidèlement
-   `gap` quand tous les enfants concernés sont de vrais éléments ; quand un
-   nœud texte s'intercale (icône suivie de texte, ex. .eyebrow, .fleche-
-   toggle), la marge est posée directement sur l'élément voisin à la place. */
+/* Marges utilisées car Safari iOS 12 ne gère pas `gap` sur flexbox. */
 .header > * + * {
   margin-left: 1rem;
 }
@@ -192,11 +177,7 @@ button {
     color var(--transition);
 }
 
-/* :hover réservé aux appareils qui ont un vrai pointeur (souris) — sur
-   l'iPad (tactile), un tap déclenche :hover sans jamais le "relâcher"
-   (pas de mouseleave sans souris), donc le surlignage restait affiché
-   jusqu'au tap suivant ailleurs. :focus-visible reste hors de la media
-   query : c'est un état clavier, indépendant du support du survol. */
+/* Évite les survols bloqués après un tap sur iPad. */
 @media (hover: hover) {
   .badge-demo:hover {
     border-color: var(--accent);
@@ -366,41 +347,7 @@ button {
   }
 }
 
-/* Système de lueur de carte, partagé par la carte trafic (perturbation sur
-   mon trajet) et les cartes départ/arrivée (retard notable) — la lueur vit
-   sur la CARTE, jamais sur le texte/l'heure elle-même, pour rester lisible
-   et parce que c'est ce qu'on veut regarder en un coup d'œil (toute la
-   carte, pas juste un chiffre). Tons chauds délibérément — un ambre doux
-   pour "notable mais pas grave", un corail pour "ça mérite l'attention" —
-   plutôt qu'un rouge/orange froid et agressif sur un écran allumé en
-   permanence.
-
-   Performance (important sur l'iPad cible, matériel ancien) : on
-   n'anime PAS `box-shadow` directement — l'animer force le navigateur à
-   recalculer/repeindre l'ombre floutée à chaque frame, ce qui peut
-   suffire à saturer le thread principal sur du matériel faible (et,
-   plus grave, retarder le traitement des taps pendant que l'appareil est
-   occupé à repeindre — un facteur plausible dans le bug LL-7). À la
-   place : un pseudo-élément `::after` porte un `box-shadow` FIXE (calculé
-   une seule fois), et seule son OPACITÉ s'anime — comme `transform`,
-   `opacity` peut être composée par le GPU sans repeindre, donc bien
-   moins coûteux même sur un appareil ancien.
-
-   Les DEUX animations durent exactement 1.4s (aucune n'a de raison
-   d'être plus lente que l'autre, l'urgence "forte" n'attend pas) — ça
-   les met dans le même groupe de resynchronisation que .statut-dot/
-   .alerte-clignotante/.alerte-anneau (voir refresh.js, qui groupe par
-   durée d'animation et pas par nom de keyframe, justement pour que des
-   formes visuelles différentes partageant le même rythme restent
-   perçues comme "elles clignotent ensemble").
-
-   Toutes les lueurs de carte utilisent désormais une ombre INTERNE
-   (inset), pas seulement celle de la carte trafic : `.carte-trafic` a
-   `overflow: hidden` (pour rogner le train qui glisse) et rognerait une
-   ombre qui déborde, donc un inset y est obligatoire — LOOK-22 demande
-   la même direction partout plutôt que outward sur les cartes train et
-   inset seulement sur la carte trafic, donc les cartes train sont
-   passées en inset ici aussi pour rester cohérentes. */
+/* Lueurs internes; seule l'opacité s'anime pour limiter les repaints. */
 .carte-glow-chaude,
 .carte-glow-alerte {
   position: relative;
@@ -431,13 +378,7 @@ button {
   box-shadow: inset 0 0 28px 7px rgba(255, 100, 66, 0.55);
 }
 
-/* Alerte carte trafic : rouge mais "restrained" (2026-08-03, 3e révision
-   LOOK-22) — une vraie perturbation qui touche Trilport doit rester
-   visible sans devenir aussi criante qu'un retard >10min sur une carte
-   départ/arrivée. Opacité de lueur plus basse que .carte-glow-alerte
-   (0.35 vs 0.55) et point qui respire (clignoter-restrained, creux à
-   0.5) plutôt que de presque s'éteindre (clignoter standard, creux à
-   0.25) — toujours 1.4s pour rester dans le même groupe de sync. */
+/* Alerte trafic volontairement moins forte qu'un retard critique. */
 .carte-trafic-alerte::after {
   box-shadow: inset 0 0 22px 4px rgba(255, 100, 66, 0.35);
 }
@@ -462,10 +403,7 @@ button {
   color: var(--texte-muted);
 }
 
-/* .eyebrow parfois "icône + texte" (ex. "Gym ce soir") — le texte est un
-   nœud texte brut, pas un élément, donc `> * + *` ne le verrait pas ;
-   la marge va directement sur l'icône. Sans effet sur les .eyebrow
-   texte seul (Départ/Arrivée), qui n'ont pas d'icône. */
+/* Le texte voisin est un nœud brut; la marge reste sur l'icône. */
 .eyebrow .icone {
   margin-right: 0.4rem;
 }
@@ -486,30 +424,18 @@ button {
 
 .grille-principale {
   display: grid;
-  /* minmax(0, Nfr), not just "Nfr" — a bare fr track still defaults to
-     minmax(auto, Nfr), so a column whose content happens to need more
-     room (e.g. "Château-Thierry" vs "Paris Est") gets silently widened
-     past its fair share, breaking the 3.5fr/3.5fr equal split between
-     départ and arrivée. The 0 minimum forces both to their exact
-     proportional width and lets content truncate instead. */
+  /* Le minimum nul empêche les destinations d'élargir leur colonne. */
   grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr);
   gap: 24px;
   margin-bottom: 24px;
-  /* align-items: start (not stretch) — a grid row still sizes to its
-     tallest cell, but with "start" the other cards stay their own natural
-     height instead of stretching to fill it. Otherwise opening "Voir
-     départs" (which grows that one card) would visibly inflate Météo and
-     Arrivée too, even though nothing in them changed. */
+  /* Un panneau ouvert ne doit pas étirer les cartes voisines. */
   align-items: start;
 }
 
 .grille-principale .carte {
   display: flex;
   flex-direction: column;
-  /* Grid items default to min-width:auto (their content's min-content
-     size) even inside a minmax(0, ...) track — without this, long
-     content (e.g. a destination name) still forces the card wider than
-     its column, defeating the minmax(0, ...) fix above. */
+  /* Autorise la carte à rétrécir dans sa colonne. */
   min-width: 0;
 }
 
@@ -518,6 +444,7 @@ button {
 .carte-meteo {
   position: relative;
   overflow: hidden;
+  --vitesse-meteo: 1;
 }
 
 /* Le contenu doit rester lisible par-dessus l'animation de fond
@@ -557,24 +484,33 @@ button {
 .meteo-fond-soleil .soleil-lueur {
   opacity: 0.1;
   transform-origin: 338px 154px;
-  animation: soleil-lueur-pulser 4.8s ease-in-out infinite;
+  animation-name: soleil-lueur-pulser;
+  animation-duration: calc(4.8s / var(--vitesse-meteo, 1));
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
 .meteo-fond-soleil .soleil-coeur {
   opacity: 0.2;
   transform-origin: 338px 154px;
-  animation: soleil-coeur-pulser 4.8s ease-in-out infinite;
+  animation-name: soleil-coeur-pulser;
+  animation-duration: calc(4.8s / var(--vitesse-meteo, 1));
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
 .meteo-fond-soleil-chaud .soleil-lueur {
   opacity: 0.16;
   animation-name: soleil-lueur-chaud-pulser;
-  animation-duration: 3.8s;
+  animation-duration: calc(3.8s / var(--vitesse-meteo, 1));
 }
 
 .meteo-fond-soleil-chaud .soleil-coeur {
   opacity: 0.3;
-  animation: soleil-chaud-rayonner 3.2s ease-in-out infinite;
+  animation-name: soleil-chaud-rayonner;
+  animation-duration: calc(3.2s / var(--vitesse-meteo, 1));
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
 }
 
 @keyframes soleil-lueur-pulser {
@@ -624,12 +560,15 @@ button {
 }
 
 .meteo-fond .nuage-forme {
-  animation: nuage-derive 60s linear infinite;
+  animation-name: nuage-derive;
+  animation-duration: calc(60s / var(--vitesse-meteo, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 
 .meteo-fond .nuage-2 {
-  animation-duration: 85s;
-  animation-delay: -20s;
+  animation-duration: calc(85s / var(--vitesse-meteo, 1));
+  animation-delay: calc(-20s / var(--vitesse-meteo, 1));
 }
 
 @keyframes nuage-derive {
@@ -642,9 +581,7 @@ button {
 }
 
 .meteo-fond .nuage-forme {
-  /* même faible opacité pour toutes les scènes — avant, pluie/orage/neige
-     avaient un opacity="0.7" en dur dans le SVG, largement trop marqué
-     ("gros nuage gris solide" plutôt qu'une texture de fond discrète). */
+  /* Même opacité discrète dans chaque scène. */
   opacity: 0.1;
 }
 
@@ -655,34 +592,40 @@ button {
 
 .pluie-gouttes .pluie-goutte {
   opacity: 0;
-  animation: goutte-tomber 1s linear infinite;
+  animation-name: goutte-tomber;
+  animation-duration: calc(1s / var(--vitesse-meteo, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
+/* Décalages proportionnels (calc) : un changement de --vitesse-meteo
+   rescale la durée ET les décalages ensemble, donc les gouttes restent
+   dans le même ordre relatif au lieu de se désynchroniser. */
 .pluie-gouttes .pluie-goutte:nth-child(2) {
-  animation-delay: -0.1s;
+  animation-delay: calc(-0.1s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(3) {
-  animation-delay: -0.2s;
+  animation-delay: calc(-0.2s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(4) {
-  animation-delay: -0.3s;
+  animation-delay: calc(-0.3s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(5) {
-  animation-delay: -0.4s;
+  animation-delay: calc(-0.4s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(6) {
-  animation-delay: -0.5s;
+  animation-delay: calc(-0.5s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(7) {
-  animation-delay: -0.6s;
+  animation-delay: calc(-0.6s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(8) {
-  animation-delay: -0.7s;
+  animation-delay: calc(-0.7s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(9) {
-  animation-delay: -0.8s;
+  animation-delay: calc(-0.8s / var(--vitesse-meteo, 1));
 }
 .pluie-gouttes .pluie-goutte:nth-child(10) {
-  animation-delay: -0.9s;
+  animation-delay: calc(-0.9s / var(--vitesse-meteo, 1));
 }
 
 @keyframes goutte-tomber {
@@ -703,15 +646,10 @@ button {
 }
 
 .meteo-fond-orage .orage-gouttes .pluie-goutte {
-  animation-duration: 0.6s;
+  animation-duration: calc(0.6s / var(--vitesse-meteo, 1));
 }
 
-/* Trois éclairs superposés, durées volontairement "non rondes" et sans
-   diviseur commun simple (4.7s / 7.3s / 9.1s) — leurs pics ne retombent
-   quasiment jamais ensemble, donc le motif combiné ne se sent pas comme
-   une boucle fixe qui se répète, même en le regardant plusieurs minutes.
-   Chacun a aussi sa propre forme (un blip net, un double-flash, un flash
-   qui tient un peu plus longtemps) plutôt que trois copies identiques. */
+/* Durées différentes pour masquer la répétition des éclairs. */
 .orage-eclair {
   opacity: 0;
 }
@@ -766,8 +704,7 @@ button {
   }
 }
 
-/* Flash qui tient un peu plus longtemps avant de retomber, plutôt qu'un
-   blip instantané. */
+/* Flash prolongé. */
 @keyframes eclair-3 {
   0%,
   88%,
@@ -785,12 +722,13 @@ button {
   }
 }
 
-/* Décalage et durée par flocon : style inline généré dans icons.js
-   (flocons()), pas de liste :nth-child à tenir à jour ici — le nombre de
-   flocons peut changer librement. */
+/* --flocon-delai/--flocon-duree générés dans icons.js par flocon ;
+   calc() garde leur rapport intact quand --vitesse-meteo change. */
 .neige-flocons .neige-flocon {
   opacity: 0;
   animation-name: flocon-tomber;
+  animation-duration: calc(var(--flocon-duree) / var(--vitesse-meteo, 1));
+  animation-delay: calc(var(--flocon-delai) / var(--vitesse-meteo, 1) * -1);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
@@ -812,29 +750,28 @@ button {
   }
 }
 
-/* Nappes de brouillard floutées (filtre SVG), superposées à des vitesses et
-   profondeurs différentes — certaines dérivent vers la droite, d'autres
-   vers la gauche (`animation-direction: reverse`, toujours un seul sens
-   chacune, pas d'aller-retour) pour un effet de couches indépendantes
-   plutôt que des barres qui avancent en bloc. */
+/* Nappes indépendantes dans les deux directions. */
 .meteo-fond-brouillard .brouillard-nappe {
   opacity: 0.18;
-  animation: brouillard-derive 34s linear infinite;
+  animation-name: brouillard-derive;
+  animation-duration: calc(34s / var(--vitesse-meteo, 1));
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 .meteo-fond-brouillard .n2 {
-  animation-duration: 44s;
-  animation-delay: -12s;
+  animation-duration: calc(44s / var(--vitesse-meteo, 1));
+  animation-delay: calc(-12s / var(--vitesse-meteo, 1));
   animation-direction: reverse;
   opacity: 0.13;
 }
 .meteo-fond-brouillard .n3 {
-  animation-duration: 26s;
-  animation-delay: -6s;
+  animation-duration: calc(26s / var(--vitesse-meteo, 1));
+  animation-delay: calc(-6s / var(--vitesse-meteo, 1));
   opacity: 0.15;
 }
 .meteo-fond-brouillard .n4 {
-  animation-duration: 38s;
-  animation-delay: -20s;
+  animation-duration: calc(38s / var(--vitesse-meteo, 1));
+  animation-delay: calc(-20s / var(--vitesse-meteo, 1));
   animation-direction: reverse;
   opacity: 0.11;
 }
@@ -958,16 +895,110 @@ button {
   transform: translateY(4px);
 }
 
-.carte-meteo.pluie-vitesse-rapide .pluie-goutte {
-  animation-duration: 0.32s;
+.carte-meteo {
+  touch-action: manipulation;
 }
 
-.carte-meteo.pluie-vitesse-moyenne .pluie-goutte {
-  animation-duration: 0.55s;
+/* Un seul multiplicateur partagé, un seul palier : accélère la scène
+   affichée sans jamais toucher son animation-name ni son décalage
+   relatif — juste sa vitesse. Un seul changement à l'entrée et un seul
+   à la sortie (pas de paliers intermédiaires) pour rester léger sur du
+   matériel ancien : chaque changement de --vitesse-meteo force le
+   recalcul de toutes les animations qui en dépendent (gouttes, flocons,
+   nuages…), donc moins de changements = moins de à-coups. */
+.carte-meteo.vitesse-active {
+  --vitesse-meteo: 2;
 }
 
-.carte-meteo.pluie-vitesse-douce .pluie-goutte {
-  animation-duration: 0.78s;
+/* Éclair immédiat et net, en plus de la pluie accélérée — un vrai coup
+   de foudre plutôt qu'un simple réglage de vitesse. */
+.orage-flash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.orage-flash.orage-flash-actif {
+  animation: orage-coup-de-foudre 0.7s ease-out;
+}
+
+@keyframes orage-coup-de-foudre {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.5;
+  }
+  14% {
+    opacity: 0.05;
+  }
+  22% {
+    opacity: 0.35;
+  }
+  35% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes orage-secousse {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+.carte-meteo.orage-secousse {
+  animation: orage-secousse 0.35s ease-out;
+}
+
+/* "calme" (nuit claire) n'a pas de fond animé — la réaction porte sur la
+   carte elle-même plutôt que sur un élément météo spécifique. Opacité
+   plutôt que filter() : moins coûteux à repeindre sur l'iPad. */
+.calme-flash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.calme-flash.calme-flash-actif {
+  animation: calme-reaction 1.2s ease-in-out;
+}
+
+@keyframes calme-reaction {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.12;
+  }
 }
 
 /* --- Cartes train (départ / arrivée) --- */
@@ -992,14 +1023,7 @@ button {
   margin-right: 0.4rem;
 }
 
-/* Icône seule (un cercle, celui du tracé — pas de badge/bouton rond
-   autour) qui clignote sur départ/arrivée quand niveauTrafic === "alerte",
-   avec un anneau qui pulse derrière pour vraiment attirer l'œil (un
-   simple clignotement d'opacité sur une petite icône passait trop
-   inaperçu). Départ et arrivée pulsent volontairement EN PHASE (même
-   durée, pas de décalage) — tout ce qui clignote sur l'écran en même
-   temps doit clignoter ensemble ; resynchronisé après chaque
-   rafraîchissement 60s par refresh.js (synchroniserAnimationsAlerte). */
+/* Alertes départ et arrivée synchronisées par refresh.js. */
 .alerte-clignotante-conteneur {
   position: relative;
   display: inline-flex;
@@ -1068,9 +1092,7 @@ button {
   font-size: 0.9rem;
 }
 
-/* Le nom de destination est un nœud texte brut, pas un élément — `> * + *`
-   ne le verrait pas comme "élément précédent", donc la marge va
-   directement sur le badge de ponctualité. */
+/* Le nom de destination est un nœud texte brut. */
 .train-destination .train-ponct-inline {
   margin-left: 0.5rem;
 }
@@ -1146,9 +1168,7 @@ button {
 }
 
 .fleche-toggle {
-  /* Le texte du bouton ("Voir départs", …) est un nœud texte brut, pas un
-     élément — `> * + *` ne le verrait pas, donc la marge va directement
-     ici plutôt que sur .carte-train-toggle/.gym-details-toggle. */
+  /* Le libellé voisin est un nœud texte brut. */
   margin-left: 0.35rem;
   transition: transform var(--transition);
 }
@@ -1276,12 +1296,16 @@ button {
 }
 
 .gym-colonnes {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  justify-content: space-between;
   gap: 1rem;
   margin-top: 1.1rem;
   padding-top: 1.1rem;
   border-top: 1px solid var(--carte-border);
+}
+
+.gym-colonnes .gym-col:last-child {
+  text-align: right;
 }
 
 .gym-col span {
@@ -1305,207 +1329,294 @@ button {
   font-size: 1.1rem;
 }
 
+.gym-estime {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background: var(--carte-border);
+  color: var(--texte-dim);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.gym-alternative-heures .gym-estime {
+  margin-left: 0.25rem;
+}
+
 .gym-col-verdict .icone {
   margin-right: 0.35rem;
 }
 
-/* Colonnes Aller / Retour dans le panneau déplié */
-
-.colonnes-creneaux {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.colonnes-creneaux > div {
-  overflow: hidden;
-  background: var(--surface-2);
-  border: 1px solid var(--carte-border);
-  border-radius: var(--rayon-sm);
-}
-
-.colonnes-creneaux h3 {
+.gym-col-duree {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--texte-dim);
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin: 0;
-  padding: 0.85rem 1rem 0.6rem;
-  border-bottom: 1px solid var(--carte-border);
 }
 
-.creneau {
-  display: grid;
-  grid-template-columns: 3.5rem minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr);
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 0.65rem;
-  width: 100%;
-  min-height: 3.6rem;
-  padding: 0.6rem 1rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid var(--carte-border);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-
-.creneau:last-child {
-  border-bottom: none;
-}
-
-@media (hover: hover) {
-  .creneau:hover {
-    background: var(--carte);
-  }
-}
-
-.creneau .heure {
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.creneau .resume {
-  min-width: 0;
-  color: var(--texte-muted);
-  font-size: 0.85rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.creneau .resume .icone {
-  display: inline-block;
-  vertical-align: -3px;
-  margin-right: 0.2rem;
-}
-
-.creneau > ul {
-  grid-column: 3;
-  grid-row: 1;
-  min-width: 0;
-  width: 100%;
-}
-
-.creneau:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-.creneau-complement {
-  grid-column: 1 / -1;
-  grid-row: 2;
+.gym-col-train {
   display: flex;
   align-items: center;
-  max-height: 0;
-  margin-top: 0;
-  overflow: hidden;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
   color: var(--texte-dim);
-  font-size: 0.65rem;
-  opacity: 0;
-  transition:
-    max-height 0.25s ease,
-    margin-top 0.25s ease,
-    opacity 0.2s ease;
+  font-size: 0.75rem;
 }
 
-.creneau-complement > * + * {
-  margin-left: 0.8rem;
+.gym-col-train .icone {
+  flex-shrink: 0;
 }
 
-.creneau.deplie .creneau-complement {
-  max-height: 2rem;
-  margin-top: 0.5rem;
-  opacity: 1;
+.gym-colonnes .gym-col:last-child .gym-col-train {
+  justify-content: flex-end;
 }
 
-.train-creneau {
-  display: grid;
-  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.2rem 0;
-}
-
-.train-creneau:nth-child(n + 2) {
-  display: none;
-}
-
-.creneau.deplie .train-creneau:nth-child(n + 2) {
-  display: grid;
-}
-
-.train-creneau-heure {
+.gym-col .gym-retard {
+  color: #e67e22;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.68rem;
 }
 
-.train-creneau-heure.a-heure {
-  color: var(--succes);
+/* Deux alternatives compactes, sans rendu de tableau. */
+.gym-alternatives {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--carte-border);
 }
 
-.train-creneau-heure.retard {
-  color: var(--avertissement);
-}
-
-.train-creneau-heure.avance {
-  color: var(--info);
-}
-
-.train-creneau .dest-long,
-.train-creneau .dest-court {
-  min-width: 0;
+.gym-alternative {
+  display: flex;
+  align-items: center;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 0.2rem 0;
   color: var(--texte-muted);
   font-size: 0.75rem;
 }
 
-.dest-court {
+.gym-alternative .icone {
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Météo lisible sans ouvrir les détails. */
+.gym-alternative-meteo {
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+  color: var(--texte-dim);
+}
+
+.gym-alternative-heures {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gym-alternative-duree {
+  margin-left: auto;
+  padding-left: 0.6rem;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+/* Le libellé "Gym" est lui-même le bouton qui marque la séance faite. */
+.gym-bouton-termine {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.gym-bouton-popup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--texte-muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .gym-bouton-popup:hover {
+    color: var(--texte);
+  }
+}
+
+.gym-bouton-popup:focus-visible {
+  color: var(--texte);
+}
+
+.gym-popup-liste {
+  margin-top: 0.9rem;
+}
+
+/* Les fenêtres se superposent dans la même cellule de grille : celle qui
+   va prendre la suite attend hors champ à droite, celle qui vient de
+   céder sa place sort à gauche — gym.js pose data-etat pour donner un
+   vrai effet de glissement (la suivante "tire" l'actuelle vers la sortie). */
+.gym-fenetres {
+  display: grid;
+  overflow: hidden;
+}
+
+.gym-fenetre {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(0);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease,
+    visibility 0.5s;
+}
+
+.gym-fenetre[data-etat="suivante"] {
+  transform: translateX(36px);
+}
+
+.gym-fenetre[data-etat="precedente"] {
+  transform: translateX(-36px);
+}
+
+.gym-fenetre-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* Variantes de la même heure (ex. :30/:38) : effet "horloge digitale",
+   un roulement vertical plutôt que le glissement latéral entre heures —
+   les deux animations doivent se lire comme deux mécanismes différents. */
+.gym-sous-stack {
+  position: relative;
+  display: grid;
+}
+
+.gym-sous {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s;
+}
+
+.gym-sous-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* La ligne compacte correspondant à la fenêtre en avant se replie,
+   comme si elle était "montée" prendre la place principale. */
+.gym-alternative {
+  max-height: 2.2rem;
+  transition:
+    max-height 0.5s ease,
+    opacity 0.4s ease,
+    padding 0.4s ease,
+    transform 0.4s ease;
+}
+
+.gym-alternative-cachee {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.gym-termine-message {
+  display: none;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--carte-border);
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+}
+
+.carte-gym.gym-termine .gym-corps {
   display: none;
 }
 
-.train-creneau-ecart {
-  font-size: 0.62rem;
-  font-weight: 700;
-  white-space: nowrap;
+.carte-gym.gym-termine .gym-termine-message {
+  display: block;
 }
 
-.train-creneau-ecart.retard {
-  color: var(--avertissement);
+.gym-repos-message {
+  position: relative;
 }
 
-.train-creneau-ecart.avance {
-  color: var(--info);
+/* Même motif "Zzz" que le train endormi hors service, réutilisé ici. */
+.gym-zzz {
+  display: inline-flex;
+  align-items: flex-end;
+  margin-left: 0.4rem;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  color: var(--texte);
+  pointer-events: none;
 }
 
-.train-creneau-countdown {
-  font-size: 0.65rem;
-  color: var(--texte-dim);
-  white-space: nowrap;
+.gym-zzz span {
+  display: inline-block;
+  opacity: 0;
+  animation: zzz-flotter 3.2s ease-in infinite;
 }
 
-.train-statut {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
+.gym-zzz span:nth-child(1) {
   font-size: 0.8rem;
 }
 
-.train-statut.attente {
-  color: var(--texte-dim);
-  letter-spacing: 0.2em;
+.gym-zzz span:nth-child(2) {
+  font-size: 1rem;
+  margin-left: 2px;
+  animation-delay: -1.07s;
 }
 
-.train-statut.passe {
-  color: var(--texte-dim);
-  opacity: 0.7;
+.gym-zzz span:nth-child(3) {
+  font-size: 1.2rem;
+  margin-left: 2px;
+  animation-delay: -2.13s;
 }
 
-.train-statut.indisponible {
-  color: var(--danger);
-  font-size: 0.7rem;
+@keyframes gym-secousse {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.gym-secousse {
+  animation: gym-secousse 0.4s ease;
 }
 
 /* ──────────────────────────────────────────
@@ -1520,16 +1631,30 @@ button {
   justify-content: space-between;
   min-height: 92px;
 }
-/* Pas de remplacement pour l'ancien `gap` ici : les deux boutons coin et
-   l'illustration du train sont tous en `position: absolute`, donc hors du
-   flux — .carte-trafic-corps est en réalité le seul enfant flex, `gap`
-   n'avait déjà plus d'effet. */
+/* Les éléments absolus sont hors du flux flex. */
 
 .carte-trafic-corps {
   display: flex;
   align-items: flex-start;
   position: relative;
   z-index: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.carte-trafic-corps:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.carte-trafic-corps:not(:disabled):focus-visible .carte-trafic-titre {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
 }
 
 .carte-trafic-corps > * + * {
@@ -1549,12 +1674,7 @@ button {
   background: var(--succes);
 }
 
-/* "info" (Perturbation générale) et "ailleurs" (perturbation hors trajet)
-   partagent le même point orange + lueur ambre discrète (révisé
-   2026-08-03, 4e révision LOOK-22 — le bleu "calme" essayé pour ailleurs
-   se lisait comme un signal positif/neutre, pas comme une échelle de
-   sévérité. Trois couleurs seulement, dans l'ordre attendu : vert
-   (fluide) → orange (info/ailleurs) → rouge (alerte)). */
+/* Info et ailleurs partagent le niveau orange. */
 .carte-trafic-ailleurs .statut-dot,
 .carte-trafic-info .statut-dot {
   background: var(--avertissement);
@@ -1565,18 +1685,10 @@ button {
   position: relative;
 }
 
-/* Même pseudo-élément/opacité que .carte-glow-chaude (voir plus haut) —
-   pas de box-shadow animé directement, pour ne pas réintroduire le coût
-   de repaint déjà corrigé (LL-10). `.carte-trafic` a `overflow: hidden`
-   (rogne le train qui glisse), donc ombre `inset` comme pour
-   `.carte-trafic-alerte::after`, pas une ombre qui déborde. */
+/* Ombre interne fixe pour éviter les repaints. */
 .carte-trafic-info::after,
 .carte-trafic-ailleurs::after {
-  /* Même durée (1.4s) que tous les autres ::after de lueur — même si
-     celle-ci est calme, garder une durée commune permet à
-     synchroniserAnimationsAlerte (refresh.js, qui groupe par durée) de
-     la resynchroniser avec une carte départ/arrivée en retard modéré si
-     les deux sont visibles en même temps. */
+  /* Durée commune aux autres lueurs. */
   box-shadow: inset 0 0 18px 3px rgba(255, 176, 82, 0.22);
 }
 
@@ -1585,26 +1697,13 @@ button {
   animation: clignoter-restrained 1.4s ease-in-out infinite;
 }
 
-/* Perturbation qui touche Trilport : en plus du point qui clignote et du
-   train figé/tressautant (illustrationTrain), toute la carte respire dans
-   la même lueur chaude que les cartes départ/arrivée en retard important
-   — via le `::after` partagé défini plus haut (`.carte-trafic-alerte::after`),
-   pas une animation de box-shadow directe (coûteux à repeindre, voir la
-   note perf plus haut). `.carte-trafic` a déjà `position: relative`, pas
-   besoin de le redéclarer ici comme pour `.carte-glow-chaude/alerte`. */
+/* Une perturbation du trajet fait respirer toute la carte. */
 .carte-trafic-titre {
   font-weight: 600;
   font-size: 0.95rem;
 }
 
-/* Deux boutons dans les coins de la carte trafic, absolus par rapport à
-   .carte-trafic (position:relative), au-dessus du train qui glisse
-   (z-index:0) et du texte (z-index:1). Traitements différents :
-   - "i" (infos perturbation), haut à droite : icône seule, un cercle
-     (celui du tracé de l'icône info) — même traitement que l'alerte
-     clignotante des cartes train, pas de badge rond en plus autour.
-   - cône travaux, bas à droite : reste un bouton rond avec fond/bordure,
-     lui n'a pas besoin de se fondre avec un autre indicateur visuel. */
+/* Actions trafic dans les deux coins droits. */
 .carte-trafic-icone-bouton {
   position: absolute;
   z-index: 2;
@@ -1686,13 +1785,7 @@ button {
   animation: traverser-train 14s linear infinite;
 }
 
-/* "info"/"ailleurs" : le train continue de rouler (pas figé comme
-   .en-panne), mais nettement plus lentement que la traversée normale
-   ci-dessus (14s) — un rapport de plus de 3x pour que le contraste se
-   voie même en un coup d'œil bref, pas seulement en regardant un cycle
-   entier. Le tressautement (.secoue, voir .secousse-legere) s'ajoute
-   par-dessus pour "ailleurs" uniquement — "info" reste lisse, juste
-   plus lent. */
+/* Info ralentit le train; ailleurs ajoute une secousse. */
 .illustration-train-conteneur.ralenti .illustration-train-glisseur {
   animation-duration: 48s;
 }
@@ -1703,16 +1796,7 @@ button {
   width: auto;
   object-fit: contain;
   opacity: 0.8;
-  /* Pas de filter: drop-shadow() ici (retiré) : cet élément est TOUJOURS
-     en mouvement (glisse, tressaute, ou les deux) tant que la carte
-     trafic est visible — donc quasiment en permanence. Un filter statique
-     sur un élément qui bouge en continu force souvent un nouveau rendu
-     logiciel du filtre à chaque frame sur WebKit ancien (contrairement à
-     `transform`/`opacity` seuls, qui restent composables par le GPU) :
-     un coût constant, pas juste pendant une alerte/un retard comme les
-     lueurs de carte. Perte visuelle mineure (le train est un peu plus
-     "plat"), gain de performance probablement bien plus important sur
-     l'iPad cible. */
+  /* Aucun filtre coûteux sur cet élément toujours animé. */
 }
 
 .illustration-train-conteneur.en-panne .illustration-train-glisseur {
@@ -1730,10 +1814,7 @@ button {
   animation: secousse-legere 1.5s ease-in-out infinite;
 }
 
-/* Plus de service avant demain matin : le train est garé à droite plutôt
-   que centré (contrairement à .en-panne) — "rangé pour la nuit" plutôt
-   qu'"arrêté en urgence". Immobile, légèrement assombri, un Zzz s'échappe
-   du haut de la cabine. */
+/* Train garé à droite hors service. */
 .illustration-train-conteneur.endormi .illustration-train-glisseur {
   left: 100%;
   transform: translate(-100%, -50%);
@@ -1810,8 +1891,7 @@ button {
   }
 }
 
-/* Immobile au centre, avec un petit tressautement qui revient toutes les 2s
-   plutôt qu'un arrêt totalement figé. */
+/* Secousse périodique du train en panne. */
 @keyframes secousse-panne {
   0%,
   80%,
@@ -1832,9 +1912,7 @@ button {
   }
 }
 
-/* Même idée que secousse-panne mais plus fréquente — le train roule
-   toujours, ce n'est qu'un tremblement continu (mais bien visible, pas
-   juste un frémissement qu'on devine). */
+/* Secousse légère pendant le déplacement. */
 @keyframes secousse-legere {
   0%,
   45%,
@@ -1867,14 +1945,7 @@ button {
   }
 }
 
-/* Popups (détails perturbation / travaux) : contrairement aux disclosures
-   inline (départs, arrivées, gym), ceux-ci se détachent complètement de
-   la carte trafic en modale plein écran plutôt que de pousser le contenu
-   en dessous — la carte trafic est courte, un panneau qui s'y déplierait
-   déborderait ou pousserait tout le reste de la page. Réutilise le même
-   mécanisme [data-toggle-target]/.ouvert que les disclosures (voir
-   disclosure.js) : .popup-fond EST le panneau .disclosure (fond assombri
-   plein écran), .popup-boite est son contenu réel, centré. */
+/* Détails trafic affichés en popup plein écran. */
 .popup-fond {
   position: fixed;
   top: 0;
@@ -1897,13 +1968,7 @@ button {
 }
 
 .popup-fond.ouvert {
-  /* .disclosure.ouvert (2 classes) sets max-height:700px/margin-top —
-     même spécificité que .popup-fond.ouvert, donc sans cette redéclaration
-     ici, .disclosure.ouvert gagnait et limitait le fond assombri à 700px
-     de haut au lieu de couvrir tout l'écran. Résultat concret : en dessous
-     de 700px, le clic retombait sur le vrai contenu de la carte (ex. le
-     bouton travaux) au lieu du fond du popup — un tap "pour fermer" en
-     dehors du popup pouvait ouvrir l'autre popup à la place. */
+  /* Annule les limites du panneau inline. */
   max-height: none;
   margin-top: 0;
   background: rgba(0, 0, 0, 0.55);
@@ -1990,11 +2055,7 @@ button {
   }
 }
 
-/* Variante "restrained" du clignotement, réservée à la carte trafic en
-   alerte (LOOK-22, 3e révision) — même durée que `clignoter` (reste dans
-   le même groupe de resynchronisation, voir refresh.js) mais le creux
-   remonte à 0.5 au lieu de 0.25 : le point respire au lieu de presque
-   s'éteindre, moins criant qu'un retard de train important. */
+/* Clignotement discret de l'alerte trafic. */
 @keyframes clignoter-restrained {
   0%,
   100% {
@@ -2010,11 +2071,7 @@ button {
    ────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  /* Cards stay 3-across down to 760px (see below), but the weather card
-     itself is naturally narrower in that row than on desktop — 4 stat
-     columns get tight ("Humidité"/"Vent" crowd each other, "Pluie : …"
-     wraps). Give them 2x2 room without touching the card layout itself;
-     900px comfortably covers every iPad portrait width (768–834px). */
+  /* Statistiques météo en 2 × 2 sur iPad portrait. */
   .carte-meteo-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     row-gap: 0.75rem;
@@ -2022,19 +2079,12 @@ button {
 }
 
 @media (max-width: 760px) {
-  /* 760px, not 960px — the smallest real iPad portrait width is 768px
-     (classic/mini), and weather + départ + arrivée must stay in one row
-     on the target iPad regardless of orientation. This breakpoint is
-     meant for phones only now; every iPad width (768px+) stays on the
-     3-column desktop grid above. */
+  /* Le seuil reste sous les 768 px du plus petit iPad cible. */
   .grille-principale {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .carte-meteo {
     grid-column: 1 / -1;
-  }
-  .colonnes-creneaux {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -2079,43 +2129,6 @@ button {
   }
   .carte-trafic {
     min-height: 0;
-  }
-  .creneau {
-    grid-template-columns: 3.5rem minmax(0, 1fr);
-    grid-template-rows: auto auto;
-    column-gap: 0.4rem;
-    min-height: 3.75rem;
-    padding: 0.6rem 0.75rem;
-  }
-  .creneau .resume {
-    display: none;
-  }
-  .creneau > ul {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .creneau > .train-statut {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .train-creneau {
-    grid-template-columns: 3.25rem minmax(0, 1fr) auto;
-    font-size: 0.75rem;
-  }
-  .creneau.deplie {
-    background: var(--surface-2);
-  }
-  .creneau.deplie .dest-long {
-    display: inline;
-  }
-  .creneau.deplie .dest-court {
-    display: none;
-  }
-  .dest-long {
-    display: none;
-  }
-  .dest-court {
-    display: inline;
   }
 }
 

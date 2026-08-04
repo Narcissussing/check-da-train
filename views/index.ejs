@@ -7,7 +7,7 @@
   <title>LookuLooku</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚆</text></svg>">
 
-  <%# Police Google unique : Inter, dans l'esprit "premium et calme" du design %>
+  <%# Police principale. %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -45,7 +45,7 @@
       <% locals.boutonsMeteo.forEach(function (bouton) { %>
       <li>
         <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
-          <%- icone(iconeMeteo(bouton.code, true), { taille: 15 }) %>
+          <%- icone(iconeMeteo(bouton.code, true), { taille: 15, temperature: bouton.temp }) %>
           <%= bouton.label %>
         </a>
       </li>
@@ -89,7 +89,17 @@
       </li>
       <% }) %>
     </ul>
-    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif) { %>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsGym.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%- icone("haltere", { taille: 14 }) %>
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
+    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif || gymDemoActif) { %>
     <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
     <% } %>
   </section>
@@ -104,13 +114,11 @@
   <section class="grille-principale">
 
     <%# --- Carte météo --- %>
-    <article class="carte carte-meteo">
-      <%- animationMeteoFond(
-        sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1),
-        meteos[0].current.temperature_2m
-      ) %>
+    <% const sceneMeteoActuelle = sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1); %>
+    <article class="carte carte-meteo" data-scene="<%= sceneMeteoActuelle %>">
+      <%- animationMeteoFond(sceneMeteoActuelle, meteos[0].current.temperature_2m) %>
       <div class="carte-meteo-haut">
-        <div class="carte-meteo-icone" style="color: <%= couleurTemperature(meteos[0].current.temperature_2m) %>"><%- icone(iconeMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1), { taille: 56 }) %></div>
+        <div class="carte-meteo-icone" style="color: <%= couleurTemperature(meteos[0].current.temperature_2m) %>"><%- icone(iconeMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1), { taille: 56, temperature: meteos[0].current.temperature_2m }) %></div>
         <div>
           <p class="temp"><%= Math.round(meteos[0].current.temperature_2m) %>°</p>
           <p class="condition"><%= traduireCodeMeteo(meteos[0].current.weather_code).replace(/^\S+\s*/u, "") %></p>
@@ -150,9 +158,7 @@
     </article>
 
     <%# --- Carte prochain départ --- %>
-    <%# La lueur vit sur la carte entière, pas sur l'heure elle-même : rouge
-        chaud si le trafic touche mon trajet OU si ce train a >10 min de
-        retard, ambre si "juste" >5 min. %>
+    <%# Lueur de carte selon le trafic ou le retard. %>
     <% const departGlow = niveauTrafic === "alerte" || (departsTrilportDepart[0] && departsTrilportDepart[0].retardNiveau === "fort") ? " carte-glow-alerte" : (departsTrilportDepart[0] && departsTrilportDepart[0].retardNiveau === "moyen") ? " carte-glow-chaude" : ""; %>
     <article class="carte carte-train carte-depart<%= departGlow %>">
       <div class="carte-train-entete">
@@ -174,8 +180,7 @@
         <%= departsTrilportDepart[0].destination %>
         <% if (departsTrilportDepart[0].ponctualiteLibelle) { %><span class="train-ponct-inline <%= departsTrilportDepart[0].ponctualiteClasse %>"><%= departsTrilportDepart[0].ponctualiteLibelle %></span><% } %>
       </p>
-      <%# Toujours réservée (invisible si vide) : départ et arrivée doivent
-          garder la même hauteur, que chacun ait 1, 2 ou 3 trains à venir. %>
+      <%# Espace réservé pour égaliser les deux cartes. %>
       <p class="train-puis" <% if (departsTrilportDepart.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= departsTrilportDepart[1] ? departsTrilportDepart[1].heureFormatee : "—" %><% if (departsTrilportDepart[2]) { %> · <%= departsTrilportDepart[2].heureFormatee %><% } %></p>
       <% } else { %>
       <span class="statut-service <%= statutDeparts %>"><%= statutDeparts === "indisponible" ? "Indisponible" : statutDeparts === "attente" ? "En attente" : statutDeparts === "bientot" ? "Reprise bientôt" : "Fin de service" %></span>
@@ -246,131 +251,125 @@
   <% } %>
 
   <%# === Carte gym === %>
-  <% if (creneaux && creneaux.length > 0) { %>
-  <% const creneauxAller = creneaux.filter((c) => c.direction === "aller"); %>
-  <% const creneauxRetour = creneaux.filter((c) => c.direction === "retour"); %>
-  <%# Le créneau "vitrine" (avant clic) doit être le plus proche à venir,
-      pas systématiquement le tout premier de la journée : on prend le
-      premier non-passé, sinon le dernier de la liste (fin de soirée). %>
-  <% const slotAller = creneauxAller.find((c) => c.statutTrain !== "passe") || creneauxAller[creneauxAller.length - 1]; %>
-  <% const slotRetour = creneauxRetour.find((c) => c.statutTrain !== "passe") || creneauxRetour[creneauxRetour.length - 1]; %>
-  <section class="carte carte-gym">
+  <section class="carte carte-gym<%= gymCacheAujourdhui ? " gym-termine" : "" %>">
     <div class="carte-gym-entete">
-      <span class="eyebrow"><%- icone("haltere", { taille: 15 }) %> Gym ce soir</span>
+      <button class="gym-bouton-termine" type="button" id="gym-bouton-termine" aria-pressed="<%= gymCacheAujourdhui ? "true" : "false" %>" data-est-dimanche="<%= estDimancheAujourdhui ? "true" : "false" %>" aria-label="<%= estDimancheAujourdhui ? "Voir les trajets malgré le jour de repos" : "Marquer la séance comme terminée" %>">
+        <span class="eyebrow"><%- icone("haltere", { taille: 15 }) %> Gym</span>
+      </button>
       <div class="gym-entete-droite">
         <% if (meteos[1]) { %>
         <span class="meaux-meteo">
-          <%- icone(iconeMeteo(meteos[1].current.weather_code, meteos[1].current.is_day === 1), { taille: 15 }) %>
+          <%- icone(iconeMeteo(meteos[1].current.weather_code, meteos[1].current.is_day === 1), { taille: 15, temperature: meteos[1].current.temperature_2m }) %>
           Meaux <%= Math.round(meteos[1].current.temperature_2m) %>°
         </span>
+        <% } %>
+        <% if (trajetsGymTous && trajetsGymTous.length > 0) { %>
+        <button class="gym-bouton-popup" type="button" data-toggle-target="gym-popup" aria-expanded="false" aria-label="Voir tous les trajets">
+          <%- icone("liste", { taille: 14 }) %>
+        </button>
         <% } %>
       </div>
     </div>
 
-    <div class="gym-colonnes">
-      <div class="gym-col">
-        <span>Départ Trilport</span>
-        <strong><%= slotAller.statutTrain === "ok" ? slotAller.trainsAller[0].heureFormatee : slotAller.realHeure %></strong>
-      </div>
-      <div class="gym-col">
-        <span>Météo</span>
-        <strong class="gym-col-verdict"><%- icone(iconeVerdict(slotAller.verdicts), { taille: 17 }) %> <%= slotAller.resume.replace(/^\S+\s*/u, "") %></strong>
-      </div>
-      <div class="gym-col">
-        <span>Retour conseillé</span>
-        <strong><% if (slotRetour) { %><%= slotRetour.statutTrain === "ok" ? slotRetour.trains[0].heureFormatee : slotRetour.realHeure %><% } else { %>—<% } %></strong>
-      </div>
-    </div>
+    <% if (estDimancheAujourdhui) { %>
+    <p class="gym-termine-message gym-repos-message">
+      <span class="gym-repos-texte">Jour de repos.</span>
+      <span class="gym-zzz" aria-hidden="true"><span>Z</span><span>Z</span><span>Z</span></span>
+    </p>
+    <% } else { %>
+    <p class="gym-termine-message">Séance faite pour aujourd'hui.</p>
+    <% } %>
 
-    <button class="carte-train-toggle" type="button" data-toggle-target="gym-details" aria-expanded="false">
-      Voir tous les créneaux <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
-    </button>
-
-    <div class="disclosure gym-details" id="gym-details">
-      <div class="colonnes-creneaux">
-
-        <div>
-          <h3>Aller (Trilport → Meaux)</h3>
-          <ul class="creneaux-liste">
-            <% creneauxAller.forEach((c) => { %>
-            <li class="creneau" role="button" tabindex="0" aria-expanded="false">
-              <span class="heure"><%= c.realHeure %></span>
-              <span class="resume"><%- icone(iconeVerdict(c.verdicts), { taille: 14 }) %> <%= c.resume.replace(/^\S+\s*/u, "") %></span>
-              <% if (c.statutTrain === "ok") { %>
-              <ul>
-                <% c.trainsAller.forEach((train) => { %>
-                <li class="train-creneau">
-                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                  <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
-                  <span class="dest-long"><%= train.destination %></span>
-                  <span class="dest-court"><%= train.destinationCourte %></span>
-                  <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
-                </li>
+    <div class="gym-corps">
+      <% if (!trajetsGym || trajetsGym.length === 0) { %>
+      <p class="gym-indisponible">Aucun trajet possible pour l'instant (hors plage ou données indisponibles).</p>
+      <% } else { %>
+      <div class="gym-fenetres">
+        <% trajetsGym.forEach((t, i) => { %>
+        <div class="gym-fenetre<%= i === 0 ? " gym-fenetre-active" : "" %>">
+          <div class="gym-colonnes">
+            <div class="gym-col">
+              <div class="gym-sous-stack" data-champ="depart">
+                <% t.sousCreneaux.forEach((s, j) => { %>
+                <div class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %>">
+                  <span>Départ Trilport</span>
+                  <strong><%= s.depart.heureFormatee %><% if (s.depart.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
+                  <small class="gym-col-train">
+                    <%- icone("train", { taille: 13 }) %><%= s.aller.heureFormatee %><% if (s.aller.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.aller.ecartMinutes %>min</span><% } %>
+                  </small>
+                </div>
                 <% }) %>
-              </ul>
-              <% } else if (c.statutTrain === "passe") { %>
-              <span class="train-statut passe">passé</span>
-              <% } else if (c.statutTrain === "indisponible") { %>
-              <span class="train-statut indisponible">Indisponible</span>
-              <% } else { %>
-              <span class="train-statut attente">· · ·</span>
-              <% } %>
-              <div class="creneau-complement">
-                <span><%= c.temperature.toFixed(0) %>°C</span>
-                <span><%= c.precipitation %> mm de pluie</span>
-                <span><%= c.cloud_cover %>% de nuages</span>
               </div>
-            </li>
-            <% }) %>
-          </ul>
-        </div>
-
-        <div>
-          <h3>Retour (Meaux → Trilport)</h3>
-          <ul class="creneaux-liste">
-            <% creneauxRetour.forEach((c) => { %>
-            <li class="creneau" role="button" tabindex="0" aria-expanded="false">
-              <span class="heure"><%= c.realHeure %></span>
-              <span class="resume"><%- icone(iconeVerdict(c.verdicts), { taille: 14 }) %> <%= c.resume.replace(/^\S+\s*/u, "") %></span>
-              <% if (c.statutTrain === "ok") { %>
-              <ul>
-                <% c.trains.forEach((train) => { %>
-                <li class="train-creneau">
-                  <span class="train-creneau-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
-                  <span class="train-creneau-ecart <%= train.ponctualiteClasse %>"><% if (train.ecartMinutes) { %><%= train.ecartMinutes > 0 ? `+${train.ecartMinutes}` : train.ecartMinutes %> min<% } %></span>
-                  <span class="dest-long"><%= train.destination %></span>
-                  <span class="dest-court"><%= train.destinationCourte %></span>
-                  <span class="train-creneau-countdown"><%= train.compteAReboursFormate %></span>
-                </li>
+            </div>
+            <div class="gym-col">
+              <span>Météo</span>
+              <strong class="gym-col-verdict"><%- icone(iconeVerdict(t.meteo.verdicts), { taille: 17 }) %> <%= t.meteo.resume.replace(/^\S+\s*/u, "") %></strong>
+              <div class="gym-sous-stack" data-champ="duree">
+                <% t.sousCreneaux.forEach((s, j) => { %>
+                <small class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %> gym-col-duree"><%= s.dureeFormatee %> à la salle</small>
                 <% }) %>
-              </ul>
-              <% } else if (c.statutTrain === "passe") { %>
-              <span class="train-statut passe">passé</span>
-              <% } else if (c.statutTrain === "indisponible") { %>
-              <span class="train-statut indisponible">Indisponible</span>
-              <% } else { %>
-              <span class="train-statut attente">· · ·</span>
-              <% } %>
-              <div class="creneau-complement">
-                <span><%= c.temperature.toFixed(0) %>°C</span>
-                <span><%= c.precipitation %> mm de pluie</span>
-                <span><%= c.cloud_cover %>% de nuages</span>
               </div>
-            </li>
-            <% }) %>
-          </ul>
+            </div>
+            <div class="gym-col">
+              <div class="gym-sous-stack" data-champ="retour">
+                <% t.sousCreneaux.forEach((s, j) => { %>
+                <div class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %>">
+                  <span><%= s.procheDuMax ? "Partir avant" : "Retour conseillé" %></span>
+                  <strong><%= s.departSalleFormatee %><% if (s.retour.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
+                  <small class="gym-col-train">
+                    <%- icone("train", { taille: 13 }) %><%= s.retour.heureFormatee %><% if (s.retour.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.retour.ecartMinutes %>min</span><% } %>
+                  </small>
+                </div>
+                <% }) %>
+              </div>
+            </div>
+          </div>
         </div>
-
+        <% }) %>
       </div>
+
+      <% if (trajetsGym.length > 1) { %>
+      <ul class="gym-alternatives">
+        <% trajetsGym.forEach((t, i) => { %>
+        <li class="gym-alternative<%= i === 0 ? " gym-alternative-cachee" : "" %>" data-index="<%= i %>">
+          <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
+          <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
+          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %><% if (t.estime) { %> <span class="gym-estime">estimé</span><% } %></span>
+          <span class="gym-alternative-duree"><%= t.dureeFormatee %></span>
+        </li>
+        <% }) %>
+      </ul>
+      <% } %>
+      <% } %>
     </div>
   </section>
+
+  <% if (trajetsGymTous && trajetsGymTous.length > 0) { %>
+  <div class="disclosure popup-fond" id="gym-popup">
+    <div class="popup-boite">
+      <button class="popup-fermer" type="button" data-close-target="gym-popup" aria-label="Fermer">
+        <%- icone("fermer", { taille: 16 }) %>
+      </button>
+      <p class="popup-titre">Tous les trajets possibles</p>
+      <ul class="gym-alternatives gym-popup-liste">
+        <% trajetsGymTous.forEach((groupe) => { groupe.sousCreneaux.forEach((t) => { %>
+        <li class="gym-alternative">
+          <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
+          <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
+          <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %><% if (t.estime) { %> <span class="gym-estime">estimé</span><% } %></span>
+          <span class="gym-alternative-duree"><%= t.dureeFormatee %></span>
+        </li>
+        <% }) }) %>
+      </ul>
+    </div>
+  </div>
   <% } %>
 
   <% } %>
 
   <%# === Carte trafic (toujours affichée, même en cas d'erreur ailleurs) === %>
   <section class="carte carte-trafic carte-trafic-<%= niveauTrafic %>">
-    <% if ((niveauTrafic === "alerte" || niveauTrafic === "ailleurs") && detailAlerte) { %>
+    <% if (detailAlerte) { %>
     <button class="carte-trafic-icone-bouton carte-trafic-info-bouton<%= niveauTrafic === "alerte" ? " actif" : "" %>" type="button" data-toggle-target="trafic-details" aria-expanded="false" aria-label="Détails de la perturbation">
       <%- icone("info", { taille: 20 }) %>
     </button>
@@ -381,7 +380,7 @@
     </button>
     <% } %>
 
-    <div class="carte-trafic-corps">
+    <button class="carte-trafic-corps" type="button"<% if (detailAlerte) { %> data-toggle-target="trafic-details" aria-expanded="false" aria-label="Afficher les détails du trafic"<% } else { %> disabled<% } %>>
       <span class="statut-dot"></span>
       <div class="carte-trafic-texte">
         <% if (niveauTrafic === "fluide") { %>
@@ -394,12 +393,12 @@
         <p class="carte-trafic-titre">Infos trafic temporairement indisponibles</p>
         <% } %>
       </div>
-    </div>
+    </button>
 
     <%- illustrationTrain(niveauTrafic, locals.phaseServiceActuelle) %>
   </section>
 
-  <% if ((niveauTrafic === "alerte" || niveauTrafic === "ailleurs") && detailAlerte) { %>
+  <% if (detailAlerte) { %>
   <div class="disclosure popup-fond" id="trafic-details">
     <div class="popup-boite">
       <button class="popup-fermer" type="button" data-close-target="trafic-details" aria-label="Fermer">
@@ -439,8 +438,8 @@
   <script type="module" src="/scripts/theme.js"></script>
   <script type="module" src="/scripts/refresh.js"></script>
   <script type="module" src="/scripts/disclosure.js"></script>
-  <script type="module" src="/scripts/gym-details.js"></script>
   <script type="module" src="/scripts/weather-details.js"></script>
+  <script type="module" src="/scripts/gym.js"></script>
 </body>
 
 </html>

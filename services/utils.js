@@ -51,9 +51,25 @@ function dateISOParis(iso) {
   return creerDateParis(year, month, day, hour, minute);
 }
 
-function dateAujourdhuiParis() {
+export function dateAujourdhuiParis() {
   const { year, month, day } = obtenirPartiesDateParis();
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function jourSemaineParis(date) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Paris",
+    weekday: "short",
+  }).format(date);
+}
+
+export function estDimancheParis(date = new Date()) {
+  return jourSemaineParis(date) === "Sun";
+}
+
+export function estWeekendParis(date = new Date()) {
+  const jour = jourSemaineParis(date);
+  return jour === "Sat" || jour === "Sun";
 }
 
 function extraireHoraires(visite) {
@@ -197,7 +213,7 @@ export function extraireDeparts(data) {
         ecartMinutes === undefined
           ? undefined
           : ecartMinutes > 0
-            ? `${ecartMinutes} min de retard`
+            ? `+${ecartMinutes}min`
             : ecartMinutes < 0
               ? `${Math.abs(ecartMinutes)} min d’avance`
               : "à l’heure",
@@ -207,14 +223,9 @@ export function extraireDeparts(data) {
           : ecartMinutes < 0
             ? "avance"
             : "a-heure",
-      // Sévérité du retard, au-delà du simple "en retard" ci-dessus — pilote
-      // la lueur de la CARTE départ/arrivée entière (.carte-glow-chaude
-      // pour "moyen", .carte-glow-alerte pour "fort" — voir main.css et
-      // views/index.ejs, pas sur l'heure elle-même). undefined tant que ce
-      // n'est pas notable (≤5 min). Bornes strictes : "moyen" est
-      // 5 < x ≤ 10, "fort" est x > 10 — elles ne se chevauchent jamais.
+      // 5–9 min : ambre ; 10 min et plus : rouge.
       retardNiveau:
-        ecartMinutes > 10 ? "fort" : ecartMinutes > 5 ? "moyen" : undefined,
+        ecartMinutes >= 10 ? "fort" : ecartMinutes >= 5 ? "moyen" : undefined,
       dansXMin,
       compteAReboursFormate:
         dansXMin === undefined
@@ -222,33 +233,6 @@ export function extraireDeparts(data) {
           : formaterCompteARebours(dansXMin),
     };
   });
-}
-
-// Évaluer un créneau de départ selon les données météo et trafic
-export function evaluerCreneau(donnees) {
-  const creneauMs = dateISOParis(donnees.heure).getTime();
-  const estJour =
-    creneauMs >= donnees.sunrise * 1000 && creneauMs <= donnees.sunset * 1000;
-
-  const parapluie = donnees.precipitation > 0 || donnees.weather_code >= 51;
-  const lunettes = donnees.cloud_cover < 30 && estJour;
-  const couche = donnees.temperature < 15;
-
-  const score = Number(parapluie) * 2 + Number(couche);
-
-  let resume;
-  if (parapluie && couche) resume = "🌧️🥶 Défavorable";
-  else if (parapluie) resume = "🌧️ Parapluie !";
-  else if (couche) resume = "🥶 Couvre-toi";
-  else if (lunettes) resume = "☀️ Lunettes !";
-  else resume = "✅ Tranquille";
-
-  return {
-    ...donnees,
-    verdicts: { parapluie, lunettes, couche },
-    resume,
-    score,
-  };
 }
 
 // Formater une heure ISO en "17:30"
@@ -272,11 +256,7 @@ export function formaterCompteARebours(minutes) {
   return `dans ${minutes} min`;
 }
 
-// Formate un delai (en minutes) + son heure de debut en {resume, dateExacte}.
-// Extrait de trouverProchainePluie pour que la barre demo (?pluie=...) puisse
-// prevoir n'importe quel delai via ce MEME formatage plutot qu'une copie —
-// sinon la demo pourrait diverger silencieusement du vrai calcul, exactement
-// le genre d'ecart que le bug LL-8 a fait remonter.
+// Formate les délais réels et de démonstration de façon identique.
 export function formaterDelaiPluie(minutes, debut) {
   const dateExacte = debut.toLocaleString("fr-FR", {
     timeZone: "Europe/Paris",
@@ -351,89 +331,6 @@ export function raccourcirDestination(dest) {
   return raccourcis[dest] ?? dest;
 }
 
-// Déterminer le statut d'un créneau selon les trains disponibles
-export function determinerStatut(trains, realHeure) {
-  if (trains.length > 0) return "ok";
-
-  const maintenant = new Date();
-  const heureCreneau = construireDateLocale(realHeure);
-
-  return maintenant > heureCreneau ? "passe" : "attente";
-}
-
-// Trouver les trains disponibles après une heure de départ (format "17h30")
-export function trouverTrainsPourCreneau(trains, realHeure) {
-  const cible = construireDateLocale(realHeure).getTime();
-  const borneMin = cible - 10 * MINUTE_EN_MS;
-  const borneMax = cible + 10 * MINUTE_EN_MS;
-
-  return trains.filter((train) => {
-    const heureTrain = new Date(train.heure).getTime();
-    return heureTrain >= borneMin && heureTrain <= borneMax;
-  });
-}
-
-// Trouver les trains disponibles entre une heure de départ et un prochain créneau (format "17h30")
-export function trouverTrainsEntre(trains, realHeure, prochainCreneau) {
-  const debut = construireDateLocale(realHeure).getTime();
-
-  if (!prochainCreneau) {
-    return trains.filter((train) => new Date(train.heure).getTime() > debut);
-  }
-
-  const fin = construireDateLocale(prochainCreneau).getTime();
-
-  return trains.filter((train) => {
-    const heureTrain = new Date(train.heure).getTime();
-    return heureTrain > debut && heureTrain <= fin;
-  });
-}
-
-// Construire le tableau des données météo pour chaque créneau
-export function construireDonneesMeteo(
-  previsions,
-  meteos,
-  villes,
-  heuresRecherchees,
-) {
-  const aujourdhui = dateAujourdhuiParis();
-  const donneesMeteo = [];
-
-  for (const heureRecherchee of heuresRecherchees) {
-    const previsionVille = previsions[heureRecherchee.villeIndex];
-    const cible = `${aujourdhui}${heureRecherchee.forecastHeure}`;
-    const index = previsionVille.hourly.time.findIndex((t) => t === cible);
-
-    if (index !== -1) {
-      donneesMeteo.push({
-        ville: villes[heureRecherchee.villeIndex].nom,
-        direction: heureRecherchee.direction,
-        realHeure: heureRecherchee.realHeure,
-        heure: previsionVille.hourly.time[index],
-        temperature: previsionVille.hourly.temperature_2m[index],
-        precipitation: previsionVille.hourly.precipitation[index],
-        cloud_cover: previsionVille.hourly.cloud_cover[index],
-        weather_code: previsionVille.hourly.weather_code[index],
-        prochainCreneau: heureRecherchee.prochainCreneau ?? null,
-        sunrise:
-          new Date(
-            meteos[heureRecherchee.villeIndex].daily.sunrise[0],
-          ).getTime() / 1000,
-        sunset:
-          new Date(
-            meteos[heureRecherchee.villeIndex].daily.sunset[0],
-          ).getTime() / 1000,
-      });
-    } else {
-      console.warn(
-        `Heure ${cible} non trouvée pour ${villes[heureRecherchee.villeIndex].nom}.`,
-      );
-    }
-  }
-
-  return donneesMeteo;
-}
-
 // Filtrer et trier les départs par destination
 export function filtrerDeparts(trains, destinations, limite = null) {
   const resultat = trains
@@ -445,28 +342,276 @@ export function filtrerDeparts(trains, destinations, limite = null) {
   return limite ? resultat.slice(0, limite) : resultat;
 }
 
-// Associer les trains aux créneaux et calculer leur statut
-export function enrichirCreneaux(creneaux, departsAller, departsRetour) {
-  for (const creneau of creneaux) {
-    if (creneau.direction === "aller") {
-      creneau.trainsAller = trouverTrainsPourCreneau(
-        departsAller,
-        creneau.realHeure,
-      ).slice(0, 2);
-      creneau.statutTrain = determinerStatut(
-        creneau.trainsAller,
-        creneau.realHeure,
-      );
-    } else if (creneau.direction === "retour") {
-      creneau.trains = trouverTrainsEntre(
-        departsRetour,
-        creneau.realHeure,
-        creneau.prochainCreneau,
-      ).slice(0, 2);
-      creneau.statutTrain = determinerStatut(creneau.trains, creneau.realHeure);
+// Score horaire : pluie double, froid simple; le plus bas gagne.
+export function evaluerConditionsMeteo({
+  precipitation,
+  weatherCode,
+  cloudCover,
+  temperature,
+  estJour,
+}) {
+  const parapluie = precipitation > 0 || weatherCode >= 51;
+  const lunettes = cloudCover < 30 && estJour;
+  const couche = temperature < 15;
+  const score = Number(parapluie) * 2 + Number(couche);
+
+  let resume;
+  if (parapluie && couche) resume = "🌧️🥶 Défavorable";
+  else if (parapluie) resume = "🌧️ Parapluie !";
+  else if (couche) resume = "🥶 Couvre-toi";
+  else if (lunettes) resume = "☀️ Lunettes !";
+  else resume = "✅ Tranquille";
+
+  return { verdicts: { parapluie, lunettes, couche }, resume, score };
+}
+
+function formaterCibleHoraire(date) {
+  const { year, month, day, hour } = obtenirPartiesDateParis(date);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:00`;
+}
+
+// Prévision de Meaux à l'heure exacte du trajet.
+function meteoAHeure(contexte, date) {
+  if (!contexte) return null;
+  const { prevision, sunrise, sunset } = contexte;
+  const cible = formaterCibleHoraire(date);
+  const index = prevision.hourly.time.findIndex((t) => t === cible);
+  if (index === -1) return null;
+
+  const dateMs = date.getTime();
+  const estJour = dateMs >= sunrise * 1000 && dateMs <= sunset * 1000;
+
+  return evaluerConditionsMeteo({
+    precipitation: prevision.hourly.precipitation[index],
+    weatherCode: prevision.hourly.weather_code[index],
+    cloudCover: prevision.hourly.cloud_cover[index],
+    temperature: prevision.hourly.temperature_2m[index],
+    estJour,
+  });
+}
+
+function formaterDureeGym(minutes) {
+  if (minutes < 60) return `${minutes} min`;
+  const heures = Math.floor(minutes / 60);
+  const reste = minutes % 60;
+  return reste === 0 ? `${heures} h` : `${heures} h ${reste}`;
+}
+
+// Arrondi à la dizaine inférieure : plus lisible qu'un "xh22" exact.
+function arrondirALaDizaineInferieure(date) {
+  const d = new Date(date);
+  d.setMinutes(Math.floor(d.getMinutes() / 10) * 10, 0, 0);
+  return d;
+}
+
+// Repli utilisé quand l'horizon temps réel IDFM (1-2h) ne couvre pas
+// encore l'heure demandée. Marqué `estime: true`.
+const MINUTES_ALLER_ATTENDUES = [30, 38];
+
+function creerTrainsAttendus(borneMinMs, borneMaxMs, minutesAttendues) {
+  const trains = [];
+  const debutHeure = new Date(borneMinMs);
+  debutHeure.setMinutes(0, 0, 0);
+
+  for (
+    let heureMs = debutHeure.getTime();
+    heureMs <= borneMaxMs;
+    heureMs += 60 * MINUTE_EN_MS
+  ) {
+    for (const minute of minutesAttendues) {
+      const d = new Date(heureMs);
+      d.setMinutes(minute, 0, 0);
+      if (d.getTime() >= borneMinMs && d.getTime() <= borneMaxMs) {
+        trains.push({
+          heure: d.toISOString(),
+          heureFormatee: formaterHeure(d.toISOString()),
+          estime: true,
+        });
+      }
     }
   }
-  return creneaux;
+
+  return trains;
+}
+
+// Grille réelle mesurée, pas une formule — ne jamais extrapoler au-delà
+// (un "21h45" fabriqué n'existe pas : trou entre 21h15 et 22h15).
+const HORAIRES_RETOUR_SEMAINE = [
+  [17, 15],
+  [17, 45],
+  [18, 15],
+  [18, 30],
+  [18, 45],
+  [19, 15],
+  [19, 45],
+  [20, 15],
+  [20, 45],
+  [21, 15],
+  [22, 15],
+  [22, 45],
+];
+
+// Le week-end, fréquence réduite à un train par heure, à :15.
+function creerTrainsRetourAttendus(borneMinMs, estWeekend) {
+  const horaires = estWeekend
+    ? Array.from({ length: 24 }, (_, h) => [h, 15])
+    : HORAIRES_RETOUR_SEMAINE;
+
+  const { year, month, day } = obtenirPartiesDateParis(new Date(borneMinMs));
+
+  return horaires
+    .map(([heure, minute]) => creerDateParis(year, month, day, heure, minute))
+    .filter((d) => d.getTime() >= borneMinMs)
+    .map((d) => ({
+      heure: d.toISOString(),
+      heureFormatee: formaterHeure(d.toISOString()),
+      estime: true,
+    }));
+}
+
+// Regroupe les variantes d'une même heure (:30/:38) pour l'effet horloge
+// digitale côté vue, au lieu de les traiter comme des fenêtres séparées.
+function grouperAllersParHeure(allers) {
+  const groupes = new Map();
+  for (const aller of allers) {
+    const { year, month, day, hour } = obtenirPartiesDateParis(
+      new Date(aller.heure),
+    );
+    const cle = `${year}-${month}-${day}-${hour}`;
+    if (!groupes.has(cle)) groupes.set(cle, []);
+    groupes.get(cle).push(aller);
+  }
+  return [...groupes.values()].map((groupe) =>
+    [...groupe].sort((a, b) => new Date(a.heure) - new Date(b.heure)),
+  );
+}
+
+// Le live (retards compris) a priorité sur un créneau attendu proche (10 min).
+function fusionnerAvecAttendus(trainsLive, trainsAttendus) {
+  const proches = (a, b) =>
+    Math.abs(new Date(a.heure).getTime() - new Date(b.heure).getTime()) <=
+    10 * MINUTE_EN_MS;
+
+  const complements = trainsAttendus.filter(
+    (attendu) => !trainsLive.some((live) => proches(live, attendu)),
+  );
+
+  return [...trainsLive, ...complements].sort(
+    (a, b) => new Date(a.heure) - new Date(b.heure),
+  );
+}
+
+export function construireTrajetsGym(
+  departsAller,
+  departsRetour,
+  meteoMeaux = null,
+  options = {},
+) {
+  const {
+    scooterMinutes = 8,
+    retourMinutes = 15,
+    dureeMinGymMinutes = 60,
+    dureeMaxGymMinutes = 120,
+    heureMin = "17h20",
+    heureMax = "20h30",
+    // Désactivé en démo : la fenêtre y est élargie à la journée entière.
+    avecAttendus = true,
+  } = options;
+
+  const scooterMs = scooterMinutes * MINUTE_EN_MS;
+  const retourMs = retourMinutes * MINUTE_EN_MS;
+  const dureeMinGymMs = dureeMinGymMinutes * MINUTE_EN_MS;
+  const borneMin = construireDateLocale(heureMin).getTime();
+  const borneMax = construireDateLocale(heureMax).getTime();
+  // Un aller déjà parti disparaît au prochain rafraîchissement (60s).
+  const borneMinEffective = Math.max(borneMin, Date.now());
+
+  const allersLive = departsAller.filter((train) => {
+    const t = new Date(train.heure).getTime();
+    return t >= borneMinEffective && t <= borneMax;
+  });
+  const allersAttendus = avecAttendus
+    ? creerTrainsAttendus(borneMinEffective, borneMax, MINUTES_ALLER_ATTENDUES)
+    : [];
+  const allersViables = fusionnerAvecAttendus(allersLive, allersAttendus);
+
+  const retoursAttendus = avecAttendus
+    ? creerTrainsRetourAttendus(borneMin, estWeekendParis(new Date(borneMin)))
+    : [];
+  const retoursTries = fusionnerAvecAttendus(departsRetour, retoursAttendus);
+
+  const allersParHeure = grouperAllersParHeure(allersViables);
+  const groupes = [];
+
+  for (const allersDuGroupe of allersParHeure) {
+    const meteo = meteoAHeure(meteoMeaux, new Date(allersDuGroupe[0].heure));
+    if (!meteo) continue;
+
+    const sousCreneaux = [];
+
+    // Produit cartésien : chaque aller de l'heure × chaque retour valide
+    // dans la fourchette 1h-2h (pas un seul retour par aller).
+    for (const aller of allersDuGroupe) {
+      const arriveeGymMs = new Date(aller.heure).getTime() + scooterMs;
+      const departMaisonMs = arrondirALaDizaineInferieure(
+        new Date(new Date(aller.heure).getTime() - scooterMs),
+      ).getTime();
+      const depart = {
+        heure: new Date(departMaisonMs).toISOString(),
+        heureFormatee: formaterHeure(new Date(departMaisonMs).toISOString()),
+        estime: aller.estime,
+      };
+
+      const departSallesVus = new Set();
+
+      for (const retour of retoursTries) {
+        const departSalleMsBrut = new Date(retour.heure).getTime() - retourMs;
+        const dureeMinutes = Math.round(
+          (departSalleMsBrut - arriveeGymMs) / MINUTE_EN_MS,
+        );
+        if (
+          dureeMinutes < dureeMinGymMinutes ||
+          dureeMinutes > dureeMaxGymMinutes
+        ) {
+          continue;
+        }
+
+        const departSalleMs = arrondirALaDizaineInferieure(
+          new Date(departSalleMsBrut),
+        ).getTime();
+        if (departSallesVus.has(departSalleMs)) continue;
+        departSallesVus.add(departSalleMs);
+
+        sousCreneaux.push({
+          aller,
+          retour,
+          depart,
+          arriveeGymFormatee: formaterHeure(
+            new Date(arriveeGymMs).toISOString(),
+          ),
+          departSalleFormatee: formaterHeure(
+            new Date(departSalleMs).toISOString(),
+          ),
+          dureeMinutes,
+          dureeFormatee: formaterDureeGym(dureeMinutes),
+          meteo,
+          estime: Boolean(aller.estime || retour.estime),
+          procheDuMax: dureeMinutes >= dureeMaxGymMinutes - 30,
+        });
+      }
+    }
+
+    if (sousCreneaux.length === 0) continue;
+    groupes.push({ ...sousCreneaux[0], sousCreneaux });
+  }
+
+  groupes.sort((a, b) => {
+    const scoreA = a.meteo?.score ?? 0;
+    const scoreB = b.meteo?.score ?? 0;
+    return scoreA - scoreB || new Date(a.aller.heure) - new Date(b.aller.heure);
+  });
+
+  return groupes;
 }
 
 // Traduire un code météo WMO en description française
@@ -512,15 +657,7 @@ export function formaterDatePerturbation(date) {
   });
 }
 
-// Arrêts qui concernent le trajet Trilport ↔ Meaux ↔ Paris. Volontairement
-// SANS "paris est"/"gare de l'est" : la ligne P a plusieurs branches qui
-// partagent toutes ce même terminus parisien (la mienne, mais aussi par
-// exemple la branche Provins) — les inclure faisait qu'une perturbation
-// sur une AUTRE branche (ex. "Provins ↔ Gare de l'Est", qui ne touche ni
-// Trilport ni Meaux) matchait quand même et se classait "alerte" (touche
-// mon trajet) au lieu de "ailleurs". Confirmé en production par
-// l'utilisateur : la carte trafic passait au rouge pour une perturbation
-// entre Paris-Est et Provins, sans aucun rapport avec Meaux/Trilport.
+// Le terminus Paris-Est seul ne suffit pas à identifier cette branche.
 const ARRETS_TRAJET = ["meaux", "trilport", "château-thierry", "la ferté-milon"];
 
 // Vérifier si une perturbation est active aujourd'hui
