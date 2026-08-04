@@ -444,7 +444,6 @@ button {
 .carte-meteo {
   position: relative;
   overflow: hidden;
-  --vitesse-meteo: 1;
 }
 
 /* Le contenu doit rester lisible par-dessus l'animation de fond
@@ -484,31 +483,25 @@ button {
 .meteo-fond-soleil .soleil-lueur {
   opacity: 0.1;
   transform-origin: 338px 154px;
-  animation-name: soleil-lueur-pulser;
-  animation-duration: calc(4.8s / var(--vitesse-meteo, 1));
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
+  animation: soleil-lueur-pulser 4.8s ease-in-out infinite;
 }
 
 .meteo-fond-soleil .soleil-coeur {
   opacity: 0.2;
   transform-origin: 338px 154px;
-  animation-name: soleil-coeur-pulser;
-  animation-duration: calc(4.8s / var(--vitesse-meteo, 1));
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
+  animation: soleil-coeur-pulser 4.8s ease-in-out infinite;
 }
 
 .meteo-fond-soleil-chaud .soleil-lueur {
   opacity: 0.16;
   animation-name: soleil-lueur-chaud-pulser;
-  animation-duration: calc(3.8s / var(--vitesse-meteo, 1));
+  animation-duration: 3.8s;
 }
 
 .meteo-fond-soleil-chaud .soleil-coeur {
   opacity: 0.3;
   animation-name: soleil-chaud-rayonner;
-  animation-duration: calc(3.2s / var(--vitesse-meteo, 1));
+  animation-duration: 3.2s;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
@@ -560,15 +553,12 @@ button {
 }
 
 .meteo-fond .nuage-forme {
-  animation-name: nuage-derive;
-  animation-duration: calc(60s / var(--vitesse-meteo, 1));
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation: nuage-derive 60s linear infinite;
 }
 
 .meteo-fond .nuage-2 {
-  animation-duration: calc(85s / var(--vitesse-meteo, 1));
-  animation-delay: calc(-20s / var(--vitesse-meteo, 1));
+  animation-duration: 85s;
+  animation-delay: -20s;
 }
 
 @keyframes nuage-derive {
@@ -592,40 +582,34 @@ button {
 
 .pluie-gouttes .pluie-goutte {
   opacity: 0;
-  animation-name: goutte-tomber;
-  animation-duration: calc(1s / var(--vitesse-meteo, 1));
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation: goutte-tomber 1s linear infinite;
 }
-/* Décalages proportionnels (calc) : un changement de --vitesse-meteo
-   rescale la durée ET les décalages ensemble, donc les gouttes restent
-   dans le même ordre relatif au lieu de se désynchroniser. */
 .pluie-gouttes .pluie-goutte:nth-child(2) {
-  animation-delay: calc(-0.1s / var(--vitesse-meteo, 1));
+  animation-delay: -0.1s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(3) {
-  animation-delay: calc(-0.2s / var(--vitesse-meteo, 1));
+  animation-delay: -0.2s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(4) {
-  animation-delay: calc(-0.3s / var(--vitesse-meteo, 1));
+  animation-delay: -0.3s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(5) {
-  animation-delay: calc(-0.4s / var(--vitesse-meteo, 1));
+  animation-delay: -0.4s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(6) {
-  animation-delay: calc(-0.5s / var(--vitesse-meteo, 1));
+  animation-delay: -0.5s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(7) {
-  animation-delay: calc(-0.6s / var(--vitesse-meteo, 1));
+  animation-delay: -0.6s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(8) {
-  animation-delay: calc(-0.7s / var(--vitesse-meteo, 1));
+  animation-delay: -0.7s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(9) {
-  animation-delay: calc(-0.8s / var(--vitesse-meteo, 1));
+  animation-delay: -0.8s;
 }
 .pluie-gouttes .pluie-goutte:nth-child(10) {
-  animation-delay: calc(-0.9s / var(--vitesse-meteo, 1));
+  animation-delay: -0.9s;
 }
 
 @keyframes goutte-tomber {
@@ -646,7 +630,7 @@ button {
 }
 
 .meteo-fond-orage .orage-gouttes .pluie-goutte {
-  animation-duration: calc(0.6s / var(--vitesse-meteo, 1));
+  animation-duration: 0.6s;
 }
 
 /* Durées différentes pour masquer la répétition des éclairs. */
@@ -722,13 +706,10 @@ button {
   }
 }
 
-/* --flocon-delai/--flocon-duree générés dans icons.js par flocon ;
-   calc() garde leur rapport intact quand --vitesse-meteo change. */
+/* Rythmes générés dans icons.js. */
 .neige-flocons .neige-flocon {
   opacity: 0;
   animation-name: flocon-tomber;
-  animation-duration: calc(var(--flocon-duree) / var(--vitesse-meteo, 1));
-  animation-delay: calc(var(--flocon-delai) / var(--vitesse-meteo, 1) * -1);
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
@@ -753,25 +734,22 @@ button {
 /* Nappes indépendantes dans les deux directions. */
 .meteo-fond-brouillard .brouillard-nappe {
   opacity: 0.18;
-  animation-name: brouillard-derive;
-  animation-duration: calc(34s / var(--vitesse-meteo, 1));
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation: brouillard-derive 34s linear infinite;
 }
 .meteo-fond-brouillard .n2 {
-  animation-duration: calc(44s / var(--vitesse-meteo, 1));
-  animation-delay: calc(-12s / var(--vitesse-meteo, 1));
+  animation-duration: 44s;
+  animation-delay: -12s;
   animation-direction: reverse;
   opacity: 0.13;
 }
 .meteo-fond-brouillard .n3 {
-  animation-duration: calc(26s / var(--vitesse-meteo, 1));
-  animation-delay: calc(-6s / var(--vitesse-meteo, 1));
+  animation-duration: 26s;
+  animation-delay: -6s;
   opacity: 0.15;
 }
 .meteo-fond-brouillard .n4 {
-  animation-duration: calc(38s / var(--vitesse-meteo, 1));
-  animation-delay: calc(-20s / var(--vitesse-meteo, 1));
+  animation-duration: 38s;
+  animation-delay: -20s;
   animation-direction: reverse;
   opacity: 0.11;
 }
@@ -897,17 +875,39 @@ button {
 
 .carte-meteo {
   touch-action: manipulation;
+  /* iOS Safari (le vrai bug cible) ne délègue pas fiablement les clics
+     à un élément non interactif comme cet <article> sauf s'il a un
+     cursor:pointer — sans ça, le tap sur la carte peut ne rien faire
+     du tout, pas juste être lent. */
+  cursor: pointer;
 }
 
-/* Un seul multiplicateur partagé, un seul palier : accélère la scène
-   affichée sans jamais toucher son animation-name ni son décalage
-   relatif — juste sa vitesse. Un seul changement à l'entrée et un seul
-   à la sortie (pas de paliers intermédiaires) pour rester léger sur du
-   matériel ancien : chaque changement de --vitesse-meteo force le
-   recalcul de toutes les animations qui en dépendent (gouttes, flocons,
-   nuages…), donc moins de changements = moins de à-coups. */
-.carte-meteo.vitesse-active {
-  --vitesse-meteo: 2;
+/* Valeurs statiques (pas de calc()/var() dans animation-duration) : les
+   variables CSS référencées depuis les propriétés d'animation ne sont
+   pas fiables sur Safari iOS 12 — le clic s'exécutait mais l'effet
+   restait invisible. Un seul palier (pas de décroissance progressive)
+   pour rester léger sur du matériel ancien. */
+.carte-meteo.vitesse-active .pluie-goutte {
+  animation-duration: 0.5s;
+}
+
+.carte-meteo.vitesse-active .nuage-forme {
+  animation-duration: 30s;
+}
+
+.carte-meteo.vitesse-active .soleil-lueur,
+.carte-meteo.vitesse-active .soleil-coeur {
+  animation-duration: 2.4s;
+}
+
+.carte-meteo.vitesse-active .brouillard-nappe {
+  animation-duration: 17s;
+}
+
+/* Durée inline par flocon (icons.js) : !important nécessaire pour la
+   remplacer temporairement. */
+.carte-meteo.vitesse-active .neige-flocon {
+  animation-duration: 2.5s !important;
 }
 
 /* Éclair immédiat et net, en plus de la pluie accélérée — un vrai coup
@@ -1778,10 +1778,11 @@ button {
 .illustration-train-glisseur {
   position: absolute;
   top: 50%;
-  left: -45%;
+  left: 0;
   height: 200%;
   width: auto;
-  transform: translateY(-50%);
+  opacity: 0;
+  transform: translate(-100%, -50%);
   animation: traverser-train 14s linear infinite;
 }
 
@@ -1880,13 +1881,20 @@ button {
 }
 
 @keyframes traverser-train {
-  from {
+  0% {
     left: 0;
+    opacity: 0;
     transform: translate(-100%, -50%);
   }
 
-  to {
+  1%,
+  99% {
+    opacity: 1;
+  }
+
+  100% {
     left: 100%;
+    opacity: 0;
     transform: translate(0, -50%);
   }
 }

@@ -186,16 +186,14 @@ export function animationMeteoFond(scene, temperature = null) {
       return `<line class="${tag}" x1="${x}" y1="0" x2="${x - 14}" y2="${hauteur}"/>`;
     }).join("");
 
-  // Chaque flocon reçoit son propre rythme. Durée/décalage passés en
-  // variables CSS (pas des valeurs directes) pour que --vitesse-meteo
-  // puisse rescaler les deux ensemble en gardant leur rapport intact.
+  // Chaque flocon reçoit son propre rythme.
   const flocons = (n) =>
     Array.from({ length: n }, (_, i) => {
       const x = 10 + i * (385 / n);
       const r = 2.5 + (i % 3) * 1.5;
       const delai = ((i / n) * 6).toFixed(2);
       const duree = (4.5 + (i % 4) * 0.7).toFixed(2);
-      return `<circle class="neige-flocon" cx="${x}" cy="0" r="${r}" style="--flocon-delai:${delai}s;--flocon-duree:${duree}s"/>`;
+      return `<circle class="neige-flocon" cx="${x}" cy="0" r="${r}" style="animation-delay:-${delai}s;animation-duration:${duree}s"/>`;
     }).join("");
 
   const scenes = {
