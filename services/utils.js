@@ -513,7 +513,9 @@ export function construireTrajetsGym(
     dureeMinGymMinutes = 60,
     dureeMaxGymMinutes = 120,
     heureMin = "17h20",
-    heureMax = "20h30",
+    // Ne pas couper à 20h30 : un train de 20h38 peut encore permettre un
+    // retour réel à 22h15 ou 22h45. La grille des retours borne la fin utile.
+    heureMax = "23h59",
     // Désactivé en démo : la fenêtre y est élargie à la journée entière.
     avecAttendus = true,
   } = options;

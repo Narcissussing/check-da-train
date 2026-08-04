@@ -42,6 +42,32 @@ function synchroniserAnimationsAlerte(conteneur = document) {
 
 synchroniserAnimationsAlerte();
 
+// Anime un changement de hauteur du corps Gym (fenêtre ajoutée/retirée par le
+// rafraîchissement) au lieu de le laisser pousser la carte trafic d'un coup.
+function animerHauteurGym(element, hauteurAvant, hauteurApres) {
+  if (Math.abs(hauteurApres - hauteurAvant) < 1) return;
+
+  element.style.overflow = "hidden";
+  element.style.height = `${hauteurAvant}px`;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      element.style.transition = "height 0.4s ease";
+      element.style.height = `${hauteurApres}px`;
+    });
+  });
+
+  const nettoyer = () => {
+    element.style.transition = "";
+    element.style.height = "";
+    element.style.overflow = "";
+    element.removeEventListener("transitionend", nettoyer);
+  };
+  element.addEventListener("transitionend", nettoyer);
+  // Filet de sécurité si `transitionend` ne se déclenche pas.
+  setTimeout(nettoyer, 500);
+}
+
 // Fusion positionnelle : le gabarit EJS ne réordonne pas ses nœuds.
 function fusionnerNoeuds(actuel, nouveau) {
   if (actuel.nodeType !== nouveau.nodeType) {
@@ -117,7 +143,15 @@ async function rafraichirTableauDeBord() {
     const nouveauTableau = documentMisAJour.getElementById("dashboard-content");
     if (!nouveauTableau) throw new Error("Tableau de bord introuvable");
 
+    const corpsGym = tableauActuel.querySelector(".gym-corps");
+    const hauteurAvantGym = corpsGym ? corpsGym.getBoundingClientRect().height : 0;
+
     fusionnerNoeuds(tableauActuel, nouveauTableau);
+
+    if (corpsGym && hauteurAvantGym > 0) {
+      const hauteurApresGym = corpsGym.getBoundingClientRect().height;
+      animerHauteurGym(corpsGym, hauteurAvantGym, hauteurApresGym);
+    }
 
     // Resynchronise les animations touchées par la fusion.
     synchroniserAnimationsAlerte(tableauActuel);
