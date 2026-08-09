@@ -352,7 +352,7 @@
       </div>
 
       <% if (trajetsGym.length > 1) { %>
-      <ul class="gym-alternatives">
+      <ul class="gym-alternatives gym-alternatives-<%= Math.min(trajetsGym.length - 1, 2) %>">
         <% trajetsGym.forEach((t, i) => { %>
         <li class="gym-alternative<%= i === 0 ? " gym-alternative-cachee" : "" %>" data-index="<%= i %>">
           <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>

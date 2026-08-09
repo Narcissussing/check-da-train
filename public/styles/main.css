@@ -1522,6 +1522,17 @@ button {
   margin-top: 0.3rem;
   padding-top: 0.35rem;
   border-top: 1px solid var(--carte-border);
+  overflow: hidden;
+}
+
+/* La liste réserve sa hauteur finale indépendamment de la ligne active. La
+   rotation peut donc remplacer ses alternatives sans redimensionner la carte. */
+.gym-alternatives-1 {
+  height: 1.55rem;
+}
+
+.gym-alternatives-2 {
+  height: 3.1rem;
 }
 
 .gym-alternative {
@@ -1658,24 +1669,15 @@ button {
   transform: translateY(0);
 }
 
-/* La ligne compacte correspondant à la fenêtre en avant se replie,
-   comme si elle était "montée" prendre la place principale. */
+/* La ligne correspondant à la fenêtre principale sort immédiatement du flux :
+   animer sa hauteur/padding faisait varier celle de toute la carte Gym. */
 .gym-alternative {
-  max-height: 2.2rem;
-  transition:
-    max-height 0.5s ease,
-    opacity 0.4s ease,
-    padding 0.4s ease,
-    transform 0.4s ease;
+  height: 1.55rem;
+  box-sizing: border-box;
 }
 
 .gym-alternative-cachee {
-  max-height: 0;
-  opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
+  display: none;
 }
 
 .gym-termine-message {
