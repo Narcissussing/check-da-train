@@ -591,6 +591,7 @@ export function construireTrajetsGym(
           arriveeGymFormatee: formaterHeure(
             new Date(arriveeGymMs).toISOString(),
           ),
+          departSalleHeure: new Date(departSalleMs).toISOString(),
           departSalleFormatee: formaterHeure(
             new Date(departSalleMs).toISOString(),
           ),
@@ -604,7 +605,17 @@ export function construireTrajetsGym(
     }
 
     if (sousCreneaux.length === 0) continue;
-    groupes.push({ ...sousCreneaux[0], sousCreneaux });
+    // Dernier "quitter la salle" possible parmi les sous-créneaux du
+    // groupe : sert de date d'expiration à une sélection verrouillée
+    // côté client (le créneau reste affiché tant qu'il reste jouable).
+    const expirationMs = Math.max(
+      ...sousCreneaux.map((s) => new Date(s.departSalleHeure).getTime()),
+    );
+    groupes.push({
+      ...sousCreneaux[0],
+      sousCreneaux,
+      expirationHeure: new Date(expirationMs).toISOString(),
+    });
   }
 
   groupes.sort((a, b) => {

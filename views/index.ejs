@@ -309,13 +309,13 @@
       <% } else { %>
       <div class="gym-fenetres">
         <% trajetsGym.forEach((t, i) => { %>
-        <div class="gym-fenetre<%= i === 0 ? " gym-fenetre-active" : "" %>">
+        <div class="gym-fenetre<%= i === 0 ? " gym-fenetre-active" : "" %>" data-expire="<%= t.expirationHeure %>">
           <div class="gym-colonnes">
             <div class="gym-col">
               <div class="gym-sous-stack" data-champ="depart">
                 <% t.sousCreneaux.forEach((s, j) => { %>
                 <div class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %>">
-                  <span>Départ Trilport</span>
+                  <span>Départ</span>
                   <strong><%= s.depart.heureFormatee %><% if (s.depart.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
                   <small class="gym-col-train">
                     <%= s.aller.heureFormatee %><% if (s.aller.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.aller.ecartMinutes %>min</span><% } %><%- icone("train", { taille: 13 }) %>
@@ -337,7 +337,7 @@
               <div class="gym-sous-stack" data-champ="retour">
                 <% t.sousCreneaux.forEach((s, j) => { %>
                 <div class="gym-sous<%= j === 0 ? " gym-sous-active" : "" %>">
-                  <span><%= s.procheDuMax ? "Partir avant" : "Retour conseillé" %></span>
+                  <span><%= s.procheDuMax ? "Partir avant" : "Retour" %></span>
                   <strong><% if (s.retour.estime) { %><small class="gym-estime">estimé</small> <% } %><%= s.departSalleFormatee %></strong>
                   <small class="gym-col-train">
                     <%- icone("train", { taille: 13 }) %><%= s.retour.heureFormatee %><% if (s.retour.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= s.retour.ecartMinutes %>min</span><% } %>
@@ -376,11 +376,46 @@
       <p class="popup-titre">Tous les trajets possibles</p>
       <ul class="gym-alternatives gym-popup-liste">
         <% trajetsGymTous.forEach((groupe) => { groupe.sousCreneaux.forEach((t) => { %>
-        <li class="gym-alternative">
+        <%# Sélectionnable : verrouille ce trajet précis en vitrine jusqu'à
+            son heure de départ salle (data-expire), voir gym.js. %>
+        <li class="gym-alternative" data-expire="<%= t.departSalleHeure %>" role="button" tabindex="0">
           <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
           <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
           <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %></span>
           <span class="gym-alternative-duree"><%= t.dureeFormatee %></span>
+          <template>
+            <div class="gym-colonnes">
+              <div class="gym-col">
+                <div class="gym-sous-stack" data-champ="depart">
+                  <div class="gym-sous gym-sous-active">
+                    <span>Départ</span>
+                    <strong><%= t.depart.heureFormatee %><% if (t.depart.estime) { %> <small class="gym-estime">estimé</small><% } %></strong>
+                    <small class="gym-col-train">
+                      <%= t.aller.heureFormatee %><% if (t.aller.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= t.aller.ecartMinutes %>min</span><% } %><%- icone("train", { taille: 13 }) %>
+                    </small>
+                  </div>
+                </div>
+              </div>
+              <div class="gym-col">
+                <span>Météo</span>
+                <strong class="gym-col-verdict"><%- icone(iconeVerdict(t.meteo.verdicts), { taille: 17 }) %> <%= t.meteo.resume.replace(/^\S+\s*/u, "") %></strong>
+                <div class="gym-sous-stack" data-champ="duree">
+                  <small class="gym-sous gym-sous-active gym-col-duree"><%= t.dureeFormatee %> à la salle</small>
+                </div>
+              </div>
+              <div class="gym-col">
+                <div class="gym-sous-stack" data-champ="retour">
+                  <div class="gym-sous gym-sous-active">
+                    <span><%= t.procheDuMax ? "Partir avant" : "Retour" %></span>
+                    <strong><% if (t.retour.estime) { %><small class="gym-estime">estimé</small> <% } %><%= t.departSalleFormatee %></strong>
+                    <small class="gym-col-train">
+                      <%- icone("train", { taille: 13 }) %><%= t.retour.heureFormatee %><% if (t.retour.ecartMinutes >= 3) { %> <span class="gym-retard">+<%= t.retour.ecartMinutes %>min</span><% } %>
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </li>
         <% }) }) %>
       </ul>
@@ -392,11 +427,6 @@
 
   <%# === Carte trafic (toujours affichée, même en cas d'erreur ailleurs) === %>
   <section class="carte carte-trafic carte-trafic-<%= niveauTrafic %>">
-    <% if (detailAlerte) { %>
-    <button class="carte-trafic-icone-bouton carte-trafic-info-bouton<%= niveauTrafic === "alerte" ? " actif" : "" %>" type="button" data-toggle-target="trafic-details" aria-expanded="false" aria-label="Détails de la perturbation">
-      <%- icone("info", { taille: 20 }) %>
-    </button>
-    <% } %>
     <% if (locals.prochaineTravaux) { %>
     <button class="carte-trafic-icone-bouton carte-trafic-travaux-bouton" type="button" data-toggle-target="travaux-details" aria-expanded="false" aria-label="Travaux Ligne P">
       <%- icone("travaux", { taille: 16 }) %>

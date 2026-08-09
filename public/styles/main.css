@@ -1418,6 +1418,7 @@ button {
 
 .meaux-retour-ponct {
   margin-left: 0.3rem;
+  font-size: 0.62em;
   opacity: 0.85;
 }
 
@@ -1542,6 +1543,29 @@ button {
   padding: 0.2rem 0;
   color: var(--texte-muted);
   font-size: 0.75rem;
+}
+
+/* Seules les lignes du popup ("Tous les trajets") sont sélectionnables. */
+.gym-alternative[role="button"] {
+  cursor: pointer;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  margin-left: -0.4rem;
+  margin-right: -0.4rem;
+  border-radius: var(--rayon-sm);
+  transition: background var(--transition), color var(--transition);
+}
+
+@media (hover: hover) {
+  .gym-alternative[role="button"]:hover {
+    background: var(--surface-2);
+    color: var(--texte);
+  }
+}
+
+.gym-alternative[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .gym-alternative .icone {
@@ -1875,31 +1899,6 @@ button {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-}
-
-.carte-trafic-info-bouton {
-  top: 12px;
-  right: 12px;
-  width: 30px;
-  height: 30px;
-  border: none;
-  background: none;
-  color: var(--texte-muted);
-  transition: color var(--transition);
-}
-
-@media (hover: hover) {
-  .carte-trafic-info-bouton:hover {
-    color: var(--texte);
-  }
-}
-
-.carte-trafic-info-bouton:focus-visible {
-  color: var(--texte);
-}
-
-.carte-trafic-info-bouton.actif {
-  color: var(--danger);
 }
 
 .carte-trafic-travaux-bouton {
@@ -2291,8 +2290,20 @@ button {
     font-size: 2.75rem;
   }
   .gym-colonnes {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.4rem;
+  }
+  .gym-col span {
+    font-size: 0.6rem;
+  }
+  .gym-col strong {
+    font-size: 1.05rem;
+  }
+  .gym-col strong.gym-col-verdict {
+    font-size: 0.9rem;
+  }
+  .gym-col-duree,
+  .gym-col-train {
+    font-size: 0.62rem;
   }
   .carte-trafic {
     flex-direction: column;
@@ -2303,6 +2314,11 @@ button {
   }
   .carte-trafic {
     min-height: 0;
+  }
+  /* Réserve la place des icônes coin (info/travaux) pour que le titre,
+     sur deux lignes à cette largeur, ne passe jamais dessous. */
+  .carte-trafic-texte {
+    padding-right: 2.75rem;
   }
 }
 

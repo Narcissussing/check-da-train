@@ -5,15 +5,74 @@ let minuterieRotation = null;
 let minuterieReprise = null;
 let enPause = false;
 
+// Sélection verrouillée : une fenêtre choisie dans la liste reste affichée
+// telle quelle (rotation suspendue) jusqu'à sa propre heure d'expiration
+// (`data-expire`, le dernier "quitter la salle" possible de ce créneau),
+// même si le rafraîchissement 60s cesse de l'inclure côté serveur (son aller
+// est alors déjà passé). On garde un clone HTML pour pouvoir la réafficher
+// telle quelle après une fusion DOM qui l'aurait écrasée ou retirée.
+let verrouille = null;
+
+function verrouillageValide() {
+  return Boolean(verrouille) && Date.now() < verrouille.expireMs;
+}
+
+function appliquerVerrouillage() {
+  const conteneur = document.querySelector(".gym-fenetres");
+  if (!conteneur) return;
+
+  let cible = verrouille.element;
+  if (!cible || !cible.isConnected) {
+    cible = verrouille.clone.cloneNode(true);
+    conteneur.appendChild(cible);
+    verrouille.element = cible;
+  } else if (cible.innerHTML !== verrouille.clone.innerHTML) {
+    // La fusion DOM du rafraîchissement 60s a réécrit son contenu : on le
+    // restaure tel qu'il était au moment de la sélection.
+    cible.innerHTML = verrouille.clone.innerHTML;
+  }
+  cible.className = "gym-fenetre gym-fenetre-active";
+  cible.removeAttribute("data-etat");
+
+  [].slice.call(document.querySelectorAll(".gym-fenetre")).forEach(function (f) {
+    if (f === cible) return;
+    f.classList.remove("gym-fenetre-active");
+    f.setAttribute("data-etat", "precedente");
+  });
+}
+
 function demarrerRotationGym() {
   clearTimeout(minuterieRotation);
-  if (enPause) return;
+
+  if (verrouille && !verrouillageValide()) {
+    // Le créneau verrouillé vient d'expirer : on ne reprend pas la
+    // rotation à partir de lui, on repart du choix par défaut du serveur.
+    if (verrouille.element) {
+      verrouille.element.classList.remove("gym-fenetre-active");
+    }
+    verrouille = null;
+  }
+
+  // Réapplique la vitrine verrouillée par-dessus l'état "normal" qu'on vient
+  // de calculer, sans empêcher la liste compacte de continuer sa rotation
+  // en dessous — seule la vitrine est figée, pas le reste de la carte.
+  const reverrouiller = function () {
+    if (verrouillageValide()) appliquerVerrouillage();
+  };
+
+  if (enPause) {
+    reverrouiller();
+    return;
+  }
 
   const fenetres = [].slice.call(document.querySelectorAll(".gym-fenetre"));
   const lignes = [].slice.call(
     document.querySelectorAll(".gym-alternative[data-index]"),
   );
-  if (fenetres.length === 0) return;
+  if (fenetres.length === 0) {
+    reverrouiller();
+    return;
+  }
 
   const pilesParFenetre = fenetres.map(function (fenetre) {
     return [].slice.call(fenetre.querySelectorAll(".gym-sous-stack"));
@@ -24,7 +83,6 @@ function demarrerRotationGym() {
   const totalEtapes = comptesSousParFenetre.reduce(function (a, b) {
     return a + b;
   }, 0);
-  if (totalEtapes <= 1) return;
 
   const compteFenetres = fenetres.length;
 
@@ -41,6 +99,7 @@ function demarrerRotationGym() {
       const estActive = Number(ligne.dataset.index) === index;
       ligne.classList.toggle("gym-alternative-cachee", estActive);
     });
+    reverrouiller();
   };
 
   const appliquerSous = function (indexFenetre, indexSous) {
@@ -60,6 +119,8 @@ function demarrerRotationGym() {
 
   appliquerFenetre(indexFenetre);
   appliquerSous(indexFenetre, indexSous);
+
+  if (totalEtapes <= 1) return;
 
   const avancer = function () {
     const totalSous = comptesSousParFenetre[indexFenetre];
@@ -102,6 +163,56 @@ function configurerPauseRotation() {
   });
 
   document.addEventListener("click", reprendre);
+}
+
+// Choisir une ligne dans le popup "Tous les trajets" verrouille ce trajet
+// précis en vitrine (voir `verrouille` ci-dessus) jusqu'à sa propre
+// expiration, puis referme le popup pour révéler la vitrine mise à jour.
+function configurerSelectionFenetre() {
+  const liste = document.querySelector(".gym-popup-liste");
+  if (!liste) return;
+
+  const selectionner = function (ligne) {
+    const expireIso = ligne.dataset.expire;
+    const expireMs = expireIso ? new Date(expireIso).getTime() : NaN;
+    if (!Number.isFinite(expireMs) || expireMs <= Date.now()) return;
+
+    const gabarit = ligne.querySelector("template");
+    if (!gabarit) return;
+
+    clearTimeout(minuterieRotation);
+    clearTimeout(minuterieReprise);
+    enPause = false;
+
+    const clone = document.createElement("div");
+    clone.className = "gym-fenetre gym-fenetre-active";
+    clone.appendChild(gabarit.content.cloneNode(true));
+
+    verrouille = { expireMs, clone, element: null };
+    demarrerRotationGym();
+
+    const popup = ligne.closest(".popup-fond");
+    const bouton =
+      popup && document.querySelector(`[data-toggle-target="${popup.id}"]`);
+    if (popup && bouton && window.disclosure) {
+      window.disclosure.fermer(bouton, popup);
+    }
+  };
+
+  liste.addEventListener("click", function (event) {
+    const ligne = event.target.closest(".gym-alternative[role='button']");
+    if (!ligne) return;
+    event.stopPropagation();
+    selectionner(ligne);
+  });
+
+  liste.addEventListener("keydown", function (event) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const ligne = event.target.closest(".gym-alternative[role='button']");
+    if (!ligne) return;
+    event.preventDefault();
+    selectionner(ligne);
+  });
 }
 
 const BLAGUES_DIMANCHE = [
@@ -197,6 +308,7 @@ function configurerBoutonTermine() {
 
 demarrerRotationGym();
 configurerPauseRotation();
+configurerSelectionFenetre();
 configurerBoutonTermine();
 
 window.gymRotation = { redemarrer: demarrerRotationGym };
