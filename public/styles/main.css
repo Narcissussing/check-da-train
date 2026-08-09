@@ -331,7 +331,7 @@ button {
   background: var(--carte);
   border: 1px solid var(--carte-border);
   border-radius: var(--rayon);
-  padding: 24px;
+  padding: 15px;
   box-shadow: var(--ombre);
   animation: apparition 0.25s ease;
 }
@@ -426,8 +426,8 @@ button {
   display: grid;
   /* Le minimum nul empêche les destinations d'élargir leur colonne. */
   grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr);
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 15px;
+  margin-bottom: 15px;
   /* Un panneau ouvert ne doit pas étirer les cartes voisines. */
   align-items: start;
 }
@@ -1344,7 +1344,7 @@ button {
    ────────────────────────────────────────── */
 
 .carte-gym {
-  margin-bottom: 24px;
+  margin-bottom: 15px;
 }
 
 .carte-gym-entete {
@@ -1362,6 +1362,11 @@ button {
   align-items: center;
 }
 
+/* Marges car Safari iOS 12 ne gère pas `gap` sur flexbox. */
+.gym-entete-droite > * + * {
+  margin-left: 0.5rem;
+}
+
 .meaux-meteo {
   display: inline-flex;
   align-items: center;
@@ -1377,12 +1382,52 @@ button {
   margin-right: 0.3rem;
 }
 
+/* Prochain retour Meaux → Trilport (LOOK-43) : mêmes seuils de retard que
+   les cartes départ/arrivée (`retardNiveau`), mais bleu au repos plutôt que
+   vert/rouge — ce badge n'est ni un départ ni une arrivée du trajet aller. */
+.meaux-retour {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  color: var(--info);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.meaux-retour .icone {
+  margin-right: 0.3rem;
+}
+
+.meaux-retour-moyen {
+  color: var(--avertissement);
+}
+
+.meaux-retour-fort {
+  color: var(--danger);
+}
+
+.meaux-retour-indisponible,
+.meaux-retour-attente,
+.meaux-retour-bientot,
+.meaux-retour-termine {
+  color: var(--texte-dim);
+  font-weight: 500;
+}
+
+.meaux-retour-ponct {
+  margin-left: 0.3rem;
+  opacity: 0.85;
+}
+
 .gym-colonnes {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 1.1rem;
-  padding-top: 1.1rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.15rem;
   border-top: 1px solid var(--carte-border);
 }
 
@@ -1409,7 +1454,7 @@ button {
 
 .gym-col strong {
   display: block;
-  margin-top: 0.3rem;
+  margin-top: 0.2rem;
   font-weight: 700;
   font-size: 1.3rem;
 }
@@ -1453,7 +1498,7 @@ button {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  margin-top: 0.3rem;
+  margin-top: 0.2rem;
   color: var(--texte-dim);
   font-size: 0.75rem;
 }
@@ -1474,8 +1519,8 @@ button {
 
 /* Deux alternatives compactes, sans rendu de tableau. */
 .gym-alternatives {
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
+  margin-top: 0.3rem;
+  padding-top: 0.35rem;
   border-top: 1px solid var(--carte-border);
 }
 

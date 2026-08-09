@@ -99,7 +99,17 @@
       </li>
       <% }) %>
     </ul>
-    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif || gymDemoActif) { %>
+    <ul class="barre-demo-groupe">
+      <% locals.boutonsRetourMeaux.forEach(function (bouton) { %>
+      <li>
+        <a href="<%= bouton.href %>" class="barre-demo-bouton<%= bouton.actif ? ' actif' : '' %>">
+          <%- icone("train", { taille: 14 }) %>
+          <%= bouton.label %>
+        </a>
+      </li>
+      <% }) %>
+    </ul>
+    <% if (meteoDemoActif || traficDemoActif || serviceDemoActif || retardDemoActif || pluieDemoActif || gymDemoActif || retourMeauxDemoActif) { %>
     <a href="/?demo=1" class="barre-demo-bouton barre-demo-reinit">Réinitialiser</a>
     <% } %>
   </section>
@@ -261,6 +271,19 @@
         <span class="meaux-meteo">
           <%- icone(iconeMeteo(meteos[1].current.weather_code, meteos[1].current.is_day === 1), { taille: 15, temperature: meteos[1].current.temperature_2m }) %>
           Meaux <%= Math.round(meteos[1].current.temperature_2m) %>°
+        </span>
+        <% } %>
+        <%# Prochain retour Meaux → Trilport, toujours affiché (LOOK-43). %>
+        <% if (departsRetourEntete && departsRetourEntete.length > 0) { %>
+        <span class="meaux-retour<%= departsRetourEntete[0].retardNiveau ? " meaux-retour-" + departsRetourEntete[0].retardNiveau : "" %>">
+          <%- icone("train", { taille: 13 }) %>
+          <%= departsRetourEntete[0].heureFormatee %>
+          <% if (departsRetourEntete[0].ponctualiteLibelle) { %><span class="meaux-retour-ponct"><%= departsRetourEntete[0].ponctualiteLibelle %></span><% } %>
+        </span>
+        <% } else { %>
+        <span class="meaux-retour meaux-retour-<%= statutRetourMeaux %>">
+          <%- icone("train", { taille: 13 }) %>
+          <%= statutRetourMeaux === "indisponible" ? "Indisponible" : statutRetourMeaux === "attente" ? "En attente" : statutRetourMeaux === "bientot" ? "Reprise bientôt" : "Fin de service" %>
         </span>
         <% } %>
         <% if (trajetsGymTous && trajetsGymTous.length > 0) { %>

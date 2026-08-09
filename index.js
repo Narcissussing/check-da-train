@@ -169,6 +169,10 @@ const PHASES_SERVICE_DEMO = ["actif", "bientot", "termine"];
 // Retards de démonstration pour les deux seuils visuels.
 const NIVEAUX_RETARD_DEMO = ["leger", "fort"];
 
+// Prévisualiser le badge retour Meaux (LOOK-43) à chaque seuil de couleur.
+const NIVEAUX_RETOUR_MEAUX_DEMO = ["aLheure", "moyen", "fort", "fin"];
+const ECARTS_RETOUR_MEAUX_DEMO = { moyen: 6, fort: 12 };
+
 const LABELS_METEO_DEMO = {
   soleil: "Soleil",
   "soleil-chaud": "Soleil très chaud",
@@ -195,6 +199,13 @@ const LABELS_SERVICE_DEMO = {
 const LABELS_RETARD_DEMO = {
   leger: "Retard léger · 5 min",
   fort: "Retard rouge · 10 min+",
+};
+
+const LABELS_RETOUR_MEAUX_DEMO = {
+  aLheure: "Retour Meaux : à l'heure",
+  moyen: "Retour Meaux : retard 6 min",
+  fort: "Retour Meaux : retard 12 min",
+  fin: "Retour Meaux : fin de service",
 };
 
 // Délais de démonstration utilisant le formatage réel.
@@ -341,6 +352,7 @@ function construireBoutonsDemo(
   retardDemoActif,
   pluieDemoActif,
   gymDemoActif,
+  retourMeauxDemoActif,
 ) {
   const boutonsMeteo = Object.keys(SCENES_METEO_DEMO).map((cle) => {
     const actif = meteoDemoActif === cle;
@@ -351,6 +363,7 @@ function construireBoutonsDemo(
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_METEO_DEMO[cle],
@@ -375,6 +388,7 @@ function construireBoutonsDemo(
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_TRAFIC_DEMO[cle],
@@ -392,6 +406,7 @@ function construireBoutonsDemo(
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_SERVICE_DEMO[cle],
@@ -409,6 +424,7 @@ function construireBoutonsDemo(
     if (!actif) params.set("retard", cle);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_RETARD_DEMO[cle],
@@ -426,6 +442,7 @@ function construireBoutonsDemo(
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (!actif) params.set("pluie", cle);
     if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_PLUIE_DEMO[cle],
@@ -443,9 +460,28 @@ function construireBoutonsDemo(
     if (retardDemoActif) params.set("retard", retardDemoActif);
     if (pluieDemoActif) params.set("pluie", pluieDemoActif);
     if (!actif) params.set("gym", cle);
+    if (retourMeauxDemoActif) params.set("retourMeaux", retourMeauxDemoActif);
     return {
       cle,
       label: LABELS_GYM_DEMO[cle],
+      href: `/?${params.toString()}`,
+      actif,
+    };
+  });
+
+  const boutonsRetourMeaux = NIVEAUX_RETOUR_MEAUX_DEMO.map((cle) => {
+    const actif = retourMeauxDemoActif === cle;
+    const params = new URLSearchParams({ demo: "1" });
+    if (meteoDemoActif) params.set("meteo", meteoDemoActif);
+    if (traficDemoActif) params.set("trafic", traficDemoActif);
+    if (serviceDemoActif) params.set("service", serviceDemoActif);
+    if (retardDemoActif) params.set("retard", retardDemoActif);
+    if (pluieDemoActif) params.set("pluie", pluieDemoActif);
+    if (gymDemoActif) params.set("gym", gymDemoActif);
+    if (!actif) params.set("retourMeaux", cle);
+    return {
+      cle,
+      label: LABELS_RETOUR_MEAUX_DEMO[cle],
       href: `/?${params.toString()}`,
       actif,
     };
@@ -458,6 +494,7 @@ function construireBoutonsDemo(
     boutonsRetard,
     boutonsPluie,
     boutonsGym,
+    boutonsRetourMeaux,
   };
 }
 
@@ -511,6 +548,37 @@ function creerTrainsDemo(retardDemoActif) {
       creerVisite("Château-Thierry", 64, 0, "arrivee"),
     ]),
   };
+}
+
+// Un seul train Meaux → Château-Thierry synthétique, au seuil de retard demandé.
+function creerRetourMeauxDemo(cle) {
+  if (cle === "fin") return [];
+
+  const ecart = ECARTS_RETOUR_MEAUX_DEMO[cle] ?? 0;
+  const heure = new Date(Date.now() + 20 * 60_000);
+  const heurePrevue = new Date(heure.getTime() - ecart * 60_000);
+
+  return extraireDeparts({
+    Siri: {
+      ServiceDelivery: {
+        StopMonitoringDelivery: [
+          {
+            MonitoredStopVisit: [
+              {
+                MonitoredVehicleJourney: {
+                  DestinationName: [{ value: "Château-Thierry" }],
+                  MonitoredCall: {
+                    ExpectedDepartureTime: heure.toISOString(),
+                    AimedDepartureTime: heurePrevue.toISOString(),
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  });
 }
 
 app.get("/", async (req, res) => {
@@ -621,6 +689,11 @@ app.get("/", async (req, res) => {
         ? req.query.gym
         : null;
 
+    const retourMeauxDemoActif =
+      modeDemo && NIVEAUX_RETOUR_MEAUX_DEMO.includes(req.query.retourMeaux)
+        ? req.query.retourMeaux
+        : null;
+
     // Distingue les incidents du trajet de ceux du reste de la ligne.
     const perturbations = messages.filter(
       (m) =>
@@ -697,12 +770,29 @@ app.get("/", async (req, res) => {
       "Château-Thierry",
       "La Ferté-Milon",
     ]);
+    // Prochain retour Meaux → Trilport affiché en en-tête gym (LOOK-43) :
+    // même gating que les cartes départ/arrivée, indépendant des trajets
+    // gym eux-mêmes qui restent basés sur `departsRetour` non filtré.
+    let departsRetourEntete =
+      serviceDemoActif && serviceDemoActif !== "actif" ? [] : departsRetour;
+    if (retourMeauxDemoActif) {
+      departsRetourEntete = creerRetourMeauxDemo(retourMeauxDemoActif);
+    }
 
     // Départs utiles depuis Trilport
     const departsAller = filtrerDeparts(departsTrilport, [
       "Meaux",
       "Paris Est",
     ]);
+
+    const statutRetourMeaux =
+      retourMeauxDemoActif === "fin"
+        ? "termine"
+        : statutService(
+            departsRetourEntete,
+            modeDemo || meauxDisponible,
+            phaseServiceActuelle,
+          );
 
     const statutDeparts = statutService(
       departsTrilportDepart,
@@ -734,7 +824,10 @@ app.get("/", async (req, res) => {
       gymDonneesDisponibles = gymDemoActif !== "indisponible";
       bornesGym = { heureMin: "0h00", heureMax: "23h59", avecAttendus: false };
     }
-    const trajetsGymTous = gymDonneesDisponibles
+    // Les recommandations du soir restent cachées pendant la nuit et ne
+    // réapparaissent qu'à partir de 7h (les scénarios démo restent testables).
+    const gymDansPlageAffichage = Boolean(gymDemoActif) || heureActuelleParis() >= 7;
+    const trajetsGymTous = gymDonneesDisponibles && gymDansPlageAffichage
       ? construireTrajetsGym(
           departsAllerGym,
           departsRetourGym,
@@ -772,6 +865,7 @@ app.get("/", async (req, res) => {
       boutonsRetard,
       boutonsPluie,
       boutonsGym,
+      boutonsRetourMeaux,
     } = construireBoutonsDemo(
       meteoDemoActif,
       traficDemoActif,
@@ -779,6 +873,7 @@ app.get("/", async (req, res) => {
       retardDemoActif,
       pluieDemoActif,
       gymDemoActif,
+      retourMeauxDemoActif,
     );
     res.render("index.ejs", {
       meteos,
@@ -788,11 +883,13 @@ app.get("/", async (req, res) => {
       estDimancheAujourdhui,
       departsTrilportDepart,
       arrivesTrilport,
+      departsRetourEntete,
       texteAlerte,
       detailAlerte,
       formaterDatePerturbation,
       statutDeparts,
       statutArrivees,
+      statutRetourMeaux,
       traduireCodeMeteo,
       niveauTrafic,
       phaseServiceActuelle,
@@ -807,12 +904,14 @@ app.get("/", async (req, res) => {
       retardDemoActif,
       pluieDemoActif,
       gymDemoActif,
+      retourMeauxDemoActif,
       boutonsMeteo,
       boutonsTrafic,
       boutonsService,
       boutonsRetard,
       boutonsPluie,
       boutonsGym,
+      boutonsRetourMeaux,
       icone,
       iconeMeteo,
       iconeVerdict,
@@ -836,6 +935,8 @@ app.get("/", async (req, res) => {
       trajetsGymTous: [],
       gymCacheAujourdhui: false,
       estDimancheAujourdhui: false,
+      departsRetourEntete: [],
+      statutRetourMeaux: "indisponible",
       texteAlerte: null,
       detailAlerte: null,
       erreur: error.message,
