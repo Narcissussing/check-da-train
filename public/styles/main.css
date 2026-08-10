@@ -2154,6 +2154,10 @@ button {
   max-width: 420px;
   max-height: 80vh;
   overflow-y: auto;
+  /* Défilement inertiel sur iOS ancien ; sans ça, un tap dans une longue
+     liste scrollable (ex. le popup "Tous les trajets") peut être mal
+     interprété par WebKit, surtout juste après un défilement. */
+  -webkit-overflow-scrolling: touch;
   background: var(--carte);
   border: 1px solid var(--carte-border);
   border-radius: var(--rayon);
