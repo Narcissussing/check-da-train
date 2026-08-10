@@ -41,8 +41,60 @@ function appliquerVerrouillage() {
   });
 }
 
+// Reprend un verrouillage déjà actif côté serveur (posé depuis un autre
+// onglet/appareil, ou par ce même onglet lors d'un rafraîchissement
+// précédent) : le popup porte l'info tant qu'il reste valide (voir
+// `gymVerrouilleActif` dans index.js), donc il suffit de comparer à ce
+// qu'on affiche déjà et de retrouver la ligne correspondante si besoin.
+function hydraterVerrouillageServeur() {
+  const popup = document.getElementById("gym-popup");
+  if (!popup) return;
+
+  const aller = popup.dataset.verrouilleAller;
+  const retour = popup.dataset.verrouilleRetour;
+  if (!aller || !retour) return;
+  if (verrouille && verrouille.aller === aller && verrouille.retour === retour) {
+    return;
+  }
+
+  const ligne = document.querySelector(
+    '.gym-popup-liste .gym-alternative[data-aller="' +
+      aller +
+      '"][data-retour="' +
+      retour +
+      '"]',
+  );
+  if (ligne) verrouillerDepuisLigne(ligne);
+}
+
+// Construit le verrouillage à partir d'une ligne du popup (son <template>
+// porte le rendu exact de ce sous-créneau) ; ne déclenche pas elle-même de
+// nouveau cycle de rotation, l'appelant s'en charge.
+function verrouillerDepuisLigne(ligne) {
+  const expireIso = ligne.dataset.expire;
+  const expireMs = expireIso ? new Date(expireIso).getTime() : NaN;
+  if (!Number.isFinite(expireMs) || expireMs <= Date.now()) return false;
+
+  const gabarit = ligne.querySelector("template");
+  if (!gabarit) return false;
+
+  const clone = document.createElement("div");
+  clone.className = "gym-fenetre gym-fenetre-active";
+  clone.appendChild(gabarit.content.cloneNode(true));
+
+  verrouille = {
+    expireMs,
+    clone,
+    element: null,
+    aller: ligne.dataset.aller,
+    retour: ligne.dataset.retour,
+  };
+  return true;
+}
+
 function demarrerRotationGym() {
   clearTimeout(minuterieRotation);
+  hydraterVerrouillageServeur();
 
   if (verrouille && !verrouillageValide()) {
     // Le créneau verrouillé vient d'expirer : on ne reprend pas la
@@ -167,29 +219,33 @@ function configurerPauseRotation() {
 
 // Choisir une ligne dans le popup "Tous les trajets" verrouille ce trajet
 // précis en vitrine (voir `verrouille` ci-dessus) jusqu'à sa propre
-// expiration, puis referme le popup pour révéler la vitrine mise à jour.
+// expiration, referme le popup, et prévient le serveur (`/gym/verrouiller`)
+// pour que tout autre onglet/appareil affichant le tableau de bord reprenne
+// le même verrouillage à son prochain rafraîchissement 60s, sans action de
+// sa part — même mécanisme que "séance faite" (`/gym/terminer`).
 function configurerSelectionFenetre() {
   const liste = document.querySelector(".gym-popup-liste");
   if (!liste) return;
 
   const selectionner = function (ligne) {
-    const expireIso = ligne.dataset.expire;
-    const expireMs = expireIso ? new Date(expireIso).getTime() : NaN;
-    if (!Number.isFinite(expireMs) || expireMs <= Date.now()) return;
-
-    const gabarit = ligne.querySelector("template");
-    if (!gabarit) return;
-
     clearTimeout(minuterieRotation);
     clearTimeout(minuterieReprise);
     enPause = false;
 
-    const clone = document.createElement("div");
-    clone.className = "gym-fenetre gym-fenetre-active";
-    clone.appendChild(gabarit.content.cloneNode(true));
-
-    verrouille = { expireMs, clone, element: null };
+    if (!verrouillerDepuisLigne(ligne)) return;
     demarrerRotationGym();
+
+    fetch("/gym/verrouiller" + location.search, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        allerHeure: ligne.dataset.aller,
+        retourHeure: ligne.dataset.retour,
+        expireISO: ligne.dataset.expire,
+      }),
+    }).catch(function (error) {
+      console.warn("Verrouillage gym non partagé :", error.message);
+    });
 
     const popup = ligne.closest(".popup-fond");
     const bouton =

@@ -368,7 +368,7 @@
   </section>
 
   <% if (trajetsGymTous && trajetsGymTous.length > 0) { %>
-  <div class="disclosure popup-fond" id="gym-popup">
+  <div class="disclosure popup-fond" id="gym-popup"<% if (gymVerrouilleActif) { %> data-verrouille-aller="<%= gymVerrouilleActif.allerHeure %>" data-verrouille-retour="<%= gymVerrouilleActif.retourHeure %>"<% } %>>
     <div class="popup-boite">
       <button class="popup-fermer" type="button" data-close-target="gym-popup" aria-label="Fermer">
         <%- icone("fermer", { taille: 16 }) %>
@@ -378,7 +378,7 @@
         <% trajetsGymTous.forEach((groupe) => { groupe.sousCreneaux.forEach((t) => { %>
         <%# Sélectionnable : verrouille ce trajet précis en vitrine jusqu'à
             son heure de départ salle (data-expire), voir gym.js. %>
-        <li class="gym-alternative" data-expire="<%= t.departSalleHeure %>" role="button" tabindex="0">
+        <li class="gym-alternative" data-expire="<%= t.departSalleHeure %>" data-aller="<%= t.aller.heure %>" data-retour="<%= t.retour.heure %>" role="button" tabindex="0">
           <%- icone(iconeVerdict(t.meteo.verdicts), { taille: 12 }) %>
           <span class="gym-alternative-meteo"><%= t.meteo.resume.replace(/^\S+\s*/u, "") %></span>
           <span class="gym-alternative-heures"><%= t.depart.heureFormatee %> → <%= t.departSalleFormatee %></span>

@@ -33,6 +33,30 @@ const port = process.env.PORT || 3000;
 const MODE_DEMO_AUTORISE = process.env.ENABLE_DEMO_MODE === "true";
 
 let gymTermineDate = null;
+// Sélection verrouillée d'un trajet gym précis (LOOK-44), partagée entre
+// tous les onglets/appareils qui consultent le tableau de bord — même
+// principe que `gymTermineDate` ci-dessus : état mémoire côté serveur, lu et
+// rendu à chaque GET /, donc propagé automatiquement au rafraîchissement 60s
+// de chacun sans action manuelle de leur part.
+let gymVerrouille = null;
+
+app.post("/gym/verrouiller", express.json(), (req, res) => {
+  const { allerHeure, retourHeure, expireISO } = req.body || {};
+  const expireMs = expireISO ? new Date(expireISO).getTime() : NaN;
+
+  if (
+    typeof allerHeure !== "string" ||
+    typeof retourHeure !== "string" ||
+    !Number.isFinite(expireMs) ||
+    expireMs <= Date.now()
+  ) {
+    res.status(400).json({ ok: false });
+    return;
+  }
+
+  gymVerrouille = { allerHeure, retourHeure, expireMs };
+  res.json({ ok: true });
+});
 
 app.post("/gym/terminer", express.json(), (req, res) => {
   const gymDemoActif =
@@ -253,8 +277,14 @@ const LABELS_GYM_DEMO = {
 };
 
 function creerTrainsGymDemo(scenario) {
+  // Arrondi à la minute (pas Date.now() brut) : deux requêtes rapprochées
+  // (ex. deux appareils consultant le tableau de bord à quelques secondes
+  // d'écart) doivent voir des trains démo identiques, sinon une sélection
+  // verrouillée (LOOK-44, identifiée par l'horaire exact du train) ne
+  // pourrait jamais se retrouver d'une requête à l'autre en mode démo.
+  const maintenant = Math.floor(Date.now() / 60_000) * 60_000;
   const visite = (destination, dansMinutes, ecartMinutes = 0) => {
-    const heure = new Date(Date.now() + dansMinutes * 60_000);
+    const heure = new Date(maintenant + dansMinutes * 60_000);
     const heurePrevue = new Date(heure.getTime() - ecartMinutes * 60_000);
     return {
       MonitoredVehicleJourney: {
@@ -836,6 +866,10 @@ app.get("/", async (req, res) => {
         )
       : [];
     const trajetsGym = trajetsGymTous.slice(0, 3);
+    const gymVerrouilleActif =
+      gymVerrouille && Date.now() < gymVerrouille.expireMs
+        ? gymVerrouille
+        : null;
     const bascauleIgnoree = gymDemoActif && gymDemoActif !== "dimanche";
     const gymBasculeAujourdhui =
       !bascauleIgnoree && gymTermineDate === dateAujourdhuiParis();
@@ -881,6 +915,7 @@ app.get("/", async (req, res) => {
       trajetsGymTous,
       gymCacheAujourdhui,
       estDimancheAujourdhui,
+      gymVerrouilleActif,
       departsTrilportDepart,
       arrivesTrilport,
       departsRetourEntete,
@@ -935,6 +970,7 @@ app.get("/", async (req, res) => {
       trajetsGymTous: [],
       gymCacheAujourdhui: false,
       estDimancheAujourdhui: false,
+      gymVerrouilleActif: null,
       departsRetourEntete: [],
       statutRetourMeaux: "indisponible",
       texteAlerte: null,
