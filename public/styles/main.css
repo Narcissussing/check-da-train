@@ -478,6 +478,15 @@ button {
   height: 100%;
   color: var(--texte);
   pointer-events: none;
+  transition: color 0.4s ease;
+}
+
+/* Sur un tap, le calque de fond entier (pluie, nuage, neige, brouillard,
+   orage, soleil) prend temporairement la couleur du vrai icône météo
+   (--couleur-icone-meteo, posée sur .carte-meteo) au lieu du gris —
+   s'ajoute à la réaction de vitesse existante, ne la remplace pas. */
+.carte-meteo.couleur-tap-active .meteo-fond {
+  color: var(--couleur-icone-meteo);
 }
 
 .meteo-fond-soleil .soleil-lueur {
@@ -1482,6 +1491,12 @@ button {
 
 .gym-alternative-heures .gym-estime {
   margin-left: 0.25rem;
+}
+
+.gym-estime-ligne {
+  display: block;
+  margin-top: 0.15rem;
+  margin-left: 0;
 }
 
 .gym-col-verdict .icone {

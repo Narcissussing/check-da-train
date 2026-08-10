@@ -6,7 +6,7 @@ let minuterieAcceleration;
 
 function nettoyerAcceleration(carte) {
   clearTimeout(minuterieAcceleration);
-  carte.classList.remove("vitesse-active");
+  carte.classList.remove("vitesse-active", "couleur-tap-active");
 }
 
 // Un seul multiplicateur (--vitesse-meteo, lu par toutes les animations
@@ -17,7 +17,7 @@ function nettoyerAcceleration(carte) {
 // changements = moins d'à-coups sur du matériel ancien.
 function accelererScene(carte) {
   nettoyerAcceleration(carte);
-  carte.classList.add("vitesse-active");
+  carte.classList.add("vitesse-active", "couleur-tap-active");
   minuterieAcceleration = setTimeout(() => {
     nettoyerAcceleration(carte);
   }, DUREE_REACTION_MS);
