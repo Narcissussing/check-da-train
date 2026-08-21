@@ -6,11 +6,17 @@ const SELECTEUR_ANIMATIONS_ALERTE =
   ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-info, .carte-trafic-ailleurs, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
 
 function synchroniserAnimationsAlerte(conteneur = document) {
+  const elements = [...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE)];
+  const retardCommun = `-${Date.now() % 1400}ms`;
+  elements.forEach((element) => {
+    element.style.setProperty("--alerte-delay", retardCommun);
+  });
+
   if (typeof document.timeline === "undefined") return;
 
   // `subtree` inclut les pseudo-éléments lumineux.
   const animations = [];
-  [...conteneur.querySelectorAll(SELECTEUR_ANIMATIONS_ALERTE)]
+  elements
     .filter((element) => typeof element.getAnimations === "function")
     .forEach((element) => {
       element.getAnimations({ subtree: true }).forEach((animation) => {

@@ -615,13 +615,15 @@ function creerRetourMeauxDemo(cle) {
 app.get("/", async (req, res) => {
   try {
     const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
-    const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo, resultatBusHayette, resultatBusMeaux] =
+    const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo, resultatBusHayette, resultatBusFauvettes, resultatBusSaintsPeres, resultatBusMeaux] =
       await Promise.allSettled([
         recupererProchainsPassages("STIF:StopArea:SP:43161:"),
         recupererProchainsPassages("STIF:StopArea:SP:47962:"),
         recupererInfosTrafic(),
         obtenirMeteo(),
         recupererProchainsPassages("STIF:StopArea:SP:427141:"),
+        recupererProchainsPassages("STIF:StopArea:SP:478203:"),
+        recupererProchainsPassages("STIF:StopArea:SP:10863:"),
         recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
       ]);
 
@@ -804,7 +806,9 @@ app.get("/", async (req, res) => {
       "La Ferté-Milon",
     ]);
     const busRetour = construireBusRetour(
-      resultatBusHayette.status === "fulfilled" ? resultatBusHayette.value : null,
+      [resultatBusHayette, resultatBusFauvettes, resultatBusSaintsPeres].map(
+        (resultat) => ({ data: resultat.status === "fulfilled" ? resultat.value : null }),
+      ),
       resultatBusMeaux.status === "fulfilled" ? resultatBusMeaux.value : null,
       departsRetour,
     );

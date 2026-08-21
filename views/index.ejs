@@ -270,56 +270,56 @@
       </button>
       <p class="popup-titre">On Air → Gare de Meaux</p>
 
-      <% if (busRetour.principaux.length > 0) { %>
       <div class="bus-principaux">
-        <% busRetour.principaux.forEach((bus) => { %>
-        <article class="bus-trajet">
+        <% busRetour.principaux.forEach((groupe) => { %>
+        <article class="bus-trajet bus-groupe" data-ligne="<%= groupe.ligne %>">
           <div class="bus-trajet-entete">
-            <strong class="bus-ligne" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-            <% if (bus.train) { %><span class="bus-correspondance"><%- icone("train", { taille: 13 }) %> <%= bus.train %><% if (bus.attenteTrain !== null) { %> · <%= bus.attenteTrain %> min<% } %></span><% } %>
-          </div>
-          <p class="bus-depart-onair">Quitter On Air à <strong><%= bus.departOnAirFormate %></strong></p>
-
-          <div class="bus-horaires">
-            <div>
-              <span>La Hayette</span>
-              <strong><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %> min</em><% } %></strong>
-              <small>temps réel<% if (bus.departPrevuFormate && bus.departPrevuFormate !== bus.departFormate) { %> · prévu <%= bus.departPrevuFormate %><% } %></small>
-            </div>
-            <div>
-              <span>Gare de Meaux</span>
-              <strong><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %> min</em><% } %></strong>
-              <small><%= bus.arriveeLive ? "temps réel" : "estimé" %><% if (bus.arriveePrevueFormatee !== bus.arriveeFormatee) { %> · prévu <%= bus.arriveePrevueFormatee %><% } %></small>
-            </div>
+            <strong class="bus-ligne" style="--ligne-fond:<%= groupe.couleur %>;--ligne-texte:<%= groupe.couleurTexte %>"><%= groupe.ligne %></strong>
+            <span class="bus-identite"><span class="bus-verrou" aria-hidden="true"><%- icone("coche", { taille: 13 }) %></span><small class="bus-compte"><%= groupe.options && groupe.options[0] ? groupe.options[0].compteARebours : "—" %></small></span>
           </div>
 
-          <div class="bus-parcours" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
-            <span class="bus-rail"></span>
-            <span class="bus-progression"></span>
-            <span class="bus-arret bus-arret-hayette"></span>
-            <span class="bus-arret bus-arret-meaux"></span>
-            <span class="bus-mobile"><%- icone("bus", { taille: 19 }) %></span>
-            <span class="bus-etat"></span>
+          <% if (groupe.options.length > 0) { %>
+          <div class="bus-choix bus-choix-<%= Math.min(groupe.options.length, 3) %>" aria-label="Choisir un passage <%= groupe.ligne %>">
+            <% groupe.options.forEach((bus, index) => { %>
+            <button type="button" data-bus-id="<%= bus.id %>" aria-pressed="false"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em>+<%= bus.retardHayette %></em><% } %></button>
+            <% }) %>
           </div>
+
+          <% groupe.options.forEach((bus, index) => { %>
+          <div class="bus-detail-option<%= index === 0 ? " bus-detail-visible" : "" %>" data-bus-id="<%= bus.id %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>" data-compte="<%= bus.compteARebours %>">
+            <div class="bus-correspondance"><% if (bus.train) { %><%- icone("train", { taille: 13 }) %> <%= bus.train %><% if (bus.attenteTrain !== null) { %> · <%= bus.attenteTrain %> min<% } %><% } %></div>
+            <p class="bus-depart-onair">Quitter On Air à <strong><%= bus.departOnAirFormate %></strong></p>
+            <div class="bus-horaires">
+              <div><span>La Hayette</span><strong><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %> min</em><% } %></strong></div>
+              <div><span>Gare de Meaux</span><strong><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %> min</em><% } %></strong></div>
+            </div>
+            <div class="bus-parcours" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
+              <span class="bus-rail"></span><span class="bus-progression"></span>
+              <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
+              <span class="bus-mobile"><%- icone("bus", { taille: 19 }) %></span>
+            </div>
+          </div>
+          <% }) %>
+          <% } else { %>
+          <p class="bus-indisponible">Aucun passage disponible.</p>
+          <% } %>
         </article>
         <% }) %>
       </div>
-      <% } else { %>
-      <p class="bus-indisponible">Aucun passage 7718 ou 2319 disponible.</p>
-      <% } %>
 
       <div class="bus-autres">
-        <p class="bus-autres-titre">Autres options utiles</p>
+        <p class="bus-autres-titre">Autres lignes</p>
         <% if (busRetour.autres.length > 0) { %>
         <ul>
           <% busRetour.autres.forEach((bus) => { %>
           <li>
             <div class="bus-option-horaires">
               <strong class="bus-ligne bus-ligne-petite" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-              <span>Départ <b><%= bus.departFormate %></b><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></span>
-              <span>Arrivée <b><%= bus.arriveeFormatee %></b><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %></em><% } %> <small><%= bus.arriveeLive ? "live" : "estimé" %></small></span>
+              <span class="bus-option-arret"><%= bus.arret || "Départ" %></span>
+              <span class="bus-option-meaux">Meaux</span>
+              <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></strong>
+              <strong class="bus-option-arrivee"><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %></em><% } %></strong>
             </div>
-            <% if (bus.train) { %><span class="bus-option-train"><%- icone("train", { taille: 12 }) %> Prochain <b><%= bus.train %></b><% if (bus.attenteTrain !== null) { %> · <%= bus.attenteTrain %> min<% } %></span><% } %>
           </li>
           <% }) %>
         </ul>
