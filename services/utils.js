@@ -235,6 +235,106 @@ export function extraireDeparts(data) {
   });
 }
 
+const LIGNES_BUS_HAYETTE = {
+  C00637: { nom: "7718", couleur: "#3c91dc", texte: "#ffffff", duree: 5 },
+  C00914: { nom: "2319", couleur: "#f79036", texte: "#000000", duree: 8 },
+  C00961: { nom: "7709", couleur: "#3c91dc", texte: "#ffffff", duree: 5 },
+  C02069: { nom: "2403", couleur: "#dc9600", texte: "#000000", duree: 6 },
+};
+
+function extraireVisites(data) {
+  return (data?.Siri?.ServiceDelivery?.StopMonitoringDelivery ?? []).flatMap(
+    (livraison) => livraison?.MonitoredStopVisit ?? [],
+  );
+}
+
+// Associer le même bus entre La Hayette et son arrivée à Meaux.
+export function construireBusRetour(dataHayette, dataMeaux, trainsRetour = []) {
+  const arriveesParTrajet = new Map();
+  extraireVisites(dataMeaux).forEach((visite) => {
+    const trajet = visite?.MonitoredVehicleJourney?.FramedVehicleJourneyRef
+      ?.DatedVehicleJourneyRef;
+    if (trajet) arriveesParTrajet.set(trajet, visite);
+  });
+
+  const maintenant = Date.now();
+  const buses = extraireVisites(dataHayette)
+    .map((visite) => {
+      const parcours = visite?.MonitoredVehicleJourney;
+      const appel = parcours?.MonitoredCall;
+      const code = parcours?.LineRef?.value?.match(/C\d+/u)?.[0];
+      const ligne = LIGNES_BUS_HAYETTE[code];
+      const destination = appel?.DestinationDisplay?.[0]?.value ?? "";
+      const depart = appel?.ExpectedDepartureTime ?? appel?.ExpectedArrivalTime;
+      const departPrevu = appel?.AimedDepartureTime ?? appel?.AimedArrivalTime;
+      if (!ligne || !/Gare de Meaux/iu.test(destination) || !depart) return null;
+
+      const trajet = parcours?.FramedVehicleJourneyRef?.DatedVehicleJourneyRef;
+      const visiteMeaux = trajet ? arriveesParTrajet.get(trajet) : null;
+      const appelMeaux = visiteMeaux?.MonitoredVehicleJourney?.MonitoredCall;
+      const dureeMs = ligne.duree * MINUTE_EN_MS;
+      const arriveePrevue =
+        appelMeaux?.AimedArrivalTime ??
+        new Date(new Date(departPrevu ?? depart).getTime() + dureeMs).toISOString();
+      const arrivee =
+        appelMeaux?.ExpectedArrivalTime ??
+        new Date(new Date(depart).getTime() + dureeMs).toISOString();
+      const train = trainsRetour.find(
+        (candidat) => new Date(candidat.heure).getTime() >= new Date(arrivee).getTime(),
+      );
+      const attenteTrain = train
+        ? Math.round((new Date(train.heure).getTime() - new Date(arrivee).getTime()) / MINUTE_EN_MS)
+        : null;
+      const retardHayette = departPrevu
+        ? Math.round((new Date(depart).getTime() - new Date(departPrevu).getTime()) / MINUTE_EN_MS)
+        : 0;
+      const retardMeaux = arriveePrevue
+        ? Math.round((new Date(arrivee).getTime() - new Date(arriveePrevue).getTime()) / MINUTE_EN_MS)
+        : 0;
+      const departOnAir = new Date(new Date(depart).getTime() - 13 * MINUTE_EN_MS);
+
+      return {
+        id: `${ligne.nom}-${trajet ?? depart}`,
+        ligne: ligne.nom,
+        couleur: ligne.couleur,
+        couleurTexte: ligne.texte,
+        prioritaire: ligne.nom === "7718" || ligne.nom === "2319",
+        departOnAirFormate: formaterHeure(departOnAir),
+        depart,
+        departFormate: formaterHeure(depart),
+        departPrevu,
+        departPrevuFormate: departPrevu ? formaterHeure(departPrevu) : null,
+        retardHayette,
+        arrivee,
+        arriveeFormatee: formaterHeure(arrivee),
+        arriveePrevue,
+        arriveePrevueFormatee: formaterHeure(arriveePrevue),
+        arriveeLive: Boolean(appelMeaux?.ExpectedArrivalTime),
+        retardMeaux,
+        train: train?.heureFormatee ?? null,
+        attenteTrain,
+      };
+    })
+    .filter((bus) => bus && new Date(bus.depart).getTime() >= maintenant - 2 * MINUTE_EN_MS)
+    .sort((a, b) => new Date(a.depart) - new Date(b.depart));
+
+  const principaux = ["7718", "2319"]
+    .map((ligne) => buses.find((bus) => bus.ligne === ligne))
+    .filter(Boolean);
+  const idsPrincipaux = new Set(principaux.map((bus) => bus.id));
+  const autres = buses
+    .filter(
+      (bus) =>
+        !idsPrincipaux.has(bus.id) &&
+        !bus.prioritaire &&
+        bus.attenteTrain >= 3 &&
+        bus.attenteTrain <= 15,
+    )
+    .slice(0, 4);
+
+  return { principaux, autres };
+}
+
 // Formater une heure ISO en "17:30"
 export function formaterHeure(iso) {
   return new Date(iso).toLocaleTimeString("fr-FR", {

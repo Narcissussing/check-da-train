@@ -17,6 +17,7 @@ import {
   traduireCodeMeteo,
   dateAujourdhuiParis,
   estDimancheParis,
+  construireBusRetour,
 } from "./services/utils.js";
 import {
   icone,
@@ -614,12 +615,14 @@ function creerRetourMeauxDemo(cle) {
 app.get("/", async (req, res) => {
   try {
     const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
-    const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo] =
+    const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo, resultatBusHayette, resultatBusMeaux] =
       await Promise.allSettled([
         recupererProchainsPassages("STIF:StopArea:SP:43161:"),
         recupererProchainsPassages("STIF:StopArea:SP:47962:"),
         recupererInfosTrafic(),
         obtenirMeteo(),
+        recupererProchainsPassages("STIF:StopArea:SP:427141:"),
+        recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
       ]);
 
     const departsMeaux = resultatOuTableau(resultatMeaux);
@@ -800,6 +803,11 @@ app.get("/", async (req, res) => {
       "Château-Thierry",
       "La Ferté-Milon",
     ]);
+    const busRetour = construireBusRetour(
+      resultatBusHayette.status === "fulfilled" ? resultatBusHayette.value : null,
+      resultatBusMeaux.status === "fulfilled" ? resultatBusMeaux.value : null,
+      departsRetour,
+    );
     // Prochain retour Meaux → Trilport affiché en en-tête gym (LOOK-43) :
     // même gating que les cartes départ/arrivée, indépendant des trajets
     // gym eux-mêmes qui restent basés sur `departsRetour` non filtré.
@@ -919,6 +927,7 @@ app.get("/", async (req, res) => {
       departsTrilportDepart,
       arrivesTrilport,
       departsRetourEntete,
+      busRetour,
       texteAlerte,
       detailAlerte,
       formaterDatePerturbation,
@@ -972,6 +981,7 @@ app.get("/", async (req, res) => {
       estDimancheAujourdhui: false,
       gymVerrouilleActif: null,
       departsRetourEntete: [],
+      busRetour: { principaux: [], autres: [] },
       statutRetourMeaux: "indisponible",
       texteAlerte: null,
       detailAlerte: null,

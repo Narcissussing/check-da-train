@@ -28,6 +28,8 @@ function ouvrir(bouton, cible) {
   });
   cible.classList.add("ouvert");
 
+  if (cible.dataset.autoClose === "false") return;
+
   minuteries.set(
     bouton,
     setTimeout(() => fermer(bouton, cible), DUREE_AUTO_FERMETURE_MS),

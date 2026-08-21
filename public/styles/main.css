@@ -439,6 +439,280 @@ button {
   min-width: 0;
 }
 
+.rentre-bus-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: auto;
+  margin-right: 0.65rem;
+  padding: 0;
+  border: 0;
+  color: var(--info);
+  background: transparent;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bus-retour-popup {
+  max-width: 460px;
+}
+
+.bus-principaux {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.bus-trajet {
+  padding: 0.85rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.bus-trajet-entete,
+.bus-horaires {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bus-option-horaires {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  column-gap: 0.55rem;
+}
+
+.bus-option-horaires > span:last-child {
+  text-align: right;
+}
+
+.bus-ligne {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2rem;
+  height: 1.7rem;
+  padding: 0 0.45rem;
+  border-radius: 4px;
+  color: var(--ligne-texte);
+  background: var(--ligne-fond);
+  font-size: 0.85rem;
+}
+
+.bus-correspondance {
+  display: inline-flex;
+  align-items: center;
+  color: var(--texte-muted);
+  font-size: 0.75rem;
+}
+
+.bus-correspondance .icone {
+  margin-right: 0.25rem;
+}
+
+.bus-depart-onair {
+  margin-top: 0.55rem;
+  color: var(--texte-muted) !important;
+  font-size: 0.75rem !important;
+}
+
+.bus-depart-onair strong {
+  color: var(--texte);
+}
+
+.bus-horaires {
+  margin-top: 0.75rem;
+}
+
+.bus-horaires > div:last-child {
+  text-align: right;
+}
+
+.bus-horaires span,
+.bus-horaires small {
+  display: block;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+}
+
+.bus-horaires strong {
+  display: block;
+  margin: 0.1rem 0;
+  color: var(--texte);
+  font-size: 1.1rem;
+}
+
+.bus-retard {
+  color: var(--avertissement);
+  font-size: 0.65rem;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.bus-parcours {
+  position: relative;
+  height: 2.65rem;
+  margin-top: 0.65rem;
+  overflow: hidden;
+}
+
+.bus-rail {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--carte-border);
+}
+
+.bus-progression {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--info);
+  opacity: 0.45;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1s linear;
+}
+
+.bus-arret {
+  position: absolute;
+  top: 0.72rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--texte-muted);
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+.bus-arret-hayette {
+  left: 12%;
+}
+
+.bus-arret-meaux {
+  right: 12%;
+}
+
+.bus-mobile {
+  position: absolute;
+  top: 0.05rem;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  padding: 0.25rem;
+  color: var(--info);
+  background: var(--surface-2);
+  transform: translate3d(0, 0, 0);
+  transition: transform 1s linear;
+  will-change: transform;
+}
+
+.bus-parcours.bus-approche .bus-mobile .icone,
+.bus-parcours.bus-en-route .bus-mobile .icone {
+  animation: bus-roule 0.7s ease-in-out infinite;
+}
+
+.bus-parcours.bus-arrive .bus-arret-meaux {
+  border-color: var(--succes);
+  background: var(--succes);
+}
+
+.bus-etat {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  color: var(--texte-dim);
+  font-size: 0.62rem;
+}
+
+@keyframes bus-roule {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+
+.bus-autres {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--carte-border);
+}
+
+.bus-autres-titre {
+  margin-bottom: 0.55rem;
+  color: var(--texte) !important;
+  font-weight: 600;
+}
+
+.bus-autres ul {
+  list-style: none;
+}
+
+.bus-autres li {
+  min-height: 2rem;
+  padding: 0.45rem 0;
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+}
+
+.bus-autres li + li {
+  border-top: 1px solid var(--carte-border);
+}
+
+.bus-ligne-petite {
+  min-width: 2.8rem;
+  height: 1.35rem;
+  font-size: 0.7rem;
+}
+
+.bus-option-train {
+  display: flex;
+  align-items: center;
+  margin-top: 0.3rem;
+  margin-left: 3.75rem;
+  color: var(--texte-dim);
+}
+
+.bus-option-train .icone {
+  margin-right: 0.3rem;
+}
+
+.bus-option-train b {
+  margin-left: 0.35rem;
+}
+
+.bus-indisponible {
+  margin-top: 0.75rem;
+  color: var(--texte-dim) !important;
+  font-size: 0.75rem !important;
+}
+
+@media (max-width: 420px) {
+  .bus-retour-popup {
+    padding: 16px;
+  }
+
+  .bus-option-horaires {
+    grid-template-columns: 2.8rem minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 0.4rem;
+  }
+
+  .bus-option-train {
+    margin-left: 3.2rem;
+  }
+}
+
 /* --- Carte météo --- */
 
 .carte-meteo {
