@@ -1,5 +1,21 @@
 const DIX_MINUTES = 10 * 60 * 1000;
-const CLE_SELECTIONS = "lookulooku.busSelections.v2";
+const CLE_SELECTIONS = "check-da-train.busSelections.v2";
+const ANCIENNE_CLE_SELECTIONS = "lookulooku.busSelections.v2";
+
+// Migration ponctuelle du renommage LookuLooku → Check.Da.Train : reprend les
+// sélections déjà enregistrées sous l'ancienne clé plutôt que de les perdre.
+function migrerAncienneCleSelections() {
+  try {
+    if (localStorage.getItem(CLE_SELECTIONS) !== null) return;
+    const ancienne = localStorage.getItem(ANCIENNE_CLE_SELECTIONS);
+    if (ancienne === null) return;
+    localStorage.setItem(CLE_SELECTIONS, ancienne);
+    localStorage.removeItem(ANCIENNE_CLE_SELECTIONS);
+  } catch (_error) {
+    // Pas grave : la sélection repart simplement à zéro.
+  }
+}
+migrerAncienneCleSelections();
 
 function lireSelections() {
   try {
