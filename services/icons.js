@@ -129,6 +129,21 @@ export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") 
   </div>`;
 }
 
+// Silhouette de bus vue de côté, en aplat (currentColor) plutôt qu'au trait :
+// permet la teinte selon le retard (ambre/rouge) sans PNG dédié — cette carte
+// n'est affichée que sur iPhone, la contrainte de performance iPad ne s'applique pas.
+export function illustrationBusCote() {
+  return `<svg class="bus-cote" viewBox="0 0 64 30" aria-hidden="true">
+    <rect class="bus-cote-carrosserie" x="2" y="3" width="54" height="19" rx="5" fill="currentColor" />
+    <rect class="bus-cote-vitre" x="7" y="7" width="9" height="7" rx="1.5" />
+    <rect class="bus-cote-vitre" x="19" y="7" width="9" height="7" rx="1.5" />
+    <rect class="bus-cote-vitre" x="31" y="7" width="9" height="7" rx="1.5" />
+    <rect class="bus-cote-vitre" x="43" y="7" width="8" height="7" rx="1.5" />
+    <circle class="bus-cote-roue" cx="15" cy="24" r="3.4" fill="currentColor" />
+    <circle class="bus-cote-roue" cx="45" cy="24" r="3.4" fill="currentColor" />
+  </svg>`;
+}
+
 // Priorité : pluie, froid, soleil, conditions neutres.
 export function iconeVerdict({ parapluie, couche, lunettes } = {}) {
   if (parapluie) return "parapluie";

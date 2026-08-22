@@ -213,10 +213,54 @@
       <% } %>
     </article>
 
-    <%# --- Carte retour Meaux vers Trilport --- %>
+    <%# --- Carte prochaine arrivée (iPad / écrans larges) --- %>
+    <% const arriveeGlow = niveauTrafic === "alerte" || (arrivesTrilport[0] && arrivesTrilport[0].retardNiveau === "fort") ? " carte-glow-alerte" : (arrivesTrilport[0] && arrivesTrilport[0].retardNiveau === "moyen") ? " carte-glow-chaude" : ""; %>
+    <article class="carte carte-train carte-arrivee carte-arrivee-classique<%= arriveeGlow %>">
+      <div class="carte-train-entete">
+        <span class="carte-train-entete-gauche">
+          <span class="eyebrow">Arrivée</span>
+          <% if (niveauTrafic === "alerte") { %>
+          <span class="alerte-clignotante-conteneur">
+            <span class="alerte-anneau"></span>
+            <%- icone("alerte", { taille: 18, classe: "alerte-clignotante" }) %>
+          </span>
+          <% } %>
+        </span>
+        <% if (arrivesTrilport[0]) { %><span class="countdown"><%= arrivesTrilport[0].compteAReboursFormate %></span><% } %>
+      </div>
+
+      <% if (arrivesTrilport.length > 0) { %>
+      <p class="train-heure-principale danger"><%= arrivesTrilport[0].heureFormatee %></p>
+      <p class="train-destination">
+        <%= arrivesTrilport[0].destination %>
+        <% if (arrivesTrilport[0].ponctualiteLibelle) { %><span class="train-ponct-inline <%= arrivesTrilport[0].ponctualiteClasse %>"><%= arrivesTrilport[0].ponctualiteLibelle %></span><% } %>
+      </p>
+      <p class="train-puis" <% if (arrivesTrilport.length <= 1) { %>style="visibility: hidden;"<% } %>>puis <%= arrivesTrilport[1] ? arrivesTrilport[1].heureFormatee : "—" %><% if (arrivesTrilport[2]) { %> · <%= arrivesTrilport[2].heureFormatee %><% } %></p>
+      <% } else { %>
+      <span class="statut-service <%= statutArrivees %>"><%= statutArrivees === "indisponible" ? "Indisponible" : statutArrivees === "attente" ? "En attente" : statutArrivees === "bientot" ? "Reprise bientôt" : "Fin de service" %></span>
+      <% } %>
+
+      <% if (arrivesTrilport.length > 0) { %>
+      <button class="carte-train-toggle" type="button" data-toggle-target="arrivee-details" aria-expanded="false">
+        Voir arrivées <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
+      </button>
+      <div class="disclosure carte-train-details" id="arrivee-details">
+        <% arrivesTrilport.forEach((train) => { %>
+        <div class="train-detail-ligne">
+          <span class="train-detail-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
+          <span class="train-detail-dest"><%= train.destination %></span>
+          <% if (train.ecartMinutes) { %><span class="train-detail-ancienne"><%= train.heurePrevueFormatee %></span><% } %>
+          <% if (train.ponctualiteLibelle) { %><span class="train-detail-ponct <%= train.ponctualiteClasse %>"><%= train.ponctualiteLibelle %></span><% } %>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
+    </article>
+
+    <%# --- Carte retour Meaux vers Trilport, bus inclus (mobile uniquement) --- %>
     <% const retoursCarte = departsRetourEntete.slice(0, 3); %>
     <% const retourGlow = niveauTrafic === "alerte" || (retoursCarte[0] && retoursCarte[0].retardNiveau === "fort") ? " carte-glow-alerte" : (retoursCarte[0] && retoursCarte[0].retardNiveau === "moyen") ? " carte-glow-chaude" : ""; %>
-    <article class="carte carte-train carte-arrivee<%= retourGlow %>">
+    <article class="carte carte-train carte-arrivee carte-rentre-mobile<%= retourGlow %>">
       <div class="carte-train-entete">
         <span class="carte-train-entete-gauche">
           <span class="eyebrow">Rentre</span>
@@ -245,10 +289,10 @@
       <% } %>
 
       <% if (retoursCarte.length > 0) { %>
-      <button class="carte-train-toggle" type="button" data-toggle-target="arrivee-details" aria-expanded="false">
+      <button class="carte-train-toggle" type="button" data-toggle-target="rentre-details" aria-expanded="false">
         Voir retours <%- icone("chevron", { taille: 15, classe: "fleche-toggle" }) %>
       </button>
-      <div class="disclosure carte-train-details" id="arrivee-details">
+      <div class="disclosure carte-train-details" id="rentre-details">
         <% retoursCarte.forEach((train) => { %>
         <div class="train-detail-ligne">
           <span class="train-detail-heure <%= train.ponctualiteClasse %>"><%= train.heureFormatee %></span>
@@ -293,10 +337,10 @@
               <div><span>La Hayette</span><strong><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %> min</em><% } %></strong></div>
               <div><span>Gare de Meaux</span><strong><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %> min</em><% } %></strong></div>
             </div>
-            <div class="bus-parcours" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
+            <div class="bus-parcours<%= bus.retardNiveau ? " bus-parcours-" + bus.retardNiveau : "" %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
               <span class="bus-rail"></span><span class="bus-progression"></span>
               <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
-              <span class="bus-mobile"><%- icone("bus", { taille: 19 }) %></span>
+              <span class="bus-mobile"><%- illustrationBusCote() %></span>
             </div>
           </div>
           <% }) %>

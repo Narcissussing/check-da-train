@@ -301,6 +301,9 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
         : 0;
       const departOnAir = new Date(new Date(depart).getTime() - 13 * MINUTE_EN_MS);
       const dansXMin = Math.round((new Date(depart).getTime() - maintenant) / MINUTE_EN_MS);
+      // 5–9 min : ambre ; 10 min et plus : rouge (même seuils que les trains).
+      const retardNiveau =
+        retardMeaux >= 10 ? "fort" : retardMeaux >= 5 ? "moyen" : undefined;
 
       return {
         id: `${ligne.nom}-${trajet ?? depart}`,
@@ -309,6 +312,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
         couleur: ligne.couleur,
         couleurTexte: ligne.texte,
         prioritaire: ligne.nom === "7718" || ligne.nom === "2319",
+        retardNiveau,
         compteARebours: `${Math.max(0, dansXMin)} min`,
         departOnAirFormate: formaterHeure(departOnAir),
         depart,

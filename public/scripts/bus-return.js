@@ -92,7 +92,7 @@ function progressionBus(depart, arrivee, maintenant) {
 
 function positionnerBus() {
   appliquerSelections();
-  document.querySelectorAll(".bus-detail-actif .bus-parcours").forEach(function (parcours) {
+  document.querySelectorAll(".bus-detail-visible .bus-parcours").forEach(function (parcours) {
     const bus = parcours.querySelector(".bus-mobile");
     const avancee = parcours.querySelector(".bus-progression");
     const depart = new Date(parcours.dataset.depart).getTime();
@@ -102,8 +102,24 @@ function positionnerBus() {
     const maintenant = Date.now();
     const largeur = Math.max(0, parcours.clientWidth - bus.offsetWidth);
     const progression = progressionBus(depart, arrivee, maintenant);
+
+    // Premier positionnement (ouverture, ou fusion 60s qui a réinitialisé le
+    // marqueur) : place le bus directement, sans balayer depuis le bord.
+    const premierPositionnement = parcours.dataset.positionne !== "1";
+    if (premierPositionnement) {
+      bus.style.transition = "none";
+      if (avancee) avancee.style.transition = "none";
+    }
+
     bus.style.transform = `translate3d(${(largeur * progression).toFixed(2)}px, 0, 0)`;
     if (avancee) avancee.style.transform = `scaleX(${progression.toFixed(4)})`;
+
+    if (premierPositionnement) {
+      void bus.offsetWidth;
+      bus.style.transition = "";
+      if (avancee) avancee.style.transition = "";
+      parcours.dataset.positionne = "1";
+    }
 
     parcours.classList.remove("bus-approche", "bus-en-route", "bus-arrive");
     if (maintenant < depart) {

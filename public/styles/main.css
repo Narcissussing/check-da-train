@@ -440,6 +440,11 @@ button {
   min-width: 0;
 }
 
+/* Arrivée (iPad) vs Rentre+bus (mobile) : une seule des deux à la fois. */
+.grille-principale .carte-rentre-mobile {
+  display: none;
+}
+
 .rentre-bus-bouton {
   display: inline-flex;
   align-items: center;
@@ -540,8 +545,7 @@ button {
 }
 
 .bus-detail-visible:not(.bus-detail-actif) .bus-correspondance,
-.bus-detail-visible:not(.bus-detail-actif) .bus-depart-onair,
-.bus-detail-visible:not(.bus-detail-actif) .bus-parcours {
+.bus-detail-visible:not(.bus-detail-actif) .bus-depart-onair {
   display: none;
 }
 
@@ -718,20 +722,50 @@ button {
 
 .bus-mobile {
   position: absolute;
-  top: 0.05rem;
+  top: 0.6rem;
   left: 0;
   z-index: 1;
   display: inline-flex;
-  padding: 0.25rem;
   color: var(--info);
-  background: var(--surface-2);
   transform: translate3d(0, 0, 0);
-  transition: transform 1s linear;
+  transition: transform 1s linear, color 0.4s ease;
   will-change: transform;
 }
 
-.bus-parcours.bus-approche .bus-mobile .icone,
-.bus-parcours.bus-en-route .bus-mobile .icone {
+.bus-cote {
+  width: 2.6rem;
+  height: 1.22rem;
+  overflow: visible;
+}
+
+.bus-cote-vitre {
+  fill: var(--surface-2);
+}
+
+.bus-cote-roue {
+  fill: var(--texte);
+}
+
+.bus-parcours-moyen .bus-mobile {
+  color: var(--avertissement);
+}
+
+.bus-parcours-fort .bus-mobile {
+  color: var(--danger);
+}
+
+.bus-parcours-moyen .bus-progression {
+  background: var(--avertissement);
+  opacity: 0.6;
+}
+
+.bus-parcours-fort .bus-progression {
+  background: var(--danger);
+  opacity: 0.6;
+}
+
+.bus-parcours.bus-approche .bus-mobile .bus-cote,
+.bus-parcours.bus-en-route .bus-mobile .bus-cote {
   animation: bus-roule 0.7s ease-in-out infinite;
 }
 
@@ -2645,6 +2679,14 @@ button {
 }
 
 @media (max-width: 700px) {
+  /* Le seuil reste sous les 768 px du plus petit iPad cible. */
+  .grille-principale .carte-arrivee-classique {
+    display: none;
+  }
+  .grille-principale .carte-rentre-mobile {
+    display: flex;
+  }
+
   body {
     padding: 20px;
   }

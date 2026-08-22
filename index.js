@@ -26,6 +26,7 @@ import {
   sceneMeteo,
   animationMeteoFond,
   illustrationTrain,
+  illustrationBusCote,
   couleurTemperature,
 } from "./services/icons.js";
 
@@ -966,6 +967,7 @@ app.get("/", async (req, res) => {
       sceneMeteo,
       animationMeteoFond,
       illustrationTrain,
+      illustrationBusCote,
       couleurTemperature,
       dateAffichee: dateAffichee(),
     });
@@ -999,6 +1001,7 @@ app.get("/", async (req, res) => {
       icone,
       iconeMeteo,
       illustrationTrain,
+      illustrationBusCote,
       dateAffichee: dateAffichee(),
     });
   }
