@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for lookulooku on 2026-06-12T19:31:33Z
+# fly.toml app configuration file generated for check-da-train on 2026-08-22T19:22:49Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'lookulooku'
+app = 'check-da-train'
 primary_region = 'cdg'
 
 [build]
