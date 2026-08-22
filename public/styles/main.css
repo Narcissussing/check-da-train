@@ -2571,6 +2571,9 @@ button {
      liste scrollable (ex. le popup "Tous les trajets") peut être mal
      interprété par WebKit, surtout juste après un défilement. */
   -webkit-overflow-scrolling: touch;
+  /* Empêche le défilement de chaîner vers la page derrière une fois arrivé
+     en haut/bas du popup (iOS 16+ ; ignoré sans effet sur iOS 12). */
+  overscroll-behavior: contain;
   background: var(--carte);
   border: 1px solid var(--carte-border);
   border-radius: var(--rayon);
