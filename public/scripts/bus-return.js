@@ -148,7 +148,160 @@ function positionnerBus() {
   });
 }
 
+// État du popup bus, perdu par la fusion DOM du rafraîchissement 60s
+// (le HTML re-rendu par le serveur repart toujours des valeurs par défaut) ;
+// réappliqué par `appliquerEtatPopupBus()`, appelée depuis refresh.js après
+// chaque fusion, exactement comme le verrouillage gym se réapplique déjà.
+const etatPopupBus = { direction: "onair-meaux", filtre: "tous", tri: "heure", filtresVisibles: false };
+
+function appliquerDirection(popup, bouton, direction) {
+  bouton.dataset.directionActuelle = direction;
+  bouton.querySelectorAll("[data-direction-texte]").forEach(function (span) {
+    span.hidden = span.dataset.directionTexte !== direction;
+  });
+  popup.querySelectorAll("[data-direction-panneau]").forEach(function (panneau) {
+    panneau.hidden = panneau.dataset.directionPanneau !== direction;
+  });
+}
+
+function basculerDirectionBus(bouton) {
+  const popup = bouton.closest(".bus-retour-popup");
+  if (!popup) return;
+  const actuelle = bouton.dataset.directionActuelle === "onair-meaux" ? "meaux-onair" : "onair-meaux";
+  etatPopupBus.direction = actuelle;
+  appliquerDirection(popup, bouton, actuelle);
+
+  // Petit pulse au tap ; retiré à la fin pour pouvoir se rejouer au prochain clic.
+  bouton.classList.remove("bus-direction-toggle-anime");
+  void bouton.offsetWidth;
+  bouton.classList.add("bus-direction-toggle-anime");
+}
+
+function appliquerFiltre(popup, arret) {
+  popup.querySelectorAll(".bus-filtre-chip").forEach(function (chip) {
+    chip.classList.toggle("actif", chip.dataset.filtreArret === arret);
+  });
+  popup.querySelectorAll(".bus-vers-onair li").forEach(function (item) {
+    item.hidden = arret !== "tous" && item.dataset.arret !== arret;
+  });
+}
+
+function basculerFiltreBus(bouton) {
+  const popup = bouton.closest(".bus-retour-popup");
+  if (!popup) return;
+  etatPopupBus.filtre = bouton.dataset.filtreArret;
+  appliquerFiltre(popup, etatPopupBus.filtre);
+}
+
+const DUREE_ANIMATION_FILTRES_MS = 250;
+
+function appliquerVisibiliteFiltres(popup, visibles, animer) {
+  const bouton = popup.querySelector(".bus-filtres-toggle");
+  const controles = popup.querySelector(".bus-vers-onair-controles");
+  if (!bouton || !controles) return;
+
+  bouton.setAttribute("aria-expanded", visibles ? "true" : "false");
+  bouton.classList.toggle("actif", visibles);
+
+  if (!animer) {
+    controles.hidden = !visibles;
+    controles.classList.toggle("bus-controles-cache", !visibles);
+    return;
+  }
+
+  if (visibles) {
+    // Retire `hidden` avant de retirer la classe repliée, pour que la
+    // transition parte bien de l'état replié plutôt que de sauter directement
+    // à l'état ouvert (même technique que les autres animations du site).
+    controles.hidden = false;
+    void controles.offsetWidth;
+    controles.classList.remove("bus-controles-cache");
+  } else {
+    controles.classList.add("bus-controles-cache");
+    clearTimeout(minuterieFiltres);
+    minuterieFiltres = setTimeout(() => {
+      controles.hidden = true;
+    }, DUREE_ANIMATION_FILTRES_MS);
+  }
+}
+let minuterieFiltres = null;
+
+function basculerVisibiliteFiltres(bouton) {
+  const popup = bouton.closest(".bus-retour-popup");
+  if (!popup) return;
+  etatPopupBus.filtresVisibles = !etatPopupBus.filtresVisibles;
+  appliquerVisibiliteFiltres(popup, etatPopupBus.filtresVisibles, true);
+}
+
+function appliquerTri(popup, tri) {
+  const bouton = popup.querySelector(".bus-tri-bouton");
+  if (bouton) {
+    bouton.dataset.tri = tri;
+    bouton.classList.toggle("actif", tri === "marche");
+    bouton.querySelector(".bus-tri-texte").textContent =
+      tri === "marche" ? "Trier par heure" : "Trier par marche";
+  }
+  if (tri !== "marche") return; // "heure" = ordre déjà servi par le serveur.
+
+  const liste = popup.querySelector(".bus-vers-onair ul");
+  if (!liste) return;
+  const items = Array.from(liste.children);
+  items.sort(function (a, b) {
+    const marcheA = Number(a.dataset.marche);
+    const marcheB = Number(b.dataset.marche);
+    if (Number.isNaN(marcheA)) return 1;
+    if (Number.isNaN(marcheB)) return -1;
+    return marcheA - marcheB;
+  });
+  items.forEach(function (item) {
+    liste.appendChild(item);
+  });
+}
+
+function basculerTriBus(bouton) {
+  const popup = bouton.closest(".bus-retour-popup");
+  if (!popup) return;
+  etatPopupBus.tri = bouton.dataset.tri === "marche" ? "heure" : "marche";
+  appliquerTri(popup, etatPopupBus.tri);
+}
+
+// Réapplique la direction/le filtre/le tri/la visibilité des filtres après
+// une fusion DOM (refresh.js).
+function appliquerEtatPopupBus() {
+  const popup = document.querySelector(".bus-retour-popup");
+  const boutonDirection = popup && popup.querySelector(".bus-direction-toggle");
+  if (popup && boutonDirection) appliquerDirection(popup, boutonDirection, etatPopupBus.direction);
+  if (popup) appliquerFiltre(popup, etatPopupBus.filtre);
+  if (popup) appliquerTri(popup, etatPopupBus.tri);
+  if (popup) appliquerVisibiliteFiltres(popup, etatPopupBus.filtresVisibles);
+}
+window.busPopupEtat = { appliquer: appliquerEtatPopupBus };
+
 document.addEventListener("click", function (event) {
+  const boutonDirection = event.target.closest(".bus-direction-toggle");
+  if (boutonDirection) {
+    basculerDirectionBus(boutonDirection);
+    return;
+  }
+
+  const boutonFiltresToggle = event.target.closest(".bus-filtres-toggle");
+  if (boutonFiltresToggle) {
+    basculerVisibiliteFiltres(boutonFiltresToggle);
+    return;
+  }
+
+  const boutonFiltre = event.target.closest(".bus-filtre-chip");
+  if (boutonFiltre) {
+    basculerFiltreBus(boutonFiltre);
+    return;
+  }
+
+  const boutonTri = event.target.closest(".bus-tri-bouton");
+  if (boutonTri) {
+    basculerTriBus(boutonTri);
+    return;
+  }
+
   const boutonBus = event.target.closest(".bus-choix button");
   if (boutonBus) {
     const groupe = boutonBus.closest(".bus-groupe");

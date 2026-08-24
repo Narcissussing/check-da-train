@@ -312,8 +312,15 @@
       <button class="popup-fermer" type="button" data-close-target="bus-retour-popup" aria-label="Fermer">
         <%- icone("fermer", { taille: 16 }) %>
       </button>
-      <p class="popup-titre">On Air → Gare de Meaux</p>
+      <button type="button" class="popup-titre bus-direction-toggle" data-direction-actuelle="onair-meaux" aria-label="Changer de direction">
+        <span class="bus-direction-mot" data-direction-texte="onair-meaux">On Air</span>
+        <span class="bus-direction-mot" data-direction-texte="meaux-onair" hidden>Gare de Meaux</span>
+        <span class="bus-direction-swap"><%- icone("fleche", { taille: 13 }) %></span>
+        <span class="bus-direction-mot" data-direction-texte="onair-meaux">Gare de Meaux</span>
+        <span class="bus-direction-mot" data-direction-texte="meaux-onair" hidden>On Air</span>
+      </button>
 
+      <div class="bus-direction-panneau" data-direction-panneau="onair-meaux">
       <div class="bus-principaux">
         <% busRetour.principaux.forEach((groupe) => { %>
         <article class="bus-trajet bus-groupe" data-ligne="<%= groupe.ligne %>">
@@ -370,6 +377,54 @@
         <% } else { %>
         <p class="bus-indisponible">Aucune autre correspondance utile actuellement.</p>
         <% } %>
+      </div>
+      </div>
+
+      <div class="bus-direction-panneau" data-direction-panneau="meaux-onair" hidden>
+        <div class="bus-autres bus-vers-onair">
+          <% if (busVersOnAir.length > 0) { %>
+          <button type="button" class="bus-filtres-toggle" aria-expanded="false" aria-controls="bus-vers-onair-filtres" aria-label="Afficher ou masquer les filtres">
+            <%- icone("filtre", { taille: 13 }) %>
+          </button>
+          <div class="bus-vers-onair-controles bus-controles-cache" id="bus-vers-onair-filtres" hidden>
+            <div class="bus-filtre-chips" role="group" aria-label="Filtrer par arrêt">
+              <button type="button" class="bus-filtre-chip actif" data-filtre-arret="tous">Tous</button>
+              <% [...new Set(busVersOnAir.map((bus) => bus.arretDescente).filter(Boolean))].forEach((arret) => { %>
+              <button type="button" class="bus-filtre-chip" data-filtre-arret="<%= arret %>"><%= arret %></button>
+              <% }) %>
+            </div>
+            <button type="button" class="bus-tri-bouton" data-tri="heure">
+              <%- icone("marche", { taille: 13 }) %> <span class="bus-tri-texte">Trier par marche</span>
+            </button>
+          </div>
+          <ul>
+            <% busVersOnAir.forEach((bus) => { %>
+            <li data-arret="<%= bus.arretDescente || "" %>" data-marche="<%= bus.marcheMinutes ?? "" %>">
+              <div class="bus-vers-onair-ligne">
+                <span class="bus-ligne-quai">
+                  <strong class="bus-ligne bus-ligne-petite" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
+                  <span class="bus-quai-badge">Quai - <%= bus.quai %></span>
+                </span>
+                <div class="bus-vers-onair-contenu">
+                  <div class="bus-vers-onair-row">
+                    <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
+                    <% if (bus.arretDescente) { %><span class="bus-option-arret"><%= bus.arretDescente %></span><% } %>
+                  </div>
+                  <% if (bus.arriveeGymFormatee) { %>
+                  <div class="bus-vers-onair-row">
+                    <span class="bus-vers-onair-marche"><%- icone("marche", { taille: 13 }) %> <%= bus.marcheMinutes %> min</span>
+                    <span class="bus-vers-onair-arrivee"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                  </div>
+                  <% } %>
+                </div>
+              </div>
+            </li>
+            <% }) %>
+          </ul>
+          <% } else { %>
+          <p class="bus-indisponible">Aucun passage disponible actuellement.</p>
+          <% } %>
+        </div>
       </div>
     </div>
   </div>

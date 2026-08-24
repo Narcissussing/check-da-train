@@ -243,6 +243,49 @@ const LIGNES_BUS_HAYETTE = {
   C00961: { nom: "7709", couleur: "#3c91dc", texte: "#ffffff", duree: 5 },
   C02069: { nom: "2403", couleur: "#dc9600", texte: "#000000", duree: 6 },
   C02070: { nom: "2411", couleur: "#d2d200", texte: "#000000", duree: 10 },
+  C01820: { nom: "7702", couleur: "#3c91dc", texte: "#ffffff", duree: 10 },
+};
+
+// CDT-54 : quai de départ à Gare de Meaux pour chaque ligne, confirmé par
+// l'utilisateur (2026-08-24) sauf 2306/2311 (quai 3), confirmés en direct par
+// correspondance d'identifiant de trajet entre le quai et Cornillon/Fauvettes.
+export const QUAI_PAR_LIGNE = {
+  7718: "A",
+  2319: "B",
+  2306: "3",
+  2311: "3",
+  7709: "C",
+  2403: "E",
+  2411: "E",
+  7702: "1",
+};
+
+// CDT-54 : arrêt de descente le plus proche d'On Air pour chaque ligne, et
+// temps de marche associé (donnés par l'utilisateur, 2026-08-24). Pour une
+// ligne confirmée à plusieurs des 4 arrêts (voir Cornillon/Fauvettes/Saints
+// Pères dans construireBusRetour), on retient celui avec la marche la plus
+// courte ; pour une ligne vue uniquement à La Hayette dans les données en
+// direct, on garde La Hayette faute d'un autre arrêt confirmé pour elle.
+export const DESCENTE_PAR_LIGNE = {
+  7718: { nom: "La Hayette", minutes: 9 },
+  2319: { nom: "La Hayette", minutes: 9 },
+  2311: { nom: "Les Fauvettes", minutes: 1 },
+  2306: { nom: "Saints Pères", minutes: 5 },
+  7709: { nom: "La Hayette", minutes: 9 },
+  2403: { nom: "La Hayette", minutes: 9 },
+  2411: { nom: "Saints Pères", minutes: 5 },
+  7702: { nom: "La Hayette", minutes: 9 },
+};
+
+// StopPoint IDFM de chaque quai de départ à Gare de Meaux (référentiel des
+// arrêts Île-de-France Mobilités), utilisés pour la direction Meaux → On Air.
+export const STOPPOINTS_QUAIS_MEAUX = {
+  A: "STIF:StopPoint:Q:15378:",
+  B: "STIF:StopPoint:Q:19844:",
+  3: "STIF:StopPoint:Q:493639:",
+  C: "STIF:StopPoint:Q:493642:",
+  E: "STIF:StopPoint:Q:6439:",
+  1: "STIF:StopPoint:Q:19837:",
 };
 
 function extraireVisites(data) {
@@ -251,7 +294,8 @@ function extraireVisites(data) {
   );
 }
 
-// Associer le même bus entre La Hayette et son arrivée à Meaux.
+// Associer le même bus entre son arrêt de départ (Cornillon, Fauvettes,
+// Saints Pères ou La Hayette — CDT-54) et son arrivée à Meaux.
 export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []) {
   const arriveesParTrajet = new Map();
   extraireVisites(dataMeaux).forEach((visite) => {
@@ -308,6 +352,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       return {
         id: `${ligne.nom}-${trajet ?? depart}`,
         ligne: ligne.nom,
+        quai: QUAI_PAR_LIGNE[ligne.nom] ?? null,
         arret,
         couleur: ligne.couleur,
         couleurTexte: ligne.texte,
@@ -348,6 +393,67 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
     .slice(0, 4);
 
   return { principaux, autres };
+}
+
+// CDT-54 : direction Meaux → On Air, aucune ligne prioritaire — toutes les
+// options sont listées ensemble, triées par horaire de départ le plus proche.
+// `donneesParQuai` : [{ quai: "A", data }, ...] — un résultat stop-monitoring
+// par quai de départ (voir STOPPOINTS_QUAIS_MEAUX), chacun pouvant mélanger
+// des lignes non pertinentes (ex. le quai 1 dessert aussi une ligne vers
+// Villenoy) : chaque passage est donc filtré par son code de ligne réel, pas
+// seulement par quai.
+export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) {
+  return donneesParQuai
+    .flatMap(({ quai, data }) =>
+      extraireVisites(data).map((visite) => {
+        const parcours = visite?.MonitoredVehicleJourney;
+        const appel = parcours?.MonitoredCall;
+        const code = parcours?.LineRef?.value?.match(/C\d+/u)?.[0];
+        const ligne = LIGNES_BUS_HAYETTE[code];
+        const depart = appel?.ExpectedDepartureTime ?? appel?.ExpectedArrivalTime;
+        const departPrevu = appel?.AimedDepartureTime ?? appel?.AimedArrivalTime;
+        if (!ligne || QUAI_PAR_LIGNE[ligne.nom] !== quai || !depart) return null;
+
+        const retard = departPrevu
+          ? Math.round((new Date(depart).getTime() - new Date(departPrevu).getTime()) / MINUTE_EN_MS)
+          : 0;
+        const dansXMin = Math.round((new Date(depart).getTime() - maintenant) / MINUTE_EN_MS);
+
+        const descente = DESCENTE_PAR_LIGNE[ligne.nom];
+        // Pas de correspondance de trajet côté arrêt de descente comme pour
+        // l'autre sens (construireBusRetour) : durée de trajet estimée à
+        // partir de `ligne.duree` (mesurée sur le trajet Hayette↔Meaux),
+        // réutilisée telle quelle même quand l'arrêt de descente est un
+        // autre arrêt (Fauvettes/Saints Pères/Cornillon) — approximation,
+        // pas une heure live.
+        const arriveeStop = descente
+          ? new Date(new Date(depart).getTime() + ligne.duree * MINUTE_EN_MS)
+          : null;
+        const arriveeGym = arriveeStop
+          ? new Date(arriveeStop.getTime() + descente.minutes * MINUTE_EN_MS)
+          : null;
+
+        return {
+          id: `${ligne.nom}-${parcours?.FramedVehicleJourneyRef?.DatedVehicleJourneyRef ?? depart}`,
+          ligne: ligne.nom,
+          quai,
+          arretDescente: descente?.nom ?? null,
+          marcheMinutes: descente?.minutes ?? null,
+          arriveeStopFormatee: arriveeStop ? formaterHeure(arriveeStop) : null,
+          arriveeGymFormatee: arriveeGym ? formaterHeure(arriveeGym) : null,
+          couleur: ligne.couleur,
+          couleurTexte: ligne.texte,
+          depart,
+          departFormate: formaterHeure(depart),
+          retard,
+          retardNiveau: retard >= 10 ? "fort" : retard >= 5 ? "moyen" : undefined,
+          dansXMin: Math.max(0, dansXMin),
+          compteARebours: `${Math.max(0, dansXMin)} min`,
+        };
+      }),
+    )
+    .filter((bus) => bus && new Date(bus.depart).getTime() >= maintenant - 2 * MINUTE_EN_MS)
+    .sort((a, b) => new Date(a.depart) - new Date(b.depart));
 }
 
 // Formater une heure ISO en "17:30"

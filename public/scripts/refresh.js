@@ -139,6 +139,10 @@ async function rafraichirTableauDeBord() {
     // La fusion remet .gym-fenetre-active sur la 1ère fenêtre (valeur du
     // rendu serveur) : on relance la rotation plutôt que de la laisser figée.
     if (window.gymRotation) window.gymRotation.redemarrer();
+
+    // Idem pour la direction/le filtre/le tri du popup bus (CDT-54) : la
+    // fusion réécrit ces attributs aux valeurs par défaut du serveur.
+    if (window.busPopupEtat) window.busPopupEtat.appliquer();
   } catch (error) {
     console.warn("Mise à jour du tableau de bord impossible :", error.message);
   } finally {

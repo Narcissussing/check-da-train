@@ -18,6 +18,8 @@ import {
   dateAujourdhuiParis,
   estDimancheParis,
   construireBusRetour,
+  construireBusVersOnAir,
+  STOPPOINTS_QUAIS_MEAUX,
 } from "./services/utils.js";
 import {
   icone,
@@ -616,17 +618,46 @@ function creerRetourMeauxDemo(cle) {
 app.get("/", async (req, res) => {
   try {
     const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
-    const [resultatMeaux, resultatTrilport, resultatTrafic, resultatMeteo, resultatBusHayette, resultatBusFauvettes, resultatBusSaintsPeres, resultatBusMeaux] =
-      await Promise.allSettled([
-        recupererProchainsPassages("STIF:StopArea:SP:43161:"),
-        recupererProchainsPassages("STIF:StopArea:SP:47962:"),
-        recupererInfosTrafic(),
-        obtenirMeteo(),
-        recupererProchainsPassages("STIF:StopArea:SP:427141:"),
-        recupererProchainsPassages("STIF:StopArea:SP:478203:"),
-        recupererProchainsPassages("STIF:StopArea:SP:10863:"),
-        recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
-      ]);
+    const [
+      resultatMeaux,
+      resultatTrilport,
+      resultatTrafic,
+      resultatMeteo,
+      resultatBusHayette,
+      resultatBusCornillon,
+      resultatBusFauvettes,
+      resultatBusSaintsPeres,
+      resultatBusMeaux,
+    ] = await Promise.allSettled([
+      recupererProchainsPassages("STIF:StopArea:SP:43161:"),
+      recupererProchainsPassages("STIF:StopArea:SP:47962:"),
+      recupererInfosTrafic(),
+      obtenirMeteo(),
+      recupererProchainsPassages("STIF:StopArea:SP:427141:"),
+      // CDT-54 : Cornillon, Fauvettes et Saints Pères vérifiés en direct
+      // (2026-08-24) — remplace les identifiants 478203/10863 qui ne
+      // renvoyaient jamais de passage vers Meaux (CDT-49).
+      recupererProchainsPassages("STIF:StopArea:SP:10806:"),
+      recupererProchainsPassages("STIF:StopArea:SP:23141:"),
+      recupererProchainsPassages("STIF:StopArea:SP:10862:"),
+      recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
+    ]);
+
+    // CDT-54, direction Meaux → On Air : un appel par quai de départ
+    // (quais confirmés par l'utilisateur le 2026-08-24, voir
+    // QUAI_PAR_LIGNE/STOPPOINTS_QUAIS_MEAUX).
+    const quaisMeaux = Object.entries(STOPPOINTS_QUAIS_MEAUX);
+    const resultatsQuaisMeaux = await Promise.allSettled(
+      quaisMeaux.map(([, ref]) => recupererProchainsPassages(ref)),
+    );
+    const donneesParQuai = quaisMeaux.map(([quai], index) => ({
+      quai,
+      data:
+        resultatsQuaisMeaux[index].status === "fulfilled"
+          ? resultatsQuaisMeaux[index].value
+          : null,
+    }));
+    const busVersOnAir = construireBusVersOnAir(donneesParQuai);
 
     const departsMeaux = resultatOuTableau(resultatMeaux);
     const departsTrilport = resultatOuTableau(resultatTrilport);
@@ -807,7 +838,13 @@ app.get("/", async (req, res) => {
       "La Ferté-Milon",
     ]);
     const busRetour = construireBusRetour(
-      [resultatBusHayette, resultatBusFauvettes, resultatBusSaintsPeres].map(
+      // CDT-54 : ordre Cornillon → Fauvettes → Saints Pères → La Hayette.
+      [
+        resultatBusCornillon,
+        resultatBusFauvettes,
+        resultatBusSaintsPeres,
+        resultatBusHayette,
+      ].map(
         (resultat) => ({ data: resultat.status === "fulfilled" ? resultat.value : null }),
       ),
       resultatBusMeaux.status === "fulfilled" ? resultatBusMeaux.value : null,
@@ -933,6 +970,7 @@ app.get("/", async (req, res) => {
       arrivesTrilport,
       departsRetourEntete,
       busRetour,
+      busVersOnAir,
       texteAlerte,
       detailAlerte,
       formaterDatePerturbation,
@@ -988,6 +1026,7 @@ app.get("/", async (req, res) => {
       gymVerrouilleActif: null,
       departsRetourEntete: [],
       busRetour: { principaux: [], autres: [] },
+      busVersOnAir: [],
       statutRetourMeaux: "indisponible",
       texteAlerte: null,
       detailAlerte: null,

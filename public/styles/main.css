@@ -823,6 +823,288 @@ button {
   font-size: 0.75rem !important;
 }
 
+/* CDT-54 : bascule de direction On Air <-> Meaux */
+.bus-direction-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bus-direction-mot {
+  color: var(--texte);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.bus-direction-swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--accent);
+  transition:
+    transform 0.3s ease,
+    background 0.2s ease;
+}
+
+.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-swap {
+  transform: rotate(180deg);
+}
+
+.bus-direction-toggle-anime {
+  animation: bus-direction-pulse 0.4s ease;
+}
+
+@keyframes bus-direction-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.93);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bus-direction-panneau {
+  animation: bus-direction-entree 0.3s ease;
+}
+
+@keyframes bus-direction-entree {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (hover: hover) {
+  .bus-direction-toggle:hover .bus-direction-swap {
+    background: var(--accent);
+    color: #0d1117;
+  }
+}
+
+.bus-filtres-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texte-dim);
+  opacity: 0.6;
+  font-size: 0.62rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.bus-filtres-toggle .icone {
+  width: 13px;
+  height: 13px;
+  color: var(--texte-dim);
+  transition: color 0.2s ease;
+}
+
+.bus-filtres-toggle.actif {
+  opacity: 1;
+}
+
+.bus-filtres-toggle.actif .icone {
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .bus-filtres-toggle:hover {
+    opacity: 1;
+  }
+}
+
+.bus-vers-onair-controles {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  max-height: 3rem;
+  margin-bottom: 0.85rem;
+  opacity: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    margin-bottom 0.25s ease;
+}
+
+.bus-vers-onair-controles[hidden] {
+  display: none;
+}
+
+.bus-vers-onair-controles.bus-controles-cache {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bus-filtre-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+
+.bus-filtre-chip,
+.bus-tri-bouton {
+  flex-shrink: 0;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--texte-muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+
+.bus-tri-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.2rem;
+}
+
+.bus-tri-bouton::before {
+  content: "";
+  flex-shrink: 0;
+  width: 1px;
+  height: 0.9rem;
+  margin-right: 0.2rem;
+  background: var(--carte-border);
+}
+
+.bus-filtre-chip.actif {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.bus-tri-bouton.actif {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .bus-filtre-chip:hover,
+  .bus-tri-bouton:hover,
+  .bus-filtres-toggle:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
+.bus-vers-onair-ligne {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 2rem;
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+}
+
+.bus-vers-onair-contenu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+.bus-vers-onair-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bus-ligne-quai {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.15rem;
+}
+
+.bus-quai-badge {
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--texte-dim);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.bus-vers-onair-ligne .bus-option-heure {
+  flex-shrink: 0;
+  margin-left: 0.75rem;
+  color: var(--texte);
+  font-size: 0.95rem;
+}
+
+.bus-vers-onair-ligne .bus-option-arret {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bus-vers-onair-marche,
+.bus-vers-onair-arrivee {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.2rem;
+  color: var(--texte-dim);
+}
+
+.bus-vers-onair-marche {
+  margin-left: 0.75rem;
+}
+
+.bus-vers-onair-arrivee {
+  margin-left: auto;
+}
+
+.bus-vers-onair-arrivee {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.bus-vers-onair-marche .icone,
+.bus-vers-onair-arrivee .icone {
+  color: var(--texte-muted);
+}
+
 @media (max-width: 420px) {
   .bus-retour-popup {
     padding: 16px;

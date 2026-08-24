@@ -65,8 +65,10 @@ const PATHS = {
   coche: `<path d="M4.5 12.5l5 5L19.5 7"/>`,
   flocon: `<path d="M12 3v18M4.8 7.5l14.4 9M19.2 7.5L4.8 16.5"/><path d="M12 3l-2 2M12 3l2 2M12 21l-2-2M12 21l2-2M4.8 7.5l.3-2.6M4.8 7.5l2.5.9M19.2 7.5l-.3-2.6M19.2 7.5l-2.5.9M4.8 16.5l.3 2.6M4.8 16.5l2.5-.9M19.2 16.5l-.3 2.6M19.2 16.5l-2.5-.9"/>`,
   liste: `<path d="M9 6h12M9 12h12M9 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>`,
+  filtre: `<path d="M4 5h16L14 13v6l-4 2v-8L4 5Z"/>`,
   bus: `<rect x="4" y="3" width="16" height="16" rx="3"/><path d="M4 9h16M7 6h10M7 19v2M17 19v2"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/>`,
   train: `<rect x="5" y="4" width="14" height="12" rx="4"/><path d="M5 10h14"/><path d="M8 16v1.5M16 16v1.5"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="19" r="1.4"/>`,
+  marche: `<circle cx="13.5" cy="4" r="1.6"/><path d="M11.5 8 8 10l1 4.5L6 21M11.5 8l3.5 1.5 3 3.5M11 12.5l3 1.5-1 3.5"/>`,
 };
 
 const VIEWBOXES = {
