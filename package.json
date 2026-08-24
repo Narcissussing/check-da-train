@@ -9,16 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Narcissussing/lookulooku.git"
+    "url": "git+https://github.com/Narcissussing/check-da-train.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "bugs": {
-    "url": "https://github.com/Narcissussing/lookulooku/issues"
+    "url": "https://github.com/Narcissussing/check-da-train/issues"
   },
-  "homepage": "https://github.com/Narcissussing/lookulooku#readme",
+  "homepage": "https://github.com/Narcissussing/check-da-train#readme",
   "dependencies": {
     "axios": "^1.18.0",
     "dotenv": "^17.4.2",
