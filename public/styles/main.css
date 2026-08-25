@@ -835,16 +835,39 @@ button {
   cursor: pointer;
 }
 
+/* Ce popup n'a plus de bouton "×" séparé : le titre lui-même prend toute la
+   largeur, "On Air" et "Gare de Meaux" collés aux deux bords, taper n'importe
+   où dessus bascule la direction ; fermer se fait en tapant le fond du popup. */
+.bus-direction-toggle-pleine-largeur {
+  width: 100%;
+  justify-content: space-between;
+  margin-right: 0;
+}
+
+/* Les libellés restent fixes de chaque côté (jamais de largeur qui bouge) ;
+   seule la flèche centrale indique et anime le sens. Un petit pictogramme
+   par lieu (haltère = On Air, train = Gare de Meaux) aide à distinguer les
+   deux d'un coup d'œil, cohérent avec les icônes déjà utilisées ailleurs
+   (carte Gym, carte trafic) plutôt qu'un nouveau langage visuel. */
 .bus-direction-mot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--texte);
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.bus-direction-picto {
+  flex-shrink: 0;
+  color: var(--texte-muted);
 }
 
 .bus-direction-swap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 999px;
@@ -853,6 +876,34 @@ button {
   transition:
     transform 0.3s ease,
     background 0.2s ease;
+}
+
+/* Indice continu que la flèche "pointe" et est tapable : elle s'étire (scaleX)
+   et glisse davantage vers l'avant avant de revenir, comme un geste qui
+   pointe puis se relâche. `overflow: visible` sur le badge laisse l'icône
+   déborder légèrement du cercle au pic sans jamais changer la taille du
+   badge lui-même (donc "On Air"/"Gare de Meaux" ne bougent jamais). */
+.bus-direction-swap {
+  overflow: visible;
+}
+
+.bus-direction-swap .icone {
+  transform-origin: center;
+  animation: bus-direction-pointe 2.4s cubic-bezier(0.45, 0, 0.15, 1) infinite;
+}
+
+@keyframes bus-direction-pointe {
+  0%,
+  15% {
+    transform: translateX(0) scaleX(1);
+  }
+  55% {
+    transform: translateX(9px) scaleX(1.85);
+  }
+  80%,
+  100% {
+    transform: translateX(0) scaleX(1);
+  }
 }
 
 .bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-swap {

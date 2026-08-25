@@ -155,10 +155,10 @@ function positionnerBus() {
 const etatPopupBus = { direction: "onair-meaux", filtre: "tous", tri: "heure", filtresVisibles: false };
 
 function appliquerDirection(popup, bouton, direction) {
+  // Les libellés "On Air"/"Gare de Meaux" restent fixes de chaque côté ;
+  // seule la flèche centrale s'anime pour indiquer le sens (CSS, basé sur
+  // cet attribut).
   bouton.dataset.directionActuelle = direction;
-  bouton.querySelectorAll("[data-direction-texte]").forEach(function (span) {
-    span.hidden = span.dataset.directionTexte !== direction;
-  });
   popup.querySelectorAll("[data-direction-panneau]").forEach(function (panneau) {
     panneau.hidden = panneau.dataset.directionPanneau !== direction;
   });

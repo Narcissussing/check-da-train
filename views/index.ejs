@@ -309,15 +309,10 @@
 
   <div class="disclosure popup-fond" id="bus-retour-popup" data-auto-close="false">
     <div class="popup-boite bus-retour-popup">
-      <button class="popup-fermer" type="button" data-close-target="bus-retour-popup" aria-label="Fermer">
-        <%- icone("fermer", { taille: 16 }) %>
-      </button>
-      <button type="button" class="popup-titre bus-direction-toggle" data-direction-actuelle="onair-meaux" aria-label="Changer de direction">
-        <span class="bus-direction-mot" data-direction-texte="onair-meaux">On Air</span>
-        <span class="bus-direction-mot" data-direction-texte="meaux-onair" hidden>Gare de Meaux</span>
+      <button type="button" class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="onair-meaux" aria-label="Changer de direction">
+        <span class="bus-direction-mot"><%- icone("haltere", { taille: 14, classe: "bus-direction-picto" }) %> On Air</span>
         <span class="bus-direction-swap"><%- icone("fleche", { taille: 13 }) %></span>
-        <span class="bus-direction-mot" data-direction-texte="onair-meaux">Gare de Meaux</span>
-        <span class="bus-direction-mot" data-direction-texte="meaux-onair" hidden>On Air</span>
+        <span class="bus-direction-mot">Gare de Meaux <%- icone("train", { taille: 14, classe: "bus-direction-picto" }) %></span>
       </button>
 
       <div class="bus-direction-panneau" data-direction-panneau="onair-meaux">
