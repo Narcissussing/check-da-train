@@ -1583,31 +1583,91 @@ button {
   cursor: default;
 }
 
+/* L'heure exacte remplace le libellé en place (même emplacement), plutôt
+   que de s'ouvrir dans une ligne en dessous. */
 .pluie-toggle small {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
-  max-height: 0;
-  overflow: hidden;
   opacity: 0;
   color: var(--texte-dim);
-  transition:
-    max-height 0.25s ease,
-    opacity 0.2s ease;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.pluie-toggle.ouverte .pluie-libelle {
+  opacity: 0;
 }
 
 .pluie-toggle.ouverte small {
-  max-height: 2rem;
   opacity: 1;
-  margin-top: 0.2rem;
 }
 
-/* Pendant l'accélération, le contrôle s'efface sans quitter le flux. */
-.pluie-toggle-encours {
-  transition: opacity 0.35s ease, transform 0.35s ease;
+/* Pendant l'accélération : seul le libellé texte se remplace, en place, par
+   une petite pluie animée — la goutte reste visible tout du long (avant,
+   c'est tout le bouton qui s'effaçait pendant que l'effet ne jouait que
+   dans le fond de carte en arrière-plan, ailleurs sur l'écran). */
+.pluie-libelle-conteneur {
+  position: relative;
+  display: inline-block;
 }
 
-.pluie-toggle-encours.pluie-interaction-active {
+.pluie-libelle {
+  transition: opacity 0.25s ease;
+}
+
+.pluie-mini-anim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 1em;
   opacity: 0;
-  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.pluie-toggle-encours.pluie-interaction-active .pluie-libelle {
+  opacity: 0;
+}
+
+.pluie-toggle-encours.pluie-interaction-active .pluie-mini-anim {
+  opacity: 1;
+}
+
+.pluie-mini-goutte {
+  width: 3px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--info);
+  opacity: 0;
+  animation: pluie-mini-tombe 0.7s ease-in infinite;
+}
+
+.pluie-mini-goutte:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.pluie-mini-goutte:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes pluie-mini-tombe {
+  0% {
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(5px);
+    opacity: 0;
+  }
 }
 
 .carte-meteo {

@@ -159,10 +159,19 @@
       <% const pluieEnCours = prochainePluieTrilport.resume === "Pluie en cours"; %>
       <button class="pluie-toggle<%= pluieEnCours ? ' pluie-toggle-encours' : '' %>" type="button" aria-expanded="false" <%= (prochainePluieTrilport.dateExacte || pluieEnCours) ? '' : 'disabled' %>>
         <%- icone("goutte", { taille: 14 }) %>
-        <span class="pluie-libelle">Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
-        <% if (prochainePluieTrilport.dateExacte) { %>
-        <small><%= prochainePluieTrilport.dateExacte %></small>
-        <% } %>
+        <span class="pluie-libelle-conteneur">
+          <span class="pluie-libelle">Pluie : <%= prochainePluieTrilport.resume.toLowerCase() %></span>
+          <% if (pluieEnCours) { %>
+          <span class="pluie-mini-anim" aria-hidden="true">
+            <span class="pluie-mini-goutte"></span>
+            <span class="pluie-mini-goutte"></span>
+            <span class="pluie-mini-goutte"></span>
+          </span>
+          <% } %>
+          <% if (prochainePluieTrilport.dateExacte) { %>
+          <small><%= prochainePluieTrilport.dateExacte %></small>
+          <% } %>
+        </span>
       </button>
       <% } %>
     </article>
