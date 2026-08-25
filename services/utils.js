@@ -277,6 +277,13 @@ export const DESCENTE_PAR_LIGNE = {
   7702: { nom: "La Hayette", minutes: 9 },
 };
 
+// Marche la plus courte en premier : quand un même trajet en boucle passe
+// par plusieurs de nos arrêts (voir dédoublonnage dans construireBusRetour),
+// c'est l'arrêt à privilégier, pas l'ordre chronologique de la boucle.
+const PRIORITE_ARRET = Object.fromEntries(
+  Object.values(DESCENTE_PAR_LIGNE).map(({ nom, minutes }) => [nom, minutes]),
+);
+
 // StopPoint IDFM de chaque quai de départ à Gare de Meaux (référentiel des
 // arrêts Île-de-France Mobilités), utilisés pour la direction Meaux → On Air.
 export const STOPPOINTS_QUAIS_MEAUX = {
@@ -351,6 +358,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
 
       return {
         id: `${ligne.nom}-${trajet ?? depart}`,
+        trajet,
         ligne: ligne.nom,
         quai: QUAI_PAR_LIGNE[ligne.nom] ?? null,
         arret,
@@ -376,7 +384,26 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       };
     })
     .filter((bus) => bus && new Date(bus.arrivee).getTime() >= maintenant - 2 * MINUTE_EN_MS)
-    .sort((a, b) => new Date(a.depart) - new Date(b.depart));
+    .sort((a, b) => new Date(a.depart) - new Date(b.depart))
+    // Une ligne en boucle (ex. 2311 : Meaux → ... → Cornillon → ... → Meaux)
+    // passe par plusieurs de nos arrêts suivis pendant le même trajet — sans
+    // ça, le même bus physique apparaissait deux fois dans la liste comme
+    // s'il s'agissait de deux passages différents (repéré 2026-08-25 : 2311
+    // à La Hayette 20:46 puis "encore" à Cornillon 20:49, même trajet, 3 min
+    // d'écart cohérent avec un seul véhicule qui continue sa route). Un seul
+    // arrêt gardé par trajet identifié : celui le plus proche à pied d'On Air
+    // (Les Fauvettes > Saints Pères > Cornillon > La Hayette), pas simplement
+    // le premier chronologiquement — un arrêt plus proche vaut mieux même
+    // s'il tombe après dans la boucle. Les visites sans trajet résolu
+    // restent inchangées (on ne peut pas prouver qu'elles sont des doublons).
+    .filter((bus, index, tableau) => {
+      if (!bus.trajet) return true;
+      const candidats = tableau.filter((autre) => autre.trajet === bus.trajet);
+      const meilleur = candidats.reduce((a, b) =>
+        (PRIORITE_ARRET[a.arret] ?? Infinity) <= (PRIORITE_ARRET[b.arret] ?? Infinity) ? a : b,
+      );
+      return bus === meilleur;
+    });
 
   const principaux = ["7718", "2319"]
     .map((nom) => {

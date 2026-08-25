@@ -634,11 +634,13 @@ app.get("/", async (req, res) => {
       recupererInfosTrafic(),
       obtenirMeteo(),
       recupererProchainsPassages("STIF:StopArea:SP:427141:"),
-      // CDT-54 : Cornillon, Fauvettes et Saints Pères vérifiés en direct
-      // (2026-08-24) — remplace les identifiants 478203/10863 qui ne
-      // renvoyaient jamais de passage vers Meaux (CDT-49).
       recupererProchainsPassages("STIF:StopArea:SP:10806:"),
-      recupererProchainsPassages("STIF:StopArea:SP:23141:"),
+      // Fauvettes : remis à 478203 le 2026-08-25 sur confirmation directe de
+      // l'utilisateur (arrêt physique constaté sur place) — contredit un
+      // relevé en direct plus tôt (23141 avait du trafic réel, 478203 zéro
+      // visite, à deux reprises : 2026-08-21/22 pour CDT-49 puis 2026-08-25).
+      // À reconfirmer en direct aux heures de service.
+      recupererProchainsPassages("STIF:StopArea:SP:478203:"),
       recupererProchainsPassages("STIF:StopArea:SP:10862:"),
       recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
     ]);

@@ -1095,6 +1095,16 @@ button {
   gap: 0.5rem;
 }
 
+/* Le bloc heure occupe 2 lignes (heure + compte à rebours) : aligne l'arrêt
+   sur la première ligne (l'heure) plutôt que centré sur tout le bloc. */
+.bus-vers-onair-row-heure {
+  align-items: flex-start;
+}
+
+.bus-vers-onair-row-heure .bus-option-arret {
+  margin-top: 0.05rem;
+}
+
 .bus-ligne-quai {
   display: flex;
   flex-direction: column;
@@ -1113,11 +1123,23 @@ button {
   letter-spacing: 0.02em;
 }
 
-.bus-vers-onair-ligne .bus-option-heure {
+.bus-vers-onair-heure-bloc {
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
   margin-left: 0.75rem;
-  color: var(--texte);
+}
+
+/* Même couleur discrète que les heures des "Autres lignes" (On Air → Meaux),
+   pour que les deux directions aient le même poids visuel. */
+.bus-vers-onair-ligne .bus-option-heure {
+  color: var(--texte-muted);
   font-size: 0.95rem;
+}
+
+.bus-vers-onair-compte {
+  color: var(--texte-dim);
+  font-size: 0.6rem;
 }
 
 .bus-vers-onair-ligne .bus-option-arret {
@@ -1129,25 +1151,26 @@ button {
   white-space: nowrap;
 }
 
+/* Marche + arrivée forment un seul groupe collé à droite, séparé en interne
+   pour ne pas être tassé l'un contre l'autre. */
+.bus-vers-onair-groupe-droite {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.85rem;
+  margin-left: auto;
+}
+
 .bus-vers-onair-marche,
 .bus-vers-onair-arrivee {
   display: inline-flex;
   align-items: center;
-  flex-shrink: 0;
   gap: 0.2rem;
   color: var(--texte-dim);
 }
 
-.bus-vers-onair-marche {
-  margin-left: 0.75rem;
-}
-
 .bus-vers-onair-arrivee {
-  margin-left: auto;
-}
-
-.bus-vers-onair-arrivee {
-  color: var(--texte);
+  color: var(--texte-muted);
   font-weight: 600;
 }
 

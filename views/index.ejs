@@ -410,14 +410,19 @@
                   <span class="bus-quai-badge">Quai - <%= bus.quai %></span>
                 </span>
                 <div class="bus-vers-onair-contenu">
-                  <div class="bus-vers-onair-row">
-                    <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
+                  <div class="bus-vers-onair-row bus-vers-onair-row-heure">
+                    <span class="bus-vers-onair-heure-bloc">
+                      <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
+                      <small class="bus-vers-onair-compte"><%= bus.dansXMin %> min</small>
+                    </span>
                     <% if (bus.arretDescente) { %><span class="bus-option-arret"><%= bus.arretDescente %></span><% } %>
                   </div>
                   <% if (bus.arriveeGymFormatee) { %>
                   <div class="bus-vers-onair-row">
-                    <span class="bus-vers-onair-marche"><%- icone("marche", { taille: 13 }) %> <%= bus.marcheMinutes %> min</span>
-                    <span class="bus-vers-onair-arrivee"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                    <span class="bus-vers-onair-groupe-droite">
+                      <span class="bus-vers-onair-marche"><%- icone("marche", { taille: 13 }) %> <%= bus.marcheMinutes %> min</span>
+                      <span class="bus-vers-onair-arrivee"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                    </span>
                   </div>
                   <% } %>
                 </div>
