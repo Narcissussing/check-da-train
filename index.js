@@ -29,6 +29,7 @@ import {
   animationMeteoFond,
   illustrationTrain,
   illustrationBusCote,
+  illustrationMarche,
   couleurTemperature,
 } from "./services/icons.js";
 
@@ -641,7 +642,13 @@ app.get("/", async (req, res) => {
       // visite, à deux reprises : 2026-08-21/22 pour CDT-49 puis 2026-08-25).
       // À reconfirmer en direct aux heures de service.
       recupererProchainsPassages("STIF:StopArea:SP:478203:"),
-      recupererProchainsPassages("STIF:StopArea:SP:10862:"),
+      // Saints Pères : 10863 (pas 10862) — 10862 ne renvoie que la direction
+      // sortante (opposée à Meaux) ; confirmé en direct le 2026-08-26 par
+      // l'utilisateur, qui voyait un vrai 2306 vers Meaux à 11:09 (Paris) que
+      // 10862 ne montrait jamais. 10863 avait été écarté le 2026-08-21/22
+      // (CDT-49) pour zéro visite à l'époque — probablement un simple trou de
+      // service au moment du relevé, pas un identifiant mort.
+      recupererProchainsPassages("STIF:StopArea:SP:10863:"),
       recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
     ]);
 
@@ -1008,6 +1015,7 @@ app.get("/", async (req, res) => {
       animationMeteoFond,
       illustrationTrain,
       illustrationBusCote,
+      illustrationMarche,
       couleurTemperature,
       dateAffichee: dateAffichee(),
     });
@@ -1043,6 +1051,7 @@ app.get("/", async (req, res) => {
       iconeMeteo,
       illustrationTrain,
       illustrationBusCote,
+      illustrationMarche,
       dateAffichee: dateAffichee(),
     });
   }

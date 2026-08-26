@@ -567,13 +567,18 @@ button {
   display: grid;
   grid-template-columns: 3.2rem minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: repeat(2, minmax(1.35rem, auto));
-  align-items: center;
+  align-items: baseline;
   width: 100%;
   column-gap: 0.55rem;
 }
 
 .bus-option-horaires > .bus-ligne {
+  align-self: center;
   grid-row: 1 / 3;
+}
+
+.marche-compact {
+  vertical-align: middle;
 }
 
 .bus-option-arret {
@@ -1072,48 +1077,147 @@ button {
   }
 }
 
+/* Grille explicite à 4 colonnes × 2 lignes : chaque élément est placé dans
+   sa cellule exacte (bvo-c<col> bvo-r<row>) plutôt que groupé dans un
+   conteneur flex par colonne — ligne 1 = icône/libellé, ligne 2 = valeur,
+   les 4 colonnes partagent les deux mêmes lignes. Permet de déplacer
+   n'importe quel élément vers une autre cellule sans toucher le reste. */
 .bus-vers-onair-ligne {
-  display: flex;
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr) 2.6rem minmax(0, 1.3fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 1rem;
-  min-height: 2rem;
+  column-gap: 0.55rem;
+  row-gap: 0.25rem;
+  min-height: 2.4rem;
   color: var(--texte-muted);
   font-size: 0.72rem;
 }
 
-.bus-vers-onair-contenu {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+.bvo-c1 {
+  grid-column: 1;
+}
+
+.bvo-c2 {
+  grid-column: 2;
+}
+
+.bvo-c3 {
+  grid-column: 3;
+}
+
+.bvo-c4 {
+  grid-column: 4;
+}
+
+.bvo-r1 {
+  grid-row: 1;
+}
+
+.bvo-r2 {
+  grid-row: 2;
+}
+
+.bus-vers-onair-ligne .bus-ligne-petite,
+.bus-quai-badge {
+  justify-self: start;
+}
+
+.bus-vers-onair-ligne .bus-option-heure,
+.bus-vers-onair-compte {
+  justify-self: center;
+}
+
+.bus-vers-onair-marche-icone,
+.bus-vers-onair-marche-temps {
+  justify-self: center;
+  color: var(--texte-muted);
+}
+
+/* Rapproche l'icône marche de sa valeur : les autres colonnes restent
+   centrées sur les mêmes lignes de la grille, seule cette paire se resserre
+   (icône collée au bas de la ligne 1, valeur collée au haut de la ligne 2). */
+.bus-vers-onair-marche-icone {
+  align-self: end;
+}
+
+.bus-vers-onair-marche-icone .marche-anim {
+  opacity: 0.8;
+}
+
+.bus-vers-onair-marche-temps {
+  align-self: start;
+  color: var(--texte-dim);
+  font-size: 0.6rem;
+}
+
+/* Cycle de marche : bras/jambes tournent en opposition de phase autour de
+   leur origine (épaule/hanche), tête et torse fixes. Cible iOS 26 (bus
+   uniquement) — pas de contrainte iOS 12 ici. */
+.marche-anim {
+  display: block;
+}
+
+.marche-anim-bras,
+.marche-anim-jambe {
+  transform-box: view-box;
+}
+
+.marche-anim-phase-a {
+  animation: marche-cycle-a 0.85s ease-in-out infinite;
+}
+
+.marche-anim-phase-b {
+  animation: marche-cycle-b 0.85s ease-in-out infinite;
+}
+
+@keyframes marche-cycle-a {
+  0%,
+  100% {
+    transform: rotate(22deg);
+  }
+  50% {
+    transform: rotate(-22deg);
+  }
+}
+
+@keyframes marche-cycle-b {
+  0%,
+  100% {
+    transform: rotate(-22deg);
+  }
+  50% {
+    transform: rotate(22deg);
+  }
+}
+
+.bus-vers-onair-ligne .bus-option-arret,
+.bus-vers-onair-arrivee {
+  justify-self: end;
+}
+
+.bus-vers-onair-ligne .bus-option-heure {
+  color: var(--texte-muted);
+  font-size: 0.95rem;
+}
+
+.bus-vers-onair-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.bus-vers-onair-ligne .bus-option-arret {
   min-width: 0;
-  gap: 0.3rem;
-}
-
-.bus-vers-onair-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Le bloc heure occupe 2 lignes (heure + compte à rebours) : aligne l'arrêt
-   sur la première ligne (l'heure) plutôt que centré sur tout le bloc. */
-.bus-vers-onair-row-heure {
-  align-items: flex-start;
-}
-
-.bus-vers-onair-row-heure .bus-option-arret {
-  margin-top: 0.05rem;
-}
-
-.bus-ligne-quai {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 0.15rem;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bus-quai-badge {
+  align-self: flex-start;
+  flex-shrink: 0;
   padding: 0.05rem 0.35rem;
   border-radius: 3px;
   background: var(--surface-2);
@@ -1123,60 +1227,43 @@ button {
   letter-spacing: 0.02em;
 }
 
-.bus-vers-onair-heure-bloc {
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  margin-left: 0.75rem;
-}
-
-/* Même couleur discrète que les heures des "Autres lignes" (On Air → Meaux),
-   pour que les deux directions aient le même poids visuel. */
-.bus-vers-onair-ligne .bus-option-heure {
-  color: var(--texte-muted);
-  font-size: 0.95rem;
-}
-
 .bus-vers-onair-compte {
   color: var(--texte-dim);
   font-size: 0.6rem;
 }
 
-.bus-vers-onair-ligne .bus-option-arret {
-  min-width: 0;
-  margin-left: auto;
-  overflow: hidden;
-  text-align: right;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Marche + arrivée forment un seul groupe collé à droite, séparé en interne
-   pour ne pas être tassé l'un contre l'autre. */
-.bus-vers-onair-groupe-droite {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 0.85rem;
-  margin-left: auto;
-}
-
-.bus-vers-onair-marche,
 .bus-vers-onair-arrivee {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  color: var(--texte-dim);
-}
-
-.bus-vers-onair-arrivee {
   color: var(--texte-muted);
   font-weight: 600;
 }
 
-.bus-vers-onair-marche .icone,
 .bus-vers-onair-arrivee .icone {
   color: var(--texte-muted);
+}
+
+/* Marche à pied compacte : pictos plus petits que le chiffre, pas de mot
+   "min" — icône marche, chiffre, icône minuteur. Réutilisé dans les deux
+   directions (On Air → Meaux et Meaux → On Air). */
+.marche-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  color: var(--texte-dim);
+}
+
+.marche-compact .icone {
+  flex-shrink: 0;
+  color: var(--texte-muted);
+  opacity: 0.8;
+}
+
+.marche-compact strong {
+  color: var(--texte-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 @media (max-width: 420px) {

@@ -69,6 +69,7 @@ const PATHS = {
   bus: `<rect x="4" y="3" width="16" height="16" rx="3"/><path d="M4 9h16M7 6h10M7 19v2M17 19v2"/><circle cx="8" cy="15" r="1"/><circle cx="16" cy="15" r="1"/>`,
   train: `<rect x="5" y="4" width="14" height="12" rx="4"/><path d="M5 10h14"/><path d="M8 16v1.5M16 16v1.5"/><circle cx="9" cy="19" r="1.4"/><circle cx="15" cy="19" r="1.4"/>`,
   marche: `<circle cx="13.5" cy="4" r="1.6"/><path d="M11.5 8 8 10l1 4.5L6 21M11.5 8l3.5 1.5 3 3.5M11 12.5l3 1.5-1 3.5"/>`,
+  minuteur: `<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9.5 2.5h5M12 2.5V4.5"/>`,
 };
 
 const VIEWBOXES = {
@@ -143,6 +144,23 @@ export function illustrationBusCote() {
     <rect class="bus-cote-vitre" x="43" y="7" width="8" height="7" rx="1.5" />
     <circle class="bus-cote-roue" cx="15" cy="24" r="3.4" fill="currentColor" />
     <circle class="bus-cote-roue" cx="45" cy="24" r="3.4" fill="currentColor" />
+  </svg>`;
+}
+
+// Silhouette qui marche, vue de profil (face à droite) : tête et torse
+// pleins (comme illustrationBusCote), membres en traits fins qui tournent en
+// `transform` (pas de morphing de `d`) autour de l'épaule/hanche, en
+// opposition de phase pour un vrai pas avant/arrière plutôt qu'un écart
+// symétrique gauche-droite. Bus/On Air uniquement — cible iOS 26, pas de
+// contrainte iOS 12 ici.
+export function illustrationMarche({ taille = 16 } = {}) {
+  return `<svg class="marche-anim" width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="13" cy="4.3" r="2.1" fill="currentColor" stroke="none"/>
+    <path d="M13 6.6V14" stroke-width="2.4"/>
+    <g class="marche-anim-bras marche-anim-phase-b" style="transform-origin:13px 8px"><path d="M13 8 16.5 11.2"/></g>
+    <g class="marche-anim-bras marche-anim-phase-a" style="transform-origin:13px 8px"><path d="M13 8 9.5 11.2"/></g>
+    <g class="marche-anim-jambe marche-anim-phase-a" style="transform-origin:13px 14px"><path d="M13 14 16.9 20.5"/></g>
+    <g class="marche-anim-jambe marche-anim-phase-b" style="transform-origin:13px 14px"><path d="M13 14 9.1 20.5"/></g>
   </svg>`;
 }
 

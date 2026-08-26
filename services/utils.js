@@ -280,9 +280,20 @@ export const DESCENTE_PAR_LIGNE = {
 // Marche la plus courte en premier : quand un même trajet en boucle passe
 // par plusieurs de nos arrêts (voir dédoublonnage dans construireBusRetour),
 // c'est l'arrêt à privilégier, pas l'ordre chronologique de la boucle.
+// Cornillon n'y figure jamais (il ne l'emporte pour aucune ligne suivie),
+// mais reste dans MARCHE_MINUTES_PAR_ARRET ci-dessous pour l'affichage
+// quand il est montré seul (aucune ligne à privilégier à sa place).
 const PRIORITE_ARRET = Object.fromEntries(
   Object.values(DESCENTE_PAR_LIGNE).map(({ nom, minutes }) => [nom, minutes]),
 );
+
+// Marche à pied depuis On Air jusqu'à chacun des 4 arrêts (donnée par
+// l'utilisateur, 2026-08-24) — utilisé pour l'indicateur de marche affiché
+// à côté de chaque passage, dans les deux directions.
+const MARCHE_MINUTES_PAR_ARRET = {
+  ...PRIORITE_ARRET,
+  Cornillon: 7,
+};
 
 // StopPoint IDFM de chaque quai de départ à Gare de Meaux (référentiel des
 // arrêts Île-de-France Mobilités), utilisés pour la direction Meaux → On Air.
@@ -362,6 +373,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
         ligne: ligne.nom,
         quai: QUAI_PAR_LIGNE[ligne.nom] ?? null,
         arret,
+        marcheMinutes: MARCHE_MINUTES_PAR_ARRET[arret] ?? null,
         couleur: ligne.couleur,
         couleurTexte: ligne.texte,
         prioritaire: ligne.nom === "7718" || ligne.nom === "2319",
@@ -392,7 +404,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
     // à La Hayette 20:46 puis "encore" à Cornillon 20:49, même trajet, 3 min
     // d'écart cohérent avec un seul véhicule qui continue sa route). Un seul
     // arrêt gardé par trajet identifié : celui le plus proche à pied d'On Air
-    // (Les Fauvettes > Saints Pères > Cornillon > La Hayette), pas simplement
+    // (Les Fauvettes > Saints Pères > La Hayette), pas simplement
     // le premier chronologiquement — un arrêt plus proche vaut mieux même
     // s'il tombe après dans la boucle. Les visites sans trajet résolu
     // restent inchangées (on ne peut pas prouver qu'elles sont des doublons).

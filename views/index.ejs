@@ -370,7 +370,7 @@
           <li>
             <div class="bus-option-horaires">
               <strong class="bus-ligne bus-ligne-petite" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-              <span class="bus-option-arret"><%= bus.arret || "Départ" %></span>
+              <span class="bus-option-arret"><%= bus.arret || "Départ" %><% if (bus.marcheMinutes) { %> <span class="marche-compact"><%- icone("marche", { taille: 11 }) %><strong><%= bus.marcheMinutes %></strong><%- icone("minuteur", { taille: 9 }) %></span><% } %></span>
               <span class="bus-option-meaux">Meaux</span>
               <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></strong>
               <strong class="bus-option-arrivee"><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %></em><% } %></strong>
@@ -405,27 +405,19 @@
             <% busVersOnAir.forEach((bus) => { %>
             <li data-arret="<%= bus.arretDescente || "" %>" data-marche="<%= bus.marcheMinutes ?? "" %>">
               <div class="bus-vers-onair-ligne">
-                <span class="bus-ligne-quai">
-                  <strong class="bus-ligne bus-ligne-petite" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-                  <span class="bus-quai-badge">Quai - <%= bus.quai %></span>
-                </span>
-                <div class="bus-vers-onair-contenu">
-                  <div class="bus-vers-onair-row bus-vers-onair-row-heure">
-                    <span class="bus-vers-onair-heure-bloc">
-                      <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
-                      <small class="bus-vers-onair-compte"><%= bus.dansXMin %> min</small>
-                    </span>
-                    <% if (bus.arretDescente) { %><span class="bus-option-arret"><%= bus.arretDescente %></span><% } %>
-                  </div>
-                  <% if (bus.arriveeGymFormatee) { %>
-                  <div class="bus-vers-onair-row">
-                    <span class="bus-vers-onair-groupe-droite">
-                      <span class="bus-vers-onair-marche"><%- icone("marche", { taille: 13 }) %> <%= bus.marcheMinutes %> min</span>
-                      <span class="bus-vers-onair-arrivee"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
-                    </span>
-                  </div>
-                  <% } %>
-                </div>
+                <strong class="bus-ligne bus-ligne-petite bvo-c1 bvo-r1" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
+                <span class="bus-quai-badge bvo-c1 bvo-r2">Quai <%= bus.quai %></span>
+
+                <strong class="bus-option-heure bvo-c2 bvo-r1"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
+                <small class="bus-vers-onair-compte bvo-c2 bvo-r2"><%- icone("minuteur", { taille: 9 }) %> <%= bus.dansXMin %></small>
+
+                <span class="bus-vers-onair-marche-icone bvo-c3 bvo-r1"><%- illustrationMarche({ taille: 16 }) %></span>
+                <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c3 bvo-r2"><%= bus.marcheMinutes %> min</small><% } %>
+
+                <% if (bus.arretDescente) { %><span class="bus-option-arret bvo-c4 bvo-r1"><%= bus.arretDescente %></span><% } %>
+                <% if (bus.arriveeGymFormatee) { %>
+                <span class="bus-vers-onair-arrivee bvo-c4 bvo-r2"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                <% } %>
               </div>
             </li>
             <% }) %>
