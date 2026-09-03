@@ -155,6 +155,12 @@ button {
   white-space: nowrap;
 }
 
+.header-derniere-maj {
+  color: var(--texte-dim);
+  font-size: 0.72rem;
+  text-transform: none;
+}
+
 .header-actions {
   display: flex;
   align-items: center;

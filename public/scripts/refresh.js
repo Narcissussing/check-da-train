@@ -1,6 +1,24 @@
 // Fusion DOM ciblée pour préserver les animations entre deux actualisations.
 let miseAJourEnCours = false;
 
+// === Indicateur "dernière mise à jour" ===
+// Repère visible et diagnostiquable : contrairement aux logs Fly (qui
+// mélangent le trafic de tous les appareils), ce texte ne reflète que les
+// rafraîchissements réellement réussis sur CET écran précis.
+
+function marquerDerniereMaj() {
+  const cible = document.getElementById("derniere-maj");
+  if (!cible) return;
+  const heure = new Date().toLocaleTimeString("fr-FR", {
+    timeZone: "Europe/Paris",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  cible.textContent = `· maj ${heure}`;
+}
+marquerDerniereMaj();
+
 // === Synchronisation des animations d'alerte ===
 
 // Synchronise les alertes de même durée si Web Animations est disponible.
@@ -133,10 +151,18 @@ async function rafraichirTableauDeBord() {
   ].map((bouton) => bouton.dataset.toggleTarget);
 
   try {
+    // Délai limite explicite : un fetch qui démarre juste avant que l'onglet
+    // parte en arrière-plan peut rester bloqué indéfiniment (ni résolu ni
+    // rejeté) une fois iOS suspendu, ce qui garderait miseAJourEnCours à
+    // true pour toujours et bloquerait tout rafraîchissement futur.
+    const controleur = new AbortController();
+    const delaiLimite = setTimeout(() => controleur.abort(), 20000);
+
     // Préserve les filtres du mode démo.
     const response = await fetch(location.pathname + location.search, {
       cache: "no-store",
-    });
+      signal: controleur.signal,
+    }).finally(() => clearTimeout(delaiLimite));
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const documentMisAJour = new DOMParser().parseFromString(
@@ -147,6 +173,7 @@ async function rafraichirTableauDeBord() {
     if (!nouveauTableau) throw new Error("Tableau de bord introuvable");
 
     fusionnerNoeuds(tableauActuel, nouveauTableau);
+    marquerDerniereMaj();
 
     // Resynchronise les animations touchées par la fusion.
     synchroniserAnimationsAlerte(tableauActuel);
