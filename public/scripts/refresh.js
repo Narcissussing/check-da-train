@@ -96,8 +96,23 @@ function fusionnerNoeuds(actuel, nouveau) {
   }
 }
 
+// 00h-6h : personne ne regarde l'iPad, on laisse la machine Fly dormir
+// (auto_stop_machines) au lieu de la maintenir éveillée pour rien.
+function dansFenetreVeilleNocturne() {
+  const partieHeure = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Paris",
+    hourCycle: "h23",
+    hour: "2-digit",
+  })
+    .formatToParts(new Date())
+    .find((partie) => partie.type === "hour");
+  const heure = Number(partieHeure?.value);
+  return heure >= 0 && heure < 6;
+}
+
 async function rafraichirTableauDeBord() {
   if (miseAJourEnCours) return;
+  if (dansFenetreVeilleNocturne()) return;
 
   const tableauActuel = document.getElementById("dashboard-content");
   if (!tableauActuel) return;
