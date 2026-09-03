@@ -1,5 +1,7 @@
 const MINUTE_EN_MS = 60000;
 
+// === Dates & fuseau horaire (Europe/Paris) ===
+
 function obtenirPartiesDateParis(date = new Date()) {
   return Object.fromEntries(
     new Intl.DateTimeFormat("en-GB", {
@@ -72,6 +74,8 @@ export function estWeekendParis(date = new Date()) {
   return jour === "Sat" || jour === "Sun";
 }
 
+// === Départs trains Ligne P & perturbations trafic ===
+
 function extraireHoraires(visite) {
   const trajet = visite?.MonitoredVehicleJourney?.MonitoredCall;
   const estUnDepart = Boolean(trajet?.ExpectedDepartureTime);
@@ -86,6 +90,7 @@ function extraireHoraires(visite) {
   };
 }
 
+// Nettoie le HTML/entités du texte de perturbation IDFM en texte lisible.
 function nettoyerMessageTrafic(message) {
   const entites = {
     amp: "&",
@@ -131,13 +136,12 @@ function construireDateLocale(realHeure) {
   return dateLocaleParis(realHeure);
 }
 
-// Transformer les perturbations en tableau de messages à afficher
 export function extraireMessages(data) {
   const disruptions = data?.disruptions ?? [];
 
   return disruptions
     .filter((d) => {
-      // Garder uniquement les perturbations Ligne P
+      // Garde uniquement les perturbations Ligne P.
       const sections = d.impactedSections ?? [];
 
       return sections.some(
@@ -176,7 +180,6 @@ export function extraireMessages(data) {
     });
 }
 
-// Transformer les données de passages en tableau de départs simples
 export function extraireDeparts(data) {
   const deliveries = data?.Siri?.ServiceDelivery?.StopMonitoringDelivery ?? [];
   const visites = deliveries.flatMap(
@@ -235,6 +238,8 @@ export function extraireDeparts(data) {
   });
 }
 
+// === Bus Hayette : données de référence (lignes, quais, arrêts, marche) ===
+
 const LIGNES_BUS_HAYETTE = {
   C00637: { nom: "7718", couleur: "#3c91dc", texte: "#ffffff", duree: 5 },
   C00914: { nom: "2319", couleur: "#f79036", texte: "#000000", duree: 8 },
@@ -246,9 +251,8 @@ const LIGNES_BUS_HAYETTE = {
   C01820: { nom: "7702", couleur: "#3c91dc", texte: "#ffffff", duree: 10 },
 };
 
-// CDT-54 : quai de départ à Gare de Meaux pour chaque ligne, confirmé par
-// l'utilisateur (2026-08-24) sauf 2306/2311 (quai 3), confirmés en direct par
-// correspondance d'identifiant de trajet entre le quai et Cornillon/Fauvettes.
+// Quai de départ à Gare de Meaux par ligne. 2306/2311 utilisent le quai 3 —
+// confirmé par corrélation d'identifiant de trajet, pas par la donnée live.
 export const QUAI_PAR_LIGNE = {
   7718: "A",
   2319: "B",
@@ -260,12 +264,9 @@ export const QUAI_PAR_LIGNE = {
   7702: "1",
 };
 
-// CDT-54 : arrêt de descente le plus proche d'On Air pour chaque ligne, et
-// temps de marche associé (donnés par l'utilisateur, 2026-08-24). Pour une
-// ligne confirmée à plusieurs des 4 arrêts (voir Cornillon/Fauvettes/Saints
-// Pères dans construireBusRetour), on retient celui avec la marche la plus
-// courte ; pour une ligne vue uniquement à La Hayette dans les données en
-// direct, on garde La Hayette faute d'un autre arrêt confirmé pour elle.
+// Arrêt de descente le plus proche d'On Air par ligne, et marche associée.
+// Une ligne vue à plusieurs arrêts garde celui à la marche la plus courte ;
+// une ligne vue seulement à La Hayette garde La Hayette faute d'alternative.
 export const DESCENTE_PAR_LIGNE = {
   7718: { nom: "La Hayette", minutes: 9 },
   2319: { nom: "La Hayette", minutes: 9 },
@@ -277,26 +278,23 @@ export const DESCENTE_PAR_LIGNE = {
   7702: { nom: "La Hayette", minutes: 9 },
 };
 
-// Marche la plus courte en premier : quand un même trajet en boucle passe
-// par plusieurs de nos arrêts (voir dédoublonnage dans construireBusRetour),
-// c'est l'arrêt à privilégier, pas l'ordre chronologique de la boucle.
-// Cornillon n'y figure jamais (il ne l'emporte pour aucune ligne suivie),
-// mais reste dans MARCHE_MINUTES_PAR_ARRET ci-dessous pour l'affichage
-// quand il est montré seul (aucune ligne à privilégier à sa place).
+// Marche la plus courte en premier : c'est l'arrêt à privilégier quand un
+// trajet en boucle passe par plusieurs de nos arrêts (voir dédoublonnage
+// dans construireBusRetour). Cornillon n'y figure jamais (aucune ligne ne
+// le priorise) mais reste dans MARCHE_MINUTES_PAR_ARRET pour l'affichage.
 const PRIORITE_ARRET = Object.fromEntries(
   Object.values(DESCENTE_PAR_LIGNE).map(({ nom, minutes }) => [nom, minutes]),
 );
 
-// Marche à pied depuis On Air jusqu'à chacun des 4 arrêts (donnée par
-// l'utilisateur, 2026-08-24) — utilisé pour l'indicateur de marche affiché
-// à côté de chaque passage, dans les deux directions.
+// Marche à pied depuis On Air jusqu'à chaque arrêt, utilisée dans les deux
+// directions pour l'indicateur de marche affiché à côté de chaque passage.
 const MARCHE_MINUTES_PAR_ARRET = {
   ...PRIORITE_ARRET,
   Cornillon: 7,
 };
 
-// StopPoint IDFM de chaque quai de départ à Gare de Meaux (référentiel des
-// arrêts Île-de-France Mobilités), utilisés pour la direction Meaux → On Air.
+// StopPoint IDFM de chaque quai de départ à Gare de Meaux, pour la
+// direction Meaux → On Air.
 export const STOPPOINTS_QUAIS_MEAUX = {
   A: "STIF:StopPoint:Q:15378:",
   B: "STIF:StopPoint:Q:19844:",
@@ -312,8 +310,10 @@ function extraireVisites(data) {
   );
 }
 
-// Associer le même bus entre son arrêt de départ (Cornillon, Fauvettes,
-// Saints Pères ou La Hayette — CDT-54) et son arrivée à Meaux.
+// === Bus Hayette : Rentre (On Air → Meaux) ===
+
+// Associe chaque bus entre son arrêt de départ (Cornillon, Fauvettes,
+// Saints Pères ou La Hayette) et son arrivée à Meaux.
 export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []) {
   const arriveesParTrajet = new Map();
   extraireVisites(dataMeaux).forEach((visite) => {
@@ -396,17 +396,13 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
     })
     .filter((bus) => bus && new Date(bus.arrivee).getTime() >= maintenant - 2 * MINUTE_EN_MS)
     .sort((a, b) => new Date(a.depart) - new Date(b.depart))
-    // Une ligne en boucle (ex. 2311 : Meaux → ... → Cornillon → ... → Meaux)
-    // passe par plusieurs de nos arrêts suivis pendant le même trajet — sans
-    // ça, le même bus physique apparaissait deux fois dans la liste comme
-    // s'il s'agissait de deux passages différents (repéré 2026-08-25 : 2311
-    // à La Hayette 20:46 puis "encore" à Cornillon 20:49, même trajet, 3 min
-    // d'écart cohérent avec un seul véhicule qui continue sa route). Un seul
-    // arrêt gardé par trajet identifié : celui le plus proche à pied d'On Air
-    // (Les Fauvettes > Saints Pères > La Hayette), pas simplement
-    // le premier chronologiquement — un arrêt plus proche vaut mieux même
-    // s'il tombe après dans la boucle. Les visites sans trajet résolu
-    // restent inchangées (on ne peut pas prouver qu'elles sont des doublons).
+    // Une ligne en boucle (ex. 2311) peut passer par plusieurs de nos
+    // arrêts pendant le même trajet : sans ce filtre, le même bus physique
+    // apparaît deux fois dans la liste comme deux passages différents. On
+    // ne garde qu'un arrêt par trajet identifié — celui le plus proche à
+    // pied d'On Air (Fauvettes > Saints Pères > Hayette), pas le premier
+    // chronologique de la boucle. Les visites sans trajet résolu restent
+    // inchangées (impossible de prouver qu'elles sont des doublons).
     .filter((bus, index, tableau) => {
       if (!bus.trajet) return true;
       const candidats = tableau.filter((autre) => autre.trajet === bus.trajet);
@@ -417,19 +413,18 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
     });
 
   // Une ligne repliable par passage individuel, toutes lignes confondues,
-  // triées par heure de départ la plus proche — plus de distinction
-  // principaux/autres ni de picker par ligne (voir docs/jira.md, ticket
-  // "Unifier la liste Rentre").
+  // triées par heure de départ la plus proche.
   return buses.slice(0, 8);
 }
 
-// CDT-54 : direction Meaux → On Air, aucune ligne prioritaire — toutes les
-// options sont listées ensemble, triées par horaire de départ le plus proche.
-// `donneesParQuai` : [{ quai: "A", data }, ...] — un résultat stop-monitoring
-// par quai de départ (voir STOPPOINTS_QUAIS_MEAUX), chacun pouvant mélanger
-// des lignes non pertinentes (ex. le quai 1 dessert aussi une ligne vers
-// Villenoy) : chaque passage est donc filtré par son code de ligne réel, pas
-// seulement par quai.
+// === Bus Hayette : Meaux → On Air ===
+
+// Aucune ligne prioritaire ici : toutes les options sont listées ensemble,
+// triées par horaire de départ le plus proche. `donneesParQuai` est
+// [{ quai: "A", data }, ...] (un résultat stop-monitoring par quai, voir
+// STOPPOINTS_QUAIS_MEAUX) ; un quai peut mélanger des lignes non pertinentes
+// (ex. le quai 1 dessert aussi une ligne vers Villenoy), donc chaque passage
+// est filtré par son code de ligne réel, pas seulement par quai.
 export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) {
   return donneesParQuai
     .flatMap(({ quai, data }) =>
@@ -449,11 +444,9 @@ export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) 
 
         const descente = DESCENTE_PAR_LIGNE[ligne.nom];
         // Pas de correspondance de trajet côté arrêt de descente comme pour
-        // l'autre sens (construireBusRetour) : durée de trajet estimée à
-        // partir de `ligne.duree` (mesurée sur le trajet Hayette↔Meaux),
-        // réutilisée telle quelle même quand l'arrêt de descente est un
-        // autre arrêt (Fauvettes/Saints Pères/Cornillon) — approximation,
-        // pas une heure live.
+        // l'autre sens : durée de trajet estimée à partir de `ligne.duree`
+        // (mesurée sur Hayette↔Meaux), réutilisée telle quelle même pour un
+        // autre arrêt de descente — approximation, pas une heure live.
         const arriveeStop = descente
           ? new Date(new Date(depart).getTime() + ligne.duree * MINUTE_EN_MS)
           : null;
@@ -484,7 +477,8 @@ export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) 
     .sort((a, b) => new Date(a.depart) - new Date(b.depart));
 }
 
-// Formater une heure ISO en "17:30"
+// === Formatage heures, comptes à rebours & pluie ===
+
 export function formaterHeure(iso) {
   return new Date(iso).toLocaleTimeString("fr-FR", {
     timeZone: "Europe/Paris",
@@ -493,7 +487,6 @@ export function formaterHeure(iso) {
   });
 }
 
-// Calculer le nombre de minutes avant le départ
 export function minutesAvantDepart(iso) {
   const depart = new Date(iso);
   return Math.round((depart.getTime() - Date.now()) / MINUTE_EN_MS);
@@ -580,7 +573,6 @@ export function raccourcirDestination(dest) {
   return raccourcis[dest] ?? dest;
 }
 
-// Filtrer et trier les départs par destination
 export function filtrerDeparts(trains, destinations, limite = null) {
   const resultat = trains
     .filter(
@@ -591,7 +583,9 @@ export function filtrerDeparts(trains, destinations, limite = null) {
   return limite ? resultat.slice(0, limite) : resultat;
 }
 
-// Score horaire : pluie double, froid simple; le plus bas gagne.
+// === Météo : score & évaluation ===
+
+// Score horaire : pluie double, froid simple ; le plus bas gagne.
 export function evaluerConditionsMeteo({
   precipitation,
   weatherCode,
@@ -639,6 +633,8 @@ function meteoAHeure(contexte, date) {
   });
 }
 
+// === Trajets Gym ===
+
 function formaterDureeGym(minutes) {
   if (minutes < 60) return `${minutes} min`;
   const heures = Math.floor(minutes / 60);
@@ -653,8 +649,8 @@ function arrondirALaDizaineInferieure(date) {
   return d;
 }
 
-// Repli utilisé quand l'horizon temps réel IDFM (1-2h) ne couvre pas
-// encore l'heure demandée. Marqué `estime: true`.
+// Repli utilisé quand l'horizon temps réel IDFM ne couvre pas encore
+// l'heure demandée. Marqué `estime: true`.
 const MINUTES_ALLER_ATTENDUES = [30, 38];
 
 function creerTrainsAttendus(borneMinMs, borneMaxMs, minutesAttendues) {
@@ -854,9 +850,9 @@ export function construireTrajetsGym(
     }
 
     if (sousCreneaux.length === 0) continue;
-    // Dernier "quitter la salle" possible parmi les sous-créneaux du
-    // groupe : sert de date d'expiration à une sélection verrouillée
-    // côté client (le créneau reste affiché tant qu'il reste jouable).
+    // Dernier "quitter la salle" possible du groupe : sert de date
+    // d'expiration à une sélection verrouillée côté client (le créneau
+    // reste affiché tant qu'il reste jouable).
     const expirationMs = Math.max(
       ...sousCreneaux.map((s) => new Date(s.departSalleHeure).getTime()),
     );
@@ -876,7 +872,8 @@ export function construireTrajetsGym(
   return groupes;
 }
 
-// Traduire un code météo WMO en description française
+// === Traduction météo & perturbations trafic ===
+
 export function traduireCodeMeteo(code) {
   const descriptions = {
     0: "☀️ ensoleillé",
@@ -904,7 +901,7 @@ export function traduireCodeMeteo(code) {
   return descriptions[code] ?? "conditions variables";
 }
 
-// Formater une date IDFM (YYYYMMDDTHHMMSS) dans le fuseau de Paris
+// Formate une date IDFM (YYYYMMDDTHHMMSS) dans le fuseau de Paris.
 export function formaterDatePerturbation(date) {
   if (!date) return null;
 
@@ -922,7 +919,6 @@ export function formaterDatePerturbation(date) {
 // Le terminus Paris-Est seul ne suffit pas à identifier cette branche.
 const ARRETS_TRAJET = ["meaux", "trilport", "château-thierry", "la ferté-milon"];
 
-// Vérifier si une perturbation est active aujourd'hui
 function estActiveAujourdhui(periodes) {
   const aujourdhui = dateAujourdhuiParis().replace(/-/g, "");
   return periodes.some((p) => {
@@ -932,13 +928,11 @@ function estActiveAujourdhui(periodes) {
   });
 }
 
-// Vérifier si une perturbation concerne le trajet
 function concerneTrajet(disruption) {
   const texte = JSON.stringify(disruption.impactedSections ?? []).toLowerCase();
   return ARRETS_TRAJET.some((arret) => texte.includes(arret));
 }
 
-// Nettoyer le nom d'un arrêt en supprimant les parenthèses et leur contenu
 function nettoyerNomArret(nom) {
   return nom?.replace(/\s*\(.*?\)/g, "").trim();
 }
