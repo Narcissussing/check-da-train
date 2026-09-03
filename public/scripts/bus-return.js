@@ -1,102 +1,5 @@
 const DIX_MINUTES = 10 * 60 * 1000;
-const CLE_SELECTIONS = "check-da-train.busSelections.v2";
-const ANCIENNE_CLE_SELECTIONS = "lookulooku.busSelections.v2";
-
-// Migration ponctuelle du renommage LookuLooku → Check.Da.Train : reprend les
-// sélections déjà enregistrées sous l'ancienne clé plutôt que de les perdre.
-function migrerAncienneCleSelections() {
-  try {
-    if (localStorage.getItem(CLE_SELECTIONS) !== null) return;
-    const ancienne = localStorage.getItem(ANCIENNE_CLE_SELECTIONS);
-    if (ancienne === null) return;
-    localStorage.setItem(CLE_SELECTIONS, ancienne);
-    localStorage.removeItem(ANCIENNE_CLE_SELECTIONS);
-  } catch (_error) {
-    // Pas grave : la sélection repart simplement à zéro.
-  }
-}
-migrerAncienneCleSelections();
-
-function lireSelections() {
-  try {
-    return JSON.parse(localStorage.getItem(CLE_SELECTIONS) || "{}");
-  } catch (_error) {
-    return {};
-  }
-}
-
-function sauverSelections(selections) {
-  try {
-    localStorage.setItem(CLE_SELECTIONS, JSON.stringify(selections));
-  } catch (_error) {
-    // Le verrouillage reste utilisable jusqu'au prochain rafraîchissement.
-  }
-}
-
-function texteCompte(depart) {
-  const minutes = Math.round((depart - Date.now()) / 60000);
-  return `${Math.max(0, minutes)} min`;
-}
-
-function restaurerSelection(groupe, selection) {
-  if (!selection.html) return null;
-  const enveloppe = document.createElement("div");
-  enveloppe.innerHTML = selection.html;
-  const detail = enveloppe.firstElementChild;
-  if (!detail) return null;
-  groupe.appendChild(detail);
-
-  const choix = groupe.querySelector(".bus-choix");
-  if (choix && !choix.querySelector(`[data-bus-id="${selection.id}"]`)) {
-    const bouton = document.createElement("button");
-    bouton.type = "button";
-    bouton.dataset.busId = selection.id;
-    bouton.textContent = selection.texteBouton || "Sélection";
-    bouton.setAttribute("aria-pressed", "false");
-    choix.insertBefore(bouton, choix.firstChild);
-  }
-  return detail;
-}
-
-function appliquerSelections() {
-  const selections = lireSelections();
-  let modifie = false;
-
-  document.querySelectorAll(".bus-groupe").forEach(function (groupe) {
-    const ligne = groupe.dataset.ligne;
-    let selection = selections[ligne];
-    if (selection && Date.now() >= new Date(selection.arrivee).getTime()) {
-      delete selections[ligne];
-      selection = null;
-      modifie = true;
-    }
-
-    let actif = selection
-      ? groupe.querySelector(`.bus-detail-option[data-bus-id="${selection.id}"]`)
-      : null;
-    if (!actif && selection) actif = restaurerSelection(groupe, selection);
-    const apercu = actif || groupe.querySelector(".bus-detail-option");
-    groupe.querySelectorAll(".bus-detail-option").forEach(function (detail) {
-      detail.classList.toggle("bus-detail-visible", detail === apercu);
-      detail.classList.toggle("bus-detail-actif", detail === actif);
-    });
-    groupe.querySelectorAll(".bus-choix button").forEach(function (bouton) {
-      const estActif = actif && bouton.dataset.busId === actif.dataset.busId;
-      bouton.classList.toggle("actif", Boolean(estActif));
-      bouton.setAttribute("aria-pressed", estActif ? "true" : "false");
-    });
-    groupe.classList.toggle("bus-verrouille", Boolean(selection && actif));
-
-    const compte = groupe.querySelector(".bus-compte");
-    const prochain = apercu;
-    if (compte && prochain) {
-      compte.textContent = texteCompte(new Date(prochain.dataset.depart).getTime());
-    }
-    if (compte && !prochain) compte.textContent = "—";
-  });
-
-  if (modifie) sauverSelections(selections);
-}
+const MAX_OUVERTS = 2;
 
 function progressionBus(depart, arrivee, maintenant) {
   if (maintenant < depart) {
@@ -106,9 +9,10 @@ function progressionBus(depart, arrivee, maintenant) {
   return 0.12 + 0.76 * ((maintenant - depart) / (arrivee - depart));
 }
 
+// Anime le tracé .bus-parcours de CHAQUE ligne Rentre actuellement dépliée
+// (jusqu'à 2 à la fois), pas seulement la première ouverte.
 function positionnerBus() {
-  appliquerSelections();
-  document.querySelectorAll(".bus-detail-visible .bus-parcours").forEach(function (parcours) {
+  document.querySelectorAll(".bus-rentre-ouvert .bus-parcours").forEach(function (parcours) {
     const bus = parcours.querySelector(".bus-mobile");
     const avancee = parcours.querySelector(".bus-progression");
     const depart = new Date(parcours.dataset.depart).getTime();
@@ -152,7 +56,22 @@ function positionnerBus() {
 // (le HTML re-rendu par le serveur repart toujours des valeurs par défaut) ;
 // réappliqué par `appliquerEtatPopupBus()`, appelée depuis refresh.js après
 // chaque fusion, exactement comme le verrouillage gym se réapplique déjà.
-const etatPopupBus = { direction: "onair-meaux", filtre: "tous", tri: "heure", filtresVisibles: false };
+const etatPopupBus = {
+  direction: "onair-meaux",
+  ouverts: [], // ids de lignes Rentre dépliées, plus ancienne en premier (FIFO)
+  // Filtres/tri sont indépendants par direction (chacune a sa propre liste,
+  // ses propres arrêts et son propre bouton dans l'en-tête).
+  filtres: {
+    "onair-meaux": { arret: "tous", tri: "heure", visibles: false },
+    "meaux-onair": { arret: "tous", tri: "heure", visibles: false },
+  },
+};
+
+// Où trouver la liste et le panneau de contrôles de chaque direction.
+const CONFIG_FILTRES = {
+  "onair-meaux": { listeSelector: ".bus-rentre-item", controlesId: "bus-rentre-filtres" },
+  "meaux-onair": { listeSelector: ".bus-vers-onair li", controlesId: "bus-vers-onair-filtres" },
+};
 
 function appliquerDirection(popup, bouton, direction) {
   // Les libellés "On Air"/"Gare de Meaux" restent fixes de chaque côté ;
@@ -164,44 +83,94 @@ function appliquerDirection(popup, bouton, direction) {
   });
 }
 
-function basculerDirectionBus(bouton) {
-  const popup = bouton.closest(".bus-retour-popup");
+function appliquerOuverts(popup) {
   if (!popup) return;
-  const actuelle = bouton.dataset.directionActuelle === "onair-meaux" ? "meaux-onair" : "onair-meaux";
-  etatPopupBus.direction = actuelle;
-  appliquerDirection(popup, bouton, actuelle);
-
-  // Petit pulse au tap ; retiré à la fin pour pouvoir se rejouer au prochain clic.
-  bouton.classList.remove("bus-direction-toggle-anime");
-  void bouton.offsetWidth;
-  bouton.classList.add("bus-direction-toggle-anime");
+  popup.querySelectorAll(".bus-rentre-item").forEach(function (item) {
+    const ouvert = etatPopupBus.ouverts.includes(item.dataset.busId);
+    item.classList.toggle("bus-rentre-ouvert", ouvert);
+    const bouton = item.querySelector(".bus-rentre-toggle");
+    if (bouton) bouton.setAttribute("aria-expanded", ouvert ? "true" : "false");
+  });
 }
 
-function appliquerFiltre(popup, arret) {
-  popup.querySelectorAll(".bus-filtre-chip").forEach(function (chip) {
-    chip.classList.toggle("actif", chip.dataset.filtreArret === arret);
+function basculerOuvertureBus(item) {
+  const id = item.dataset.busId;
+  const index = etatPopupBus.ouverts.indexOf(id);
+  if (index !== -1) {
+    etatPopupBus.ouverts.splice(index, 1);
+  } else {
+    etatPopupBus.ouverts.push(id);
+    // Une 3e ligne ouverte ferme la plus ancienne : jamais plus de 2 à la fois.
+    if (etatPopupBus.ouverts.length > MAX_OUVERTS) etatPopupBus.ouverts.shift();
+  }
+  appliquerOuverts(item.closest(".bus-retour-popup"));
+  positionnerBus();
+}
+
+function basculerDirectionBus(flecheBouton) {
+  const conteneur = flecheBouton.closest(".bus-direction-toggle");
+  const popup = flecheBouton.closest(".bus-retour-popup");
+  if (!conteneur || !popup) return;
+  const actuelle = conteneur.dataset.directionActuelle === "onair-meaux" ? "meaux-onair" : "onair-meaux";
+  etatPopupBus.direction = actuelle;
+  // Changer de direction referme entièrement les lignes Rentre dépliées.
+  etatPopupBus.ouverts = [];
+  // ... et réinitialise filtre/tri/visibilité des deux côtés, pour repartir
+  // à zéro (bouton "déclic") à chaque bascule, plutôt que de garder un filtre
+  // actif qu'on ne voit plus une fois revenu sur ce côté.
+  Object.keys(CONFIG_FILTRES).forEach(function (cote) {
+    etatPopupBus.filtres[cote] = { arret: "tous", tri: "heure", visibles: false };
+    appliquerFiltre(popup, cote, "tous");
+    appliquerTri(popup, cote, "heure");
+    appliquerVisibiliteFiltres(popup, cote, false);
   });
-  popup.querySelectorAll(".bus-vers-onair li").forEach(function (item) {
+  appliquerDirection(popup, conteneur, actuelle);
+  appliquerOuverts(popup);
+
+  // Petit pulse au tap ; retiré à la fin pour pouvoir se rejouer au prochain clic.
+  flecheBouton.classList.remove("bus-direction-toggle-anime");
+  void flecheBouton.offsetWidth;
+  flecheBouton.classList.add("bus-direction-toggle-anime");
+}
+
+function appliquerFiltre(popup, cote, arret) {
+  const config = CONFIG_FILTRES[cote];
+  const controles = popup.querySelector(`#${config.controlesId}`);
+  if (controles) {
+    controles.querySelectorAll(".bus-filtre-chip").forEach(function (chip) {
+      chip.classList.toggle("actif", chip.dataset.filtreArret === arret);
+    });
+  }
+  popup.querySelectorAll(config.listeSelector).forEach(function (item) {
     item.hidden = arret !== "tous" && item.dataset.arret !== arret;
   });
 }
 
 function basculerFiltreBus(bouton) {
   const popup = bouton.closest(".bus-retour-popup");
-  if (!popup) return;
-  etatPopupBus.filtre = bouton.dataset.filtreArret;
-  appliquerFiltre(popup, etatPopupBus.filtre);
+  const cote = bouton.closest("[data-filtres-cote]")?.dataset.filtresCote;
+  if (!popup || !cote) return;
+  etatPopupBus.filtres[cote].arret = bouton.dataset.filtreArret;
+  appliquerFiltre(popup, cote, etatPopupBus.filtres[cote].arret);
 }
 
 const DUREE_ANIMATION_FILTRES_MS = 250;
 
-function appliquerVisibiliteFiltres(popup, visibles, animer) {
-  const bouton = popup.querySelector(".bus-filtres-toggle");
-  const controles = popup.querySelector(".bus-vers-onair-controles");
-  if (!bouton || !controles) return;
+function appliquerVisibiliteFiltres(popup, cote, visibles, animer) {
+  const config = CONFIG_FILTRES[cote];
+  const controles = popup.querySelector(`#${config.controlesId}`);
+  if (!controles) return;
 
-  bouton.setAttribute("aria-expanded", visibles ? "true" : "false");
-  bouton.classList.toggle("actif", visibles);
+  // Un seul bouton (icône train) sert de déclencheur pour les deux
+  // directions : son état actif/aria ne reflète que le côté actuellement
+  // affiché, pas "cote" pour chaque appel de cette fonction.
+  if (cote === etatPopupBus.direction) {
+    const bouton = popup.querySelector(".bus-filtres-toggle");
+    if (bouton) {
+      bouton.setAttribute("aria-expanded", visibles ? "true" : "false");
+      bouton.classList.toggle("actif", visibles);
+    }
+  }
 
   if (!animer) {
     controles.hidden = !visibles;
@@ -218,23 +187,27 @@ function appliquerVisibiliteFiltres(popup, visibles, animer) {
     controles.classList.remove("bus-controles-cache");
   } else {
     controles.classList.add("bus-controles-cache");
-    clearTimeout(minuterieFiltres);
-    minuterieFiltres = setTimeout(() => {
+    clearTimeout(minuteriesFiltres[cote]);
+    minuteriesFiltres[cote] = setTimeout(() => {
       controles.hidden = true;
     }, DUREE_ANIMATION_FILTRES_MS);
   }
 }
-let minuterieFiltres = null;
+const minuteriesFiltres = { "onair-meaux": null, "meaux-onair": null };
 
 function basculerVisibiliteFiltres(bouton) {
   const popup = bouton.closest(".bus-retour-popup");
   if (!popup) return;
-  etatPopupBus.filtresVisibles = !etatPopupBus.filtresVisibles;
-  appliquerVisibiliteFiltres(popup, etatPopupBus.filtresVisibles, true);
+  // Bouton unique : agit toujours sur la direction actuellement affichée.
+  const cote = etatPopupBus.direction;
+  etatPopupBus.filtres[cote].visibles = !etatPopupBus.filtres[cote].visibles;
+  appliquerVisibiliteFiltres(popup, cote, etatPopupBus.filtres[cote].visibles, true);
 }
 
-function appliquerTri(popup, tri) {
-  const bouton = popup.querySelector(".bus-tri-bouton");
+function appliquerTri(popup, cote, tri) {
+  const config = CONFIG_FILTRES[cote];
+  const controles = popup.querySelector(`#${config.controlesId}`);
+  const bouton = controles && controles.querySelector(".bus-tri-bouton");
   if (bouton) {
     bouton.dataset.tri = tri;
     bouton.classList.toggle("actif", tri === "marche");
@@ -243,7 +216,7 @@ function appliquerTri(popup, tri) {
   }
   if (tri !== "marche") return; // "heure" = ordre déjà servi par le serveur.
 
-  const liste = popup.querySelector(".bus-vers-onair ul");
+  const liste = popup.querySelector(cote === "onair-meaux" ? ".bus-rentre-liste" : ".bus-vers-onair ul");
   if (!liste) return;
   const items = Array.from(liste.children);
   items.sort(function (a, b) {
@@ -260,27 +233,34 @@ function appliquerTri(popup, tri) {
 
 function basculerTriBus(bouton) {
   const popup = bouton.closest(".bus-retour-popup");
-  if (!popup) return;
-  etatPopupBus.tri = bouton.dataset.tri === "marche" ? "heure" : "marche";
-  appliquerTri(popup, etatPopupBus.tri);
+  const cote = bouton.closest("[data-filtres-cote]")?.dataset.filtresCote;
+  if (!popup || !cote) return;
+  etatPopupBus.filtres[cote].tri = bouton.dataset.tri === "marche" ? "heure" : "marche";
+  appliquerTri(popup, cote, etatPopupBus.filtres[cote].tri);
 }
 
-// Réapplique la direction/le filtre/le tri/la visibilité des filtres après
-// une fusion DOM (refresh.js).
+// Réapplique la direction/les lignes Rentre dépliées/les filtres et tris des
+// deux côtés après une fusion DOM (refresh.js).
 function appliquerEtatPopupBus() {
   const popup = document.querySelector(".bus-retour-popup");
   const boutonDirection = popup && popup.querySelector(".bus-direction-toggle");
   if (popup && boutonDirection) appliquerDirection(popup, boutonDirection, etatPopupBus.direction);
-  if (popup) appliquerFiltre(popup, etatPopupBus.filtre);
-  if (popup) appliquerTri(popup, etatPopupBus.tri);
-  if (popup) appliquerVisibiliteFiltres(popup, etatPopupBus.filtresVisibles);
+  if (popup) appliquerOuverts(popup);
+  if (popup) {
+    Object.keys(CONFIG_FILTRES).forEach(function (cote) {
+      const etat = etatPopupBus.filtres[cote];
+      appliquerFiltre(popup, cote, etat.arret);
+      appliquerTri(popup, cote, etat.tri);
+      appliquerVisibiliteFiltres(popup, cote, etat.visibles);
+    });
+  }
 }
 window.busPopupEtat = { appliquer: appliquerEtatPopupBus };
 
 document.addEventListener("click", function (event) {
-  const boutonDirection = event.target.closest(".bus-direction-toggle");
-  if (boutonDirection) {
-    basculerDirectionBus(boutonDirection);
+  const boutonFleche = event.target.closest(".bus-direction-swap");
+  if (boutonFleche) {
+    basculerDirectionBus(boutonFleche);
     return;
   }
 
@@ -302,26 +282,10 @@ document.addEventListener("click", function (event) {
     return;
   }
 
-  const boutonBus = event.target.closest(".bus-choix button");
-  if (boutonBus) {
-    const groupe = boutonBus.closest(".bus-groupe");
-    const detail = groupe && groupe.querySelector(`.bus-detail-option[data-bus-id="${boutonBus.dataset.busId}"]`);
-    if (!groupe || !detail) return;
-
-    const selections = lireSelections();
-    const ligne = groupe.dataset.ligne;
-    if (selections[ligne] && selections[ligne].id === boutonBus.dataset.busId) {
-      delete selections[ligne];
-    } else {
-      selections[ligne] = {
-        id: boutonBus.dataset.busId,
-        arrivee: detail.dataset.arrivee,
-        html: detail.outerHTML,
-        texteBouton: boutonBus.textContent.trim(),
-      };
-    }
-    sauverSelections(selections);
-    positionnerBus();
+  const boutonRentre = event.target.closest(".bus-rentre-toggle");
+  if (boutonRentre) {
+    const item = boutonRentre.closest(".bus-rentre-item");
+    if (item) basculerOuvertureBus(item);
     return;
   }
 

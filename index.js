@@ -1035,7 +1035,7 @@ app.get("/", async (req, res) => {
       estDimancheAujourdhui: false,
       gymVerrouilleActif: null,
       departsRetourEntete: [],
-      busRetour: { principaux: [], autres: [] },
+      busRetour: [],
       busVersOnAir: [],
       statutRetourMeaux: "indisponible",
       texteAlerte: null,

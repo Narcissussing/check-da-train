@@ -376,9 +376,8 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
         marcheMinutes: MARCHE_MINUTES_PAR_ARRET[arret] ?? null,
         couleur: ligne.couleur,
         couleurTexte: ligne.texte,
-        prioritaire: ligne.nom === "7718" || ligne.nom === "2319",
         retardNiveau,
-        compteARebours: `${Math.max(0, dansXMin)} min`,
+        dansXMin: Math.max(0, dansXMin),
         departOnAirFormate: formaterHeure(departOnAir),
         depart,
         departFormate: formaterHeure(depart),
@@ -417,21 +416,11 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       return bus === meilleur;
     });
 
-  const principaux = ["7718", "2319"]
-    .map((nom) => {
-      const meta = Object.values(LIGNES_BUS_HAYETTE).find((ligne) => ligne.nom === nom);
-      return {
-        ligne: nom,
-        couleur: meta.couleur,
-        couleurTexte: meta.texte,
-        options: buses.filter((bus) => bus.ligne === nom).slice(0, 3),
-      };
-    });
-  const autres = buses
-    .filter((bus) => !bus.prioritaire)
-    .slice(0, 4);
-
-  return { principaux, autres };
+  // Une ligne repliable par passage individuel, toutes lignes confondues,
+  // triées par heure de départ la plus proche — plus de distinction
+  // principaux/autres ni de picker par ligne (voir docs/jira.md, ticket
+  // "Unifier la liste Rentre").
+  return buses.slice(0, 8);
 }
 
 // CDT-54 : direction Meaux → On Air, aucune ligne prioritaire — toutes les

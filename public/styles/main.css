@@ -461,124 +461,80 @@ button {
   cursor: pointer;
 }
 
+/* Taille fixe : sans ça, la boîte s'ajuste au contenu et change de hauteur
+   à chaque bascule de direction (une liste est toujours plus longue que
+   l'autre). `.popup-boite` fournit déjà le scroll (overflow-y: auto). */
 .bus-retour-popup {
   max-width: 460px;
+  height: 80vh;
 }
 
-.bus-principaux {
+/* Rentre (On Air → Meaux) : une carte par passage — copie exacte de la
+   grille .bus-vers-onair-ligne de Meaux → On Air (mêmes colonnes, mêmes
+   classes, même taille), seul le sens des cellules change (Quai/arrêt
+   inversés). La seule chose propre à cette liste : chaque ligne garde sa
+   propre carte (bordure/fond), pas un simple séparateur entre lignes. Un
+   tap remplace le contenu replié par le tracé de bus animé, dans la même
+   carte (pas un panneau qui s'ouvre en dessous) ; la carte grandit juste
+   assez pour l'accueillir. */
+.bus-rentre-liste {
   display: grid;
-  gap: 0.7rem;
+  gap: 0.5rem;
   margin-top: 1rem;
+  list-style: none;
 }
 
-.bus-identite {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.bus-compte {
-  min-width: 2.8rem;
-  color: var(--texte-dim);
-  font-size: 0.62rem;
-  text-align: right;
-}
-
-.bus-verrou {
-  display: inline-flex;
-  color: var(--succes);
-  opacity: 0;
-}
-
-.bus-verrouille .bus-verrou {
-  opacity: 1;
-}
-
-.bus-choix {
-  display: grid;
-  column-gap: 0.45rem;
-  margin-top: 0.65rem;
-}
-
-.bus-choix-1 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.bus-choix-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.bus-choix-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.bus-choix button {
-  min-width: 0;
-  height: 1.8rem;
-  border: 1px solid var(--carte-border);
-  border-radius: 5px;
-  color: var(--texte-muted);
-  background: transparent;
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-
-.bus-choix button.actif {
-  border-color: var(--info);
-  color: var(--texte);
-  background: rgba(91, 159, 239, 0.1);
-}
-
-.bus-choix button em {
-  margin-left: 0.2rem;
-  color: var(--avertissement);
-  font-size: 0.62rem;
-  font-style: normal;
-}
-
-.bus-detail-option {
-  display: none;
-}
-
-.bus-detail-option.bus-detail-visible {
-  display: block;
-}
-
-.bus-detail-visible:not(.bus-detail-actif) .bus-correspondance,
-.bus-detail-visible:not(.bus-detail-actif) .bus-depart-onair {
-  display: none;
-}
-
-.bus-trajet {
-  padding: 0.85rem;
+.bus-rentre-item {
   border: 1px solid var(--carte-border);
   border-radius: 8px;
   background: var(--surface-2);
+  overflow: hidden;
 }
 
-.bus-trajet-entete,
-.bus-horaires {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.bus-option-horaires {
-  display: grid;
-  grid-template-columns: 3.2rem minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: repeat(2, minmax(1.35rem, auto));
-  align-items: baseline;
+.bus-rentre-toggle {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
   width: 100%;
-  column-gap: 0.55rem;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
 }
 
-.bus-option-horaires > .bus-ligne {
-  align-self: center;
-  grid-row: 1 / 3;
+/* Colonne 1 élargie pour un nom d'arrêt complet ("Les Fauvettes", "Saints
+   Pères") au lieu du court "Quai X" d'origine ; colonne 3 (heure) reste
+   large comme côté Meaux → On Air pour que "+X" de retard ne bascule pas
+   sur sa propre ligne. */
+.bus-vers-onair-ligne.bus-rentre-grille {
+  grid-template-columns: 5rem 2.6rem minmax(0, 1fr) minmax(0, 1fr);
 }
 
-.marche-compact {
-  vertical-align: middle;
+.bus-rentre-arret {
+  max-width: 100%;
+  padding: 0.05rem 0.3rem;
+  overflow: hidden;
+  font-size: 0.58rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bus-rentre-anim {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease,
+    margin-top 0.3s ease;
+}
+
+.bus-rentre-item.bus-rentre-ouvert .bus-rentre-anim {
+  max-height: 2.65rem;
+  margin-top: 0.5rem;
+  opacity: 1;
+}
+
+.bus-rentre-item.bus-rentre-ouvert .bus-vers-onair-ligne {
+  color: var(--texte);
 }
 
 .bus-option-arret {
@@ -588,22 +544,10 @@ button {
   white-space: nowrap;
 }
 
-.bus-option-meaux,
-.bus-option-arrivee {
-  text-align: right;
-}
-
-.bus-option-heure,
-.bus-option-arrivee {
-  align-self: start;
-}
-
-.bus-option-arrivee {
-  display: inline-flex;
+.bus-horaires {
+  display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  color: var(--texte-dim);
+  justify-content: space-between;
 }
 
 .bus-ligne {
@@ -672,7 +616,8 @@ button {
   white-space: nowrap;
 }
 
-.bus-autres .bus-retard {
+.bus-autres .bus-retard,
+.bus-rentre-toggle .bus-retard {
   margin-left: 0.1rem;
   font-size: 0.48rem;
   vertical-align: 0.08rem;
@@ -791,8 +736,6 @@ button {
 
 .bus-autres {
   margin-top: 1rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--carte-border);
 }
 
 .bus-autres-titre {
@@ -802,18 +745,19 @@ button {
 }
 
 .bus-autres ul {
+  display: grid;
+  gap: 0.5rem;
   list-style: none;
 }
 
 .bus-autres li {
   min-height: 2rem;
-  padding: 0.45rem 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 8px;
+  background: var(--surface-2);
   color: var(--texte-muted);
   font-size: 0.72rem;
-}
-
-.bus-autres li + li {
-  border-top: 1px solid var(--carte-border);
 }
 
 .bus-ligne-petite {
@@ -834,15 +778,13 @@ button {
   align-items: center;
   gap: 0.5rem;
   padding: 0;
-  border: none;
-  background: none;
-  font: inherit;
-  cursor: pointer;
+  cursor: default;
 }
 
-/* Ce popup n'a plus de bouton "×" séparé : le titre lui-même prend toute la
-   largeur, "On Air" et "Gare de Meaux" collés aux deux bords, taper n'importe
-   où dessus bascule la direction ; fermer se fait en tapant le fond du popup. */
+/* Ce popup n'a plus de bouton "×" séparé : le titre prend toute la largeur,
+   "On Air" et "Gare de Meaux" collés aux deux bords ; fermer se fait en
+   tapant le fond du popup. Seule la flèche centrale (.bus-direction-swap,
+   un vrai <button>) bascule la direction — taper les libellés ne fait rien. */
 .bus-direction-toggle-pleine-largeur {
   width: 100%;
   justify-content: space-between;
@@ -868,6 +810,13 @@ button {
   color: var(--texte-muted);
 }
 
+/* Décoratif uniquement, pas un bouton — le seul déclencheur de filtres est
+   l'icône train de "Gare de Meaux". Rouge seulement quand la salle est la
+   destination actuelle (meaux-onair) ; gris comme le train sinon. */
+.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-picto-onair {
+  color: var(--danger);
+}
+
 .bus-direction-swap {
   display: inline-flex;
   align-items: center;
@@ -875,9 +824,12 @@ button {
   flex-shrink: 0;
   width: 1.5rem;
   height: 1.5rem;
+  border: none;
   border-radius: 999px;
   background: var(--surface-2);
   color: var(--accent);
+  font: inherit;
+  cursor: pointer;
   transition:
     transform 0.3s ease,
     background 0.2s ease;
@@ -947,49 +899,36 @@ button {
 }
 
 @media (hover: hover) {
-  .bus-direction-toggle:hover .bus-direction-swap {
+  .bus-direction-swap:hover {
     background: var(--accent);
     color: #0d1117;
   }
 }
 
+/* Le pictogramme "Gare de Meaux" de l'en-tête sert lui-même de bouton
+   filtres (plus de bouton dédié séparé) : mêmes réglages visuels que
+   .bus-direction-picto, juste rendu tapable. */
 .bus-filtres-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 0.5rem;
   padding: 0;
   border: none;
   background: none;
-  color: var(--texte-dim);
-  opacity: 0.6;
-  font-size: 0.62rem;
+  font: inherit;
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
 .bus-filtres-toggle .icone {
-  width: 13px;
-  height: 13px;
-  color: var(--texte-dim);
+  color: var(--texte-muted);
   transition: color 0.2s ease;
-}
-
-.bus-filtres-toggle.actif {
-  opacity: 1;
 }
 
 .bus-filtres-toggle.actif .icone {
   color: var(--accent);
 }
 
-@media (hover: hover) {
-  .bus-filtres-toggle:hover {
-    opacity: 1;
-  }
-}
-
-.bus-vers-onair-controles {
+.bus-vers-onair-controles,
+.bus-rentre-controles {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
@@ -1005,16 +944,28 @@ button {
     margin-bottom 0.25s ease;
 }
 
-.bus-vers-onair-controles[hidden] {
+/* Le panneau Rentre n'a pas de bandeau .bus-autres au-dessus pour fournir
+   l'espacement du haut — ajouté ici directement. */
+.bus-rentre-controles {
+  margin-top: 1rem;
+}
+
+.bus-vers-onair-controles[hidden],
+.bus-rentre-controles[hidden] {
   display: none;
 }
 
-.bus-vers-onair-controles.bus-controles-cache {
+.bus-vers-onair-controles.bus-controles-cache,
+.bus-rentre-controles.bus-controles-cache {
   max-height: 0;
   margin-bottom: 0;
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+.bus-rentre-controles.bus-controles-cache {
+  margin-top: 0;
 }
 
 .bus-filtre-chips {
@@ -1244,36 +1195,9 @@ button {
   color: var(--texte-muted);
 }
 
-/* Marche à pied compacte : pictos plus petits que le chiffre, pas de mot
-   "min" — icône marche, chiffre, icône minuteur. Réutilisé dans les deux
-   directions (On Air → Meaux et Meaux → On Air). */
-.marche-compact {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  color: var(--texte-dim);
-}
-
-.marche-compact .icone {
-  flex-shrink: 0;
-  color: var(--texte-muted);
-  opacity: 0.8;
-}
-
-.marche-compact strong {
-  color: var(--texte-muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-
 @media (max-width: 420px) {
   .bus-retour-popup {
     padding: 16px;
-  }
-
-  .bus-option-horaires {
-    grid-template-columns: 2.8rem minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: 0.4rem;
   }
 }
 

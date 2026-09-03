@@ -318,79 +318,67 @@
 
   <div class="disclosure popup-fond" id="bus-retour-popup" data-auto-close="false">
     <div class="popup-boite bus-retour-popup">
-      <button type="button" class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="onair-meaux" aria-label="Changer de direction">
-        <span class="bus-direction-mot"><%- icone("haltere", { taille: 14, classe: "bus-direction-picto" }) %> On Air</span>
-        <span class="bus-direction-swap"><%- icone("fleche", { taille: 13 }) %></span>
-        <span class="bus-direction-mot">Gare de Meaux <%- icone("train", { taille: 14, classe: "bus-direction-picto" }) %></span>
-      </button>
+      <div class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="onair-meaux">
+        <span class="bus-direction-mot"><%- icone("haltere", { taille: 14, classe: "bus-direction-picto bus-direction-picto-onair" }) %> On Air</span>
+        <button type="button" class="bus-direction-swap" aria-label="Changer de direction"><%- icone("fleche", { taille: 13 }) %></button>
+        <span class="bus-direction-mot">Gare de Meaux
+          <button type="button" class="bus-filtres-toggle" aria-expanded="false" aria-label="Afficher ou masquer les filtres">
+            <%- icone("train", { taille: 14, classe: "bus-direction-picto" }) %>
+          </button>
+        </span>
+      </div>
 
       <div class="bus-direction-panneau" data-direction-panneau="onair-meaux">
-      <div class="bus-principaux">
-        <% busRetour.principaux.forEach((groupe) => { %>
-        <article class="bus-trajet bus-groupe" data-ligne="<%= groupe.ligne %>">
-          <div class="bus-trajet-entete">
-            <strong class="bus-ligne" style="--ligne-fond:<%= groupe.couleur %>;--ligne-texte:<%= groupe.couleurTexte %>"><%= groupe.ligne %></strong>
-            <span class="bus-identite"><span class="bus-verrou" aria-hidden="true"><%- icone("coche", { taille: 13 }) %></span><small class="bus-compte"><%= groupe.options && groupe.options[0] ? groupe.options[0].compteARebours : "—" %></small></span>
-          </div>
-
-          <% if (groupe.options.length > 0) { %>
-          <div class="bus-choix bus-choix-<%= Math.min(groupe.options.length, 3) %>" aria-label="Choisir un passage <%= groupe.ligne %>">
-            <% groupe.options.forEach((bus, index) => { %>
-            <button type="button" data-bus-id="<%= bus.id %>" aria-pressed="false"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em>+<%= bus.retardHayette %></em><% } %></button>
-            <% }) %>
-          </div>
-
-          <% groupe.options.forEach((bus, index) => { %>
-          <div class="bus-detail-option<%= index === 0 ? " bus-detail-visible" : "" %>" data-bus-id="<%= bus.id %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>" data-compte="<%= bus.compteARebours %>">
-            <div class="bus-correspondance"><% if (bus.train) { %><%- icone("train", { taille: 13 }) %> <%= bus.train %><% if (bus.attenteTrain !== null) { %> · <%= bus.attenteTrain %> min<% } %><% } %></div>
-            <p class="bus-depart-onair">Quitter On Air à <strong><%= bus.departOnAirFormate %></strong></p>
-            <div class="bus-horaires">
-              <div><span>La Hayette</span><strong><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %> min</em><% } %></strong></div>
-              <div><span>Gare de Meaux</span><strong><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %> min</em><% } %></strong></div>
-            </div>
-            <div class="bus-parcours<%= bus.retardNiveau ? " bus-parcours-" + bus.retardNiveau : "" %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
-              <span class="bus-rail"></span><span class="bus-progression"></span>
-              <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
-              <span class="bus-mobile"><%- illustrationBusCote() %></span>
-            </div>
-          </div>
+      <% if (busRetour.length > 0) { %>
+      <div class="bus-rentre-controles bus-controles-cache" id="bus-rentre-filtres" data-filtres-cote="onair-meaux" hidden>
+        <div class="bus-filtre-chips" role="group" aria-label="Filtrer par arrêt">
+          <button type="button" class="bus-filtre-chip actif" data-filtre-arret="tous">Tous</button>
+          <% [...new Set(busRetour.map((bus) => bus.arret).filter(Boolean))].forEach((arret) => { %>
+          <button type="button" class="bus-filtre-chip" data-filtre-arret="<%= arret %>"><%= arret %></button>
           <% }) %>
-          <% } else { %>
-          <p class="bus-indisponible">Aucun passage disponible.</p>
-          <% } %>
-        </article>
+        </div>
+        <button type="button" class="bus-tri-bouton" data-tri="heure">
+          <%- icone("marche", { taille: 13 }) %> <span class="bus-tri-texte">Trier par marche</span>
+        </button>
+      </div>
+      <ul class="bus-rentre-liste">
+        <% busRetour.forEach((bus) => { %>
+        <li class="bus-rentre-item" data-bus-id="<%= bus.id %>" data-arret="<%= bus.arret %>" data-marche="<%= bus.marcheMinutes ?? "" %>">
+          <button type="button" class="bus-rentre-toggle" data-bus-toggle="<%= bus.id %>" aria-expanded="false" aria-label="Détails du bus <%= bus.ligne %> à <%= bus.departFormate %>">
+            <div class="bus-vers-onair-ligne bus-rentre-grille">
+              <strong class="bus-ligne bus-ligne-petite bvo-c1 bvo-r1" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
+              <span class="bus-quai-badge bus-rentre-arret bvo-c1 bvo-r2"><%= bus.arret %></span>
+
+              <span class="bus-vers-onair-marche-icone bvo-c2 bvo-r1"><%- illustrationMarche({ taille: 16 }) %></span>
+              <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c2 bvo-r2"><%= bus.marcheMinutes %> min</small><% } %>
+
+              <strong class="bus-option-heure bus-rentre-heure bvo-c3 bvo-r1"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></strong>
+              <small class="bus-vers-onair-compte bvo-c3 bvo-r2"><%- icone("minuteur", { taille: 9 }) %> <%= bus.dansXMin %></small>
+
+              <span class="bus-option-arret bvo-c4 bvo-r1">Meaux</span>
+              <span class="bus-vers-onair-arrivee bvo-c4 bvo-r2"><%- icone("train", { taille: 13 }) %> <%= bus.arriveeFormatee %></span>
+            </div>
+
+            <div class="bus-rentre-anim">
+              <div class="bus-parcours<%= bus.retardNiveau ? " bus-parcours-" + bus.retardNiveau : "" %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
+                <span class="bus-rail"></span><span class="bus-progression"></span>
+                <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
+                <span class="bus-mobile"><%- illustrationBusCote() %></span>
+              </div>
+            </div>
+          </button>
+        </li>
         <% }) %>
-      </div>
-
-      <div class="bus-autres">
-        <p class="bus-autres-titre">Autres lignes</p>
-        <% if (busRetour.autres.length > 0) { %>
-        <ul>
-          <% busRetour.autres.forEach((bus) => { %>
-          <li>
-            <div class="bus-option-horaires">
-              <strong class="bus-ligne bus-ligne-petite" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-              <span class="bus-option-arret"><%= bus.arret || "Départ" %><% if (bus.marcheMinutes) { %> <span class="marche-compact"><%- icone("marche", { taille: 11 }) %><strong><%= bus.marcheMinutes %></strong><%- icone("minuteur", { taille: 9 }) %></span><% } %></span>
-              <span class="bus-option-meaux">Meaux</span>
-              <strong class="bus-option-heure"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></strong>
-              <strong class="bus-option-arrivee"><%= bus.arriveeFormatee %><% if (bus.retardMeaux > 0) { %> <em class="bus-retard">+<%= bus.retardMeaux %></em><% } %></strong>
-            </div>
-          </li>
-          <% }) %>
-        </ul>
-        <% } else { %>
-        <p class="bus-indisponible">Aucune autre correspondance utile actuellement.</p>
-        <% } %>
-      </div>
+      </ul>
+      <% } else { %>
+      <p class="bus-indisponible">Aucun passage disponible actuellement.</p>
+      <% } %>
       </div>
 
       <div class="bus-direction-panneau" data-direction-panneau="meaux-onair" hidden>
         <div class="bus-autres bus-vers-onair">
           <% if (busVersOnAir.length > 0) { %>
-          <button type="button" class="bus-filtres-toggle" aria-expanded="false" aria-controls="bus-vers-onair-filtres" aria-label="Afficher ou masquer les filtres">
-            <%- icone("filtre", { taille: 13 }) %>
-          </button>
-          <div class="bus-vers-onair-controles bus-controles-cache" id="bus-vers-onair-filtres" hidden>
+          <div class="bus-vers-onair-controles bus-controles-cache" id="bus-vers-onair-filtres" data-filtres-cote="meaux-onair" hidden>
             <div class="bus-filtre-chips" role="group" aria-label="Filtrer par arrêt">
               <button type="button" class="bus-filtre-chip actif" data-filtre-arret="tous">Tous</button>
               <% [...new Set(busVersOnAir.map((bus) => bus.arretDescente).filter(Boolean))].forEach((arret) => { %>
