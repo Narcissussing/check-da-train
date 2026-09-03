@@ -1,6 +1,6 @@
-// Icônes filaires minimalistes.
+// === Icône soleil — rayons dynamiques par température ===
 
-// Deux états visuels : normal jusqu'à 30 °C, canicule au-delà.
+// Deux états visuels, normal jusqu'à 30 °C puis canicule au-delà.
 const SOLEIL_ICONE_TEMP_CHAUD = 30;
 const SOLEIL_ICONE_RAYON_CANICULE = 1.8;
 const SOLEIL_ICONE_RAYON_NORMAL = SOLEIL_ICONE_RAYON_CANICULE / 2;
@@ -38,6 +38,8 @@ function traceSoleil(temperature) {
 
   return `<circle cx="12" cy="12" r="5"/><path d="${cardinaux}${diagonaux}"/>`;
 }
+
+// === Icônes filaires (SVG) ===
 
 const PATHS = {
   soleil: `<circle cx="12" cy="12" r="5"/><path d="M12 4.5V2.7M12 19.5V21.3M19.5 12H21.3M4.5 12H2.7M17.3 6.7l1.3-1.3M17.3 17.3l1.3 1.3M6.7 17.3l-1.3 1.3M6.7 6.7l-1.3-1.3"/>`,
@@ -91,7 +93,9 @@ export function icone(nom, { taille = 20, classe = "", temperature } = {}) {
   return `<svg class="icone ${classe}" width="${taille}" height="${taille}" viewBox="${viewBox}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"${styleCouleur}>${contenu}</svg>`;
 }
 
-// Priorité : fin de service, alerte, information, trafic normal.
+// === Illustrations (train / bus / marche) ===
+
+// Priorité fin de service, puis alerte, information, trafic normal.
 // Deux niveaux séparent déplacement et secousse sur `transform`.
 // Les trains restent en PNG pour préserver les performances de l'iPad.
 export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") {
@@ -132,9 +136,8 @@ export function illustrationTrain(niveauTrafic, phaseServiceActuelle = "actif") 
   </div>`;
 }
 
-// Silhouette de bus vue de côté, en aplat (currentColor) plutôt qu'au trait :
-// permet la teinte selon le retard (ambre/rouge) sans PNG dédié — cette carte
-// n'est affichée que sur iPhone, la contrainte de performance iPad ne s'applique pas.
+// Silhouette de bus vue de côté, en aplat (currentColor) plutôt qu'au trait
+// pour permettre la teinte selon le retard (ambre/rouge) sans PNG dédié.
 export function illustrationBusCote() {
   return `<svg class="bus-cote" viewBox="0 0 64 30" aria-hidden="true">
     <rect class="bus-cote-carrosserie" x="2" y="3" width="54" height="19" rx="5" fill="currentColor" />
@@ -147,12 +150,9 @@ export function illustrationBusCote() {
   </svg>`;
 }
 
-// Silhouette qui marche, vue de profil (face à droite) : tête et torse
-// pleins (comme illustrationBusCote), membres en traits fins qui tournent en
-// `transform` (pas de morphing de `d`) autour de l'épaule/hanche, en
-// opposition de phase pour un vrai pas avant/arrière plutôt qu'un écart
-// symétrique gauche-droite. Bus/On Air uniquement — cible iOS 26, pas de
-// contrainte iOS 12 ici.
+// Silhouette qui marche vue de profil, membres en traits fins qui tournent
+// en `transform` autour de l'épaule/hanche en opposition de phase pour un
+// vrai pas avant/arrière, ciblant iOS 26 uniquement (bus/On Air).
 export function illustrationMarche({ taille = 16 } = {}) {
   return `<svg class="marche-anim" width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="13" cy="4.3" r="2.1" fill="currentColor" stroke="none"/>
@@ -164,7 +164,9 @@ export function illustrationMarche({ taille = 16 } = {}) {
   </svg>`;
 }
 
-// Priorité : pluie, froid, soleil, conditions neutres.
+// === Icônes météo — sélection par code WMO ===
+
+// Priorité pluie, puis froid, soleil, conditions neutres.
 export function iconeVerdict({ parapluie, couche, lunettes } = {}) {
   if (parapluie) return "parapluie";
   if (couche) return "flocon";
@@ -172,7 +174,6 @@ export function iconeVerdict({ parapluie, couche, lunettes } = {}) {
   return "coche";
 }
 
-// Convertit un code WMO en icône.
 export function iconeMeteo(code, estJour = true) {
   if (code === 0) return estJour ? "soleil" : "lune";
   if (code === 1 || code === 2) return estJour ? "nuage-soleil" : "nuage-lune";
@@ -185,7 +186,6 @@ export function iconeMeteo(code, estJour = true) {
   return "nuage";
 }
 
-// Regroupe les codes WMO par scène animée.
 export function sceneMeteo(code, estJour = true) {
   if ([95, 96, 99].includes(code)) return "orage";
   if ([71, 73, 75].includes(code)) return "neige";
@@ -195,7 +195,8 @@ export function sceneMeteo(code, estJour = true) {
   return "nuage";
 }
 
-// Génère le fond météo animé par CSS.
+// === Fond météo animé (SVG + CSS) ===
+
 export function animationMeteoFond(scene, temperature = null) {
   if (scene === "calme") return "";
 
@@ -287,7 +288,9 @@ export function animationMeteoFond(scene, temperature = null) {
   return scenes[scene] ?? scenes.nuage;
 }
 
-// Couleur calculée côté serveur pour Safari iOS 12.
+// === Couleur par température ===
+
+// Calculée côté serveur pour Safari iOS 12.
 const ARRETS_TEMPERATURE = [
   { temp: -10, rgb: [59, 130, 246] }, // bleu — froid
   { temp: 12, rgb: [34, 197, 94] }, // vert — doux

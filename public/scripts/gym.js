@@ -5,13 +5,13 @@ let minuterieRotation = null;
 let minuterieReprise = null;
 let enPause = false;
 
-// Sélection verrouillée : une fenêtre choisie dans la liste reste affichée
-// telle quelle (rotation suspendue) jusqu'à sa propre heure d'expiration
-// (`data-expire`, le dernier "quitter la salle" possible de ce créneau),
-// même si le rafraîchissement 60s cesse de l'inclure côté serveur (son aller
-// est alors déjà passé). On garde un clone HTML pour pouvoir la réafficher
-// telle quelle après une fusion DOM qui l'aurait écrasée ou retirée.
+// Une fenêtre choisie dans la liste reste affichée telle quelle (rotation
+// suspendue) jusqu'à sa propre heure d'expiration (`data-expire`), même si
+// le rafraîchissement 60s cesse de l'inclure côté serveur — un clone HTML
+// permet de la réafficher après une fusion DOM qui l'aurait écrasée.
 let verrouille = null;
+
+// === Verrouillage d'une fenêtre vitrine ===
 
 function verrouillageValide() {
   return Boolean(verrouille) && Date.now() < verrouille.expireMs;
@@ -27,7 +27,7 @@ function appliquerVerrouillage() {
     conteneur.appendChild(cible);
     verrouille.element = cible;
   } else if (cible.innerHTML !== verrouille.clone.innerHTML) {
-    // La fusion DOM du rafraîchissement 60s a réécrit son contenu : on le
+    // La fusion DOM du rafraîchissement 60s a réécrit son contenu, on le
     // restaure tel qu'il était au moment de la sélection.
     cible.innerHTML = verrouille.clone.innerHTML;
   }
@@ -41,11 +41,9 @@ function appliquerVerrouillage() {
   });
 }
 
-// Reprend un verrouillage déjà actif côté serveur (posé depuis un autre
-// onglet/appareil, ou par ce même onglet lors d'un rafraîchissement
-// précédent) : le popup porte l'info tant qu'il reste valide (voir
-// `gymVerrouilleActif` dans index.js), donc il suffit de comparer à ce
-// qu'on affiche déjà et de retrouver la ligne correspondante si besoin.
+// Reprend un verrouillage déjà actif côté serveur, posé depuis un autre
+// onglet/appareil ou par ce même onglet lors d'un rafraîchissement
+// précédent (voir `gymVerrouilleActif` dans index.js).
 function hydraterVerrouillageServeur() {
   const popup = document.getElementById("gym-popup");
   if (!popup) return;
@@ -92,13 +90,15 @@ function verrouillerDepuisLigne(ligne) {
   return true;
 }
 
+// === Rotation automatique ===
+
 function demarrerRotationGym() {
   clearTimeout(minuterieRotation);
   hydraterVerrouillageServeur();
 
   if (verrouille && !verrouillageValide()) {
-    // Le créneau verrouillé vient d'expirer : on ne reprend pas la
-    // rotation à partir de lui, on repart du choix par défaut du serveur.
+    // Le créneau verrouillé vient d'expirer, on repart du choix par défaut
+    // du serveur plutôt que de reprendre la rotation à partir de lui.
     if (verrouille.element) {
       verrouille.element.classList.remove("gym-fenetre-active");
     }
@@ -191,6 +191,8 @@ function demarrerRotationGym() {
   minuterieRotation = setTimeout(avancer, DUREE_SOUS_CRENEAU_MS);
 }
 
+// === Pause au tap ===
+
 function configurerPauseRotation() {
   const zone = document.querySelector(".gym-fenetres");
   if (!zone) return;
@@ -223,6 +225,8 @@ function configurerPauseRotation() {
 // pour que tout autre onglet/appareil affichant le tableau de bord reprenne
 // le même verrouillage à son prochain rafraîchissement 60s, sans action de
 // sa part — même mécanisme que "séance faite" (`/gym/terminer`).
+// === Sélection depuis le popup "Tous les trajets" ===
+
 function configurerSelectionFenetre() {
   const liste = document.querySelector(".gym-popup-liste");
   if (!liste) return;
@@ -271,6 +275,8 @@ function configurerSelectionFenetre() {
   });
 }
 
+// === Blagues du dimanche (3 taps requis pour débloquer) ===
+
 const BLAGUES_DIMANCHE = [
   "Demande rejetée. Motif invoqué : dimanche.",
   "Request denied under Sunday Statute, article 1.",
@@ -318,6 +324,8 @@ function choisirBlague() {
   }
   return choix;
 }
+
+// === Bouton "séance terminée" ===
 
 function configurerBoutonTermine() {
   const bouton = document.getElementById("gym-bouton-termine");

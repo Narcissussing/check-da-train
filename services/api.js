@@ -8,7 +8,8 @@ const URLs = {
 };
 const TIMEOUT_MS = 10_000;
 
-// Créer un client IDFM avec les headers par défaut
+// === Clients HTTP ===
+
 const idfmClient = axios.create({
   baseURL: URLs.IDFM,
   headers: { apikey: IDFM_API_KEY },
@@ -20,7 +21,8 @@ const openMeteoClient = axios.create({
   timeout: TIMEOUT_MS,
 });
 
-// Récupérer les prochains passages pour une zone d'arrêt
+// === IDFM : trains & trafic Ligne P ===
+
 export async function recupererProchainsPassages(monitoringRef) {
   const { data } = await idfmClient.get("/stop-monitoring", {
     params: { MonitoringRef: monitoringRef },
@@ -28,7 +30,6 @@ export async function recupererProchainsPassages(monitoringRef) {
   return data;
 }
 
-// Récupérer les infos trafic pour la Ligne P
 export async function recupererInfosTrafic() {
   const { data } = await idfmClient.get("/disruptions_bulk/disruptions/v2", {
     params: { LineRef: "STIF:Line::C01730:" },
@@ -36,7 +37,9 @@ export async function recupererInfosTrafic() {
   return data;
 }
 
-// Une seule requête par ville : évite de multiplier les appels à Open-Meteo.
+// === Open-Meteo — météo ===
+
+// Une seule requête par ville, évite de multiplier les appels à Open-Meteo.
 export async function recupererDonneesMeteo(ville) {
   const { data } = await openMeteoClient.get("/forecast", {
     params: {

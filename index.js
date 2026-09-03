@@ -37,12 +37,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 const MODE_DEMO_AUTORISE = process.env.ENABLE_DEMO_MODE === "true";
 
+// === Gym — état partagé serveur (verrouillage, séance terminée) ===
+
 let gymTermineDate = null;
-// Sélection verrouillée d'un trajet gym précis (LOOK-44), partagée entre
-// tous les onglets/appareils qui consultent le tableau de bord — même
-// principe que `gymTermineDate` ci-dessus : état mémoire côté serveur, lu et
-// rendu à chaque GET /, donc propagé automatiquement au rafraîchissement 60s
-// de chacun sans action manuelle de leur part.
+// Sélection verrouillée d'un trajet gym précis, même principe que
+// `gymTermineDate` ci-dessus — état mémoire côté serveur, propagé
+// automatiquement à tous les onglets/appareils via leur rafraîchissement
+// 60s, sans action manuelle de leur part.
 let gymVerrouille = null;
 
 app.post("/gym/verrouiller", express.json(), (req, res) => {
@@ -85,6 +86,8 @@ app.post("/gym/terminer", express.json(), (req, res) => {
   res.json({ termine: cache });
 });
 
+// === Configuration serveur ===
+
 if (!process.env.IDFM_API_KEY) {
   throw new Error("La variable d'environnement IDFM_API_KEY est requise.");
 }
@@ -105,7 +108,8 @@ const villes = [
 app.set("view engine", "ejs");
 app.use(express.static("public"));
 
-// Cache météo partagé pendant 10 minutes.
+// === Cache météo (10 min, partagé entre requêtes) ===
+
 let cacheMeteo = null;
 let dernierAppelMeteo = null;
 let requeteMeteoEnCours = null;
@@ -139,6 +143,8 @@ async function obtenirMeteo() {
     throw error;
   }
 }
+
+// === Aides diverses ===
 
 function resultatOuTableau(resultat) {
   return resultat.status === "fulfilled" ? extraireDeparts(resultat.value) : [];
@@ -180,6 +186,11 @@ function dateAffichee() {
   return texte.split(" à ")[0].replace(/^./, c => c.toUpperCase());
 }
 
+// === Mode démonstration ===
+// Force chaque axe (météo, trafic, service, retard, pluie, gym, retour
+// Meaux) indépendamment via des paramètres d'URL, pour prévisualiser tous
+// les états visuels sans attendre les vraies conditions.
+
 // Valeurs cohérentes pour chaque scène météo de démonstration.
 const SCENES_METEO_DEMO = {
   soleil: { code: 0, temp: 24, ressenti: 25, min: 16, max: 27, humidite: 40, vent: 8 },
@@ -198,7 +209,7 @@ const PHASES_SERVICE_DEMO = ["actif", "bientot", "termine"];
 // Retards de démonstration pour les deux seuils visuels.
 const NIVEAUX_RETARD_DEMO = ["leger", "fort"];
 
-// Prévisualiser le badge retour Meaux (LOOK-43) à chaque seuil de couleur.
+// Prévisualiser le badge retour Meaux à chaque seuil de couleur.
 const NIVEAUX_RETOUR_MEAUX_DEMO = ["aLheure", "moyen", "fort", "fin"];
 const ECARTS_RETOUR_MEAUX_DEMO = { moyen: 6, fort: 12 };
 
@@ -282,11 +293,11 @@ const LABELS_GYM_DEMO = {
 };
 
 function creerTrainsGymDemo(scenario) {
-  // Arrondi à la minute (pas Date.now() brut) : deux requêtes rapprochées
-  // (ex. deux appareils consultant le tableau de bord à quelques secondes
-  // d'écart) doivent voir des trains démo identiques, sinon une sélection
-  // verrouillée (LOOK-44, identifiée par l'horaire exact du train) ne
-  // pourrait jamais se retrouver d'une requête à l'autre en mode démo.
+  // Arrondi à la minute (pas Date.now() brut) pour que deux requêtes
+  // rapprochées (ex. deux appareils à quelques secondes d'écart) voient
+  // des trains démo identiques, sinon une sélection verrouillée (identifiée
+  // par l'horaire exact) ne pourrait jamais se retrouver d'une requête à
+  // l'autre.
   const maintenant = Math.floor(Date.now() / 60_000) * 60_000;
   const visite = (destination, dansMinutes, ecartMinutes = 0) => {
     const heure = new Date(maintenant + dansMinutes * 60_000);
@@ -616,6 +627,8 @@ function creerRetourMeauxDemo(cle) {
   });
 }
 
+// === Route principale (GET /) ===
+
 app.get("/", async (req, res) => {
   try {
     const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
@@ -636,24 +649,16 @@ app.get("/", async (req, res) => {
       obtenirMeteo(),
       recupererProchainsPassages("STIF:StopArea:SP:427141:"),
       recupererProchainsPassages("STIF:StopArea:SP:10806:"),
-      // Fauvettes : remis à 478203 le 2026-08-25 sur confirmation directe de
-      // l'utilisateur (arrêt physique constaté sur place) — contredit un
-      // relevé en direct plus tôt (23141 avait du trafic réel, 478203 zéro
-      // visite, à deux reprises : 2026-08-21/22 pour CDT-49 puis 2026-08-25).
-      // À reconfirmer en direct aux heures de service.
+      // Fauvettes 478203, confirmé sur place par l'utilisateur, à
+      // reconfirmer en direct aux heures de service si des visites manquent.
       recupererProchainsPassages("STIF:StopArea:SP:478203:"),
-      // Saints Pères : 10863 (pas 10862) — 10862 ne renvoie que la direction
-      // sortante (opposée à Meaux) ; confirmé en direct le 2026-08-26 par
-      // l'utilisateur, qui voyait un vrai 2306 vers Meaux à 11:09 (Paris) que
-      // 10862 ne montrait jamais. 10863 avait été écarté le 2026-08-21/22
-      // (CDT-49) pour zéro visite à l'époque — probablement un simple trou de
-      // service au moment du relevé, pas un identifiant mort.
+      // Saints Pères 10863, pas 10862, qui ne renvoie que la direction
+      // sortante (opposée à Meaux).
       recupererProchainsPassages("STIF:StopArea:SP:10863:"),
       recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
     ]);
 
-    // CDT-54, direction Meaux → On Air : un appel par quai de départ
-    // (quais confirmés par l'utilisateur le 2026-08-24, voir
+    // Direction Meaux → On Air, un appel par quai de départ (voir
     // QUAI_PAR_LIGNE/STOPPOINTS_QUAIS_MEAUX).
     const quaisMeaux = Object.entries(STOPPOINTS_QUAIS_MEAUX);
     const resultatsQuaisMeaux = await Promise.allSettled(
@@ -847,7 +852,7 @@ app.get("/", async (req, res) => {
       "La Ferté-Milon",
     ]);
     const busRetour = construireBusRetour(
-      // CDT-54 : ordre Cornillon → Fauvettes → Saints Pères → La Hayette.
+      // Ordre Cornillon → Fauvettes → Saints Pères → La Hayette.
       [
         resultatBusCornillon,
         resultatBusFauvettes,
@@ -859,9 +864,9 @@ app.get("/", async (req, res) => {
       resultatBusMeaux.status === "fulfilled" ? resultatBusMeaux.value : null,
       departsRetour,
     );
-    // Prochain retour Meaux → Trilport affiché en en-tête gym (LOOK-43) :
-    // même gating que les cartes départ/arrivée, indépendant des trajets
-    // gym eux-mêmes qui restent basés sur `departsRetour` non filtré.
+    // Prochain retour Meaux → Trilport affiché en en-tête gym, avec le même
+    // gating que les cartes départ/arrivée, indépendant des trajets gym
+    // eux-mêmes qui restent basés sur `departsRetour` non filtré.
     let departsRetourEntete =
       serviceDemoActif && serviceDemoActif !== "actif" ? [] : departsRetour;
     if (retourMeauxDemoActif) {

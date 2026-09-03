@@ -1,6 +1,8 @@
 const DIX_MINUTES = 10 * 60 * 1000;
 const MAX_OUVERTS = 2;
 
+// === Animation du tracé de bus (.bus-parcours) ===
+
 function progressionBus(depart, arrivee, maintenant) {
   if (maintenant < depart) {
     return Math.max(0, 0.12 * (1 - (depart - maintenant) / DIX_MINUTES));
@@ -23,8 +25,9 @@ function positionnerBus() {
     const largeur = Math.max(0, parcours.clientWidth - bus.offsetWidth);
     const progression = progressionBus(depart, arrivee, maintenant);
 
-    // Premier positionnement (ouverture, ou fusion 60s qui a réinitialisé le
-    // marqueur) : place le bus directement, sans balayer depuis le bord.
+    // Premier positionnement, à l'ouverture ou après une fusion 60s qui a
+    // réinitialisé le marqueur, place le bus directement sans balayer
+    // depuis le bord.
     const premierPositionnement = parcours.dataset.positionne !== "1";
     if (premierPositionnement) {
       bus.style.transition = "none";
@@ -52,7 +55,9 @@ function positionnerBus() {
   });
 }
 
-// État du popup bus, perdu par la fusion DOM du rafraîchissement 60s
+// === État partagé du popup (survit à la fusion DOM 60s) ===
+
+// Perdu par la fusion DOM du rafraîchissement 60s
 // (le HTML re-rendu par le serveur repart toujours des valeurs par défaut) ;
 // réappliqué par `appliquerEtatPopupBus()`, appelée depuis refresh.js après
 // chaque fusion, exactement comme le verrouillage gym se réapplique déjà.
@@ -73,6 +78,8 @@ const CONFIG_FILTRES = {
   "meaux-onair": { listeSelector: ".bus-vers-onair li", controlesId: "bus-vers-onair-filtres" },
 };
 
+// === Direction On Air ↔ Meaux ===
+
 function appliquerDirection(popup, bouton, direction) {
   // Les libellés "On Air"/"Gare de Meaux" restent fixes de chaque côté ;
   // seule la flèche centrale s'anime pour indiquer le sens (CSS, basé sur
@@ -82,6 +89,8 @@ function appliquerDirection(popup, bouton, direction) {
     panneau.hidden = panneau.dataset.directionPanneau !== direction;
   });
 }
+
+// === Lignes Rentre repliables (ouvert/fermé) ===
 
 function appliquerOuverts(popup) {
   if (!popup) return;
@@ -100,7 +109,7 @@ function basculerOuvertureBus(item) {
     etatPopupBus.ouverts.splice(index, 1);
   } else {
     etatPopupBus.ouverts.push(id);
-    // Une 3e ligne ouverte ferme la plus ancienne : jamais plus de 2 à la fois.
+    // Une 3e ligne ouverte ferme la plus ancienne, jamais plus de 2 à la fois.
     if (etatPopupBus.ouverts.length > MAX_OUVERTS) etatPopupBus.ouverts.shift();
   }
   appliquerOuverts(item.closest(".bus-retour-popup"));
@@ -133,6 +142,8 @@ function basculerDirectionBus(flecheBouton) {
   flecheBouton.classList.add("bus-direction-toggle-anime");
 }
 
+// === Filtres par arrêt ===
+
 function appliquerFiltre(popup, cote, arret) {
   const config = CONFIG_FILTRES[cote];
   const controles = popup.querySelector(`#${config.controlesId}`);
@@ -162,8 +173,8 @@ function appliquerVisibiliteFiltres(popup, cote, visibles, animer) {
   if (!controles) return;
 
   // Un seul bouton (icône train) sert de déclencheur pour les deux
-  // directions : son état actif/aria ne reflète que le côté actuellement
-  // affiché, pas "cote" pour chaque appel de cette fonction.
+  // directions, donc son état actif/aria ne reflète que le côté
+  // actuellement affiché, pas "cote" pour chaque appel de cette fonction.
   if (cote === etatPopupBus.direction) {
     const bouton = popup.querySelector(".bus-filtres-toggle");
     if (bouton) {
@@ -198,11 +209,13 @@ const minuteriesFiltres = { "onair-meaux": null, "meaux-onair": null };
 function basculerVisibiliteFiltres(bouton) {
   const popup = bouton.closest(".bus-retour-popup");
   if (!popup) return;
-  // Bouton unique : agit toujours sur la direction actuellement affichée.
+  // Bouton unique, agit toujours sur la direction actuellement affichée.
   const cote = etatPopupBus.direction;
   etatPopupBus.filtres[cote].visibles = !etatPopupBus.filtres[cote].visibles;
   appliquerVisibiliteFiltres(popup, cote, etatPopupBus.filtres[cote].visibles, true);
 }
+
+// === Tri heure / marche ===
 
 function appliquerTri(popup, cote, tri) {
   const config = CONFIG_FILTRES[cote];
@@ -239,6 +252,8 @@ function basculerTriBus(bouton) {
   appliquerTri(popup, cote, etatPopupBus.filtres[cote].tri);
 }
 
+// === Réapplication après fusion DOM ===
+
 // Réapplique la direction/les lignes Rentre dépliées/les filtres et tris des
 // deux côtés après une fusion DOM (refresh.js).
 function appliquerEtatPopupBus() {
@@ -256,6 +271,8 @@ function appliquerEtatPopupBus() {
   }
 }
 window.busPopupEtat = { appliquer: appliquerEtatPopupBus };
+
+// === Délégation des clics ===
 
 document.addEventListener("click", function (event) {
   const boutonFleche = event.target.closest(".bus-direction-swap");

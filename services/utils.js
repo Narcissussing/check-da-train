@@ -226,7 +226,7 @@ export function extraireDeparts(data) {
           : ecartMinutes < 0
             ? "avance"
             : "a-heure",
-      // 5–9 min : ambre ; 10 min et plus : rouge.
+      // 5–9 min ambre, 10 min et plus rouge.
       retardNiveau:
         ecartMinutes >= 10 ? "fort" : ecartMinutes >= 5 ? "moyen" : undefined,
       dansXMin,
@@ -238,7 +238,7 @@ export function extraireDeparts(data) {
   });
 }
 
-// === Bus Hayette : données de référence (lignes, quais, arrêts, marche) ===
+// === Bus Hayette — données de référence (lignes, quais, arrêts, marche) ===
 
 const LIGNES_BUS_HAYETTE = {
   C00637: { nom: "7718", couleur: "#3c91dc", texte: "#ffffff", duree: 5 },
@@ -278,7 +278,7 @@ export const DESCENTE_PAR_LIGNE = {
   7702: { nom: "La Hayette", minutes: 9 },
 };
 
-// Marche la plus courte en premier : c'est l'arrêt à privilégier quand un
+// Marche la plus courte en premier, l'arrêt à privilégier quand un
 // trajet en boucle passe par plusieurs de nos arrêts (voir dédoublonnage
 // dans construireBusRetour). Cornillon n'y figure jamais (aucune ligne ne
 // le priorise) mais reste dans MARCHE_MINUTES_PAR_ARRET pour l'affichage.
@@ -310,7 +310,7 @@ function extraireVisites(data) {
   );
 }
 
-// === Bus Hayette : Rentre (On Air → Meaux) ===
+// === Bus Hayette — Rentre (On Air → Meaux) ===
 
 // Associe chaque bus entre son arrêt de départ (Cornillon, Fauvettes,
 // Saints Pères ou La Hayette) et son arrivée à Meaux.
@@ -363,7 +363,7 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
         : 0;
       const departOnAir = new Date(new Date(depart).getTime() - 13 * MINUTE_EN_MS);
       const dansXMin = Math.round((new Date(depart).getTime() - maintenant) / MINUTE_EN_MS);
-      // 5–9 min : ambre ; 10 min et plus : rouge (même seuils que les trains).
+      // 5–9 min ambre, 10 min et plus rouge (mêmes seuils que les trains).
       const retardNiveau =
         retardMeaux >= 10 ? "fort" : retardMeaux >= 5 ? "moyen" : undefined;
 
@@ -397,12 +397,9 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
     .filter((bus) => bus && new Date(bus.arrivee).getTime() >= maintenant - 2 * MINUTE_EN_MS)
     .sort((a, b) => new Date(a.depart) - new Date(b.depart))
     // Une ligne en boucle (ex. 2311) peut passer par plusieurs de nos
-    // arrêts pendant le même trajet : sans ce filtre, le même bus physique
-    // apparaît deux fois dans la liste comme deux passages différents. On
-    // ne garde qu'un arrêt par trajet identifié — celui le plus proche à
-    // pied d'On Air (Fauvettes > Saints Pères > Hayette), pas le premier
-    // chronologique de la boucle. Les visites sans trajet résolu restent
-    // inchangées (impossible de prouver qu'elles sont des doublons).
+    // arrêts pendant le même trajet, donc on ne garde qu'un arrêt par
+    // trajet identifié, celui le plus proche à pied d'On Air (Fauvettes
+    // > Saints Pères > Hayette), pas le premier chronologique de la boucle.
     .filter((bus, index, tableau) => {
       if (!bus.trajet) return true;
       const candidats = tableau.filter((autre) => autre.trajet === bus.trajet);
@@ -417,14 +414,11 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
   return buses.slice(0, 8);
 }
 
-// === Bus Hayette : Meaux → On Air ===
+// === Bus Hayette — Meaux → On Air ===
 
-// Aucune ligne prioritaire ici : toutes les options sont listées ensemble,
-// triées par horaire de départ le plus proche. `donneesParQuai` est
-// [{ quai: "A", data }, ...] (un résultat stop-monitoring par quai, voir
-// STOPPOINTS_QUAIS_MEAUX) ; un quai peut mélanger des lignes non pertinentes
-// (ex. le quai 1 dessert aussi une ligne vers Villenoy), donc chaque passage
-// est filtré par son code de ligne réel, pas seulement par quai.
+// Chaque passage est filtré par son code de ligne réel, pas seulement par
+// quai, car un quai peut mélanger des lignes non pertinentes (ex. le quai 1
+// dessert aussi une ligne vers Villenoy).
 export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) {
   return donneesParQuai
     .flatMap(({ quai, data }) =>
@@ -443,10 +437,8 @@ export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) 
         const dansXMin = Math.round((new Date(depart).getTime() - maintenant) / MINUTE_EN_MS);
 
         const descente = DESCENTE_PAR_LIGNE[ligne.nom];
-        // Pas de correspondance de trajet côté arrêt de descente comme pour
-        // l'autre sens : durée de trajet estimée à partir de `ligne.duree`
-        // (mesurée sur Hayette↔Meaux), réutilisée telle quelle même pour un
-        // autre arrêt de descente — approximation, pas une heure live.
+        // Durée de trajet estimée à partir de `ligne.duree` (mesurée sur
+        // Hayette↔Meaux), une approximation plutôt qu'une heure live.
         const arriveeStop = descente
           ? new Date(new Date(depart).getTime() + ligne.duree * MINUTE_EN_MS)
           : null;
@@ -460,6 +452,7 @@ export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) 
           quai,
           arretDescente: descente?.nom ?? null,
           marcheMinutes: descente?.minutes ?? null,
+          arriveeStop: arriveeStop ? arriveeStop.toISOString() : null,
           arriveeStopFormatee: arriveeStop ? formaterHeure(arriveeStop) : null,
           arriveeGymFormatee: arriveeGym ? formaterHeure(arriveeGym) : null,
           couleur: ligne.couleur,
@@ -583,9 +576,9 @@ export function filtrerDeparts(trains, destinations, limite = null) {
   return limite ? resultat.slice(0, limite) : resultat;
 }
 
-// === Météo : score & évaluation ===
+// === Météo — score & évaluation ===
 
-// Score horaire : pluie double, froid simple ; le plus bas gagne.
+// Score horaire, pluie double et froid simple, le plus bas gagne.
 export function evaluerConditionsMeteo({
   precipitation,
   weatherCode,
@@ -642,7 +635,7 @@ function formaterDureeGym(minutes) {
   return reste === 0 ? `${heures} h` : `${heures} h ${reste}`;
 }
 
-// Arrondi à la dizaine inférieure : plus lisible qu'un "xh22" exact.
+// Arrondi à la dizaine inférieure, plus lisible qu'un "xh22" exact.
 function arrondirALaDizaineInferieure(date) {
   const d = new Date(date);
   d.setMinutes(Math.floor(d.getMinutes() / 10) * 10, 0, 0);
@@ -680,7 +673,7 @@ function creerTrainsAttendus(borneMinMs, borneMaxMs, minutesAttendues) {
 }
 
 // Grille réelle mesurée, pas une formule — ne jamais extrapoler au-delà
-// (un "21h45" fabriqué n'existe pas : trou entre 21h15 et 22h15).
+// (un "21h45" fabriqué n'existe pas, trou entre 21h15 et 22h15).
 const HORAIRES_RETOUR_SEMAINE = [
   [17, 15],
   [17, 45],
@@ -758,10 +751,10 @@ export function construireTrajetsGym(
     dureeMinGymMinutes = 60,
     dureeMaxGymMinutes = 120,
     heureMin = "17h20",
-    // Ne pas couper à 20h30 : un train de 20h38 peut encore permettre un
-    // retour réel à 22h15 ou 22h45. La grille des retours borne la fin utile.
+    // Ne pas couper à 20h30, un train de 20h38 peut encore permettre un
+    // retour réel à 22h15 ou 22h45 (la grille des retours borne la fin utile).
     heureMax = "23h59",
-    // Désactivé en démo : la fenêtre y est élargie à la journée entière.
+    // Désactivé en démo, la fenêtre y est élargie à la journée entière.
     avecAttendus = true,
   } = options;
 
@@ -796,7 +789,7 @@ export function construireTrajetsGym(
 
     const sousCreneaux = [];
 
-    // Produit cartésien : chaque aller de l'heure × chaque retour valide
+    // Produit cartésien, chaque aller de l'heure × chaque retour valide
     // dans la fourchette 1h-2h (pas un seul retour par aller).
     for (const aller of allersDuGroupe) {
       const arriveeGymMs = new Date(aller.heure).getTime() + scooterMs;
@@ -850,9 +843,8 @@ export function construireTrajetsGym(
     }
 
     if (sousCreneaux.length === 0) continue;
-    // Dernier "quitter la salle" possible du groupe : sert de date
-    // d'expiration à une sélection verrouillée côté client (le créneau
-    // reste affiché tant qu'il reste jouable).
+    // Dernier "quitter la salle" possible du groupe, sert de date
+    // d'expiration à une sélection verrouillée côté client.
     const expirationMs = Math.max(
       ...sousCreneaux.map((s) => new Date(s.departSalleHeure).getTime()),
     );

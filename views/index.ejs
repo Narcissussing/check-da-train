@@ -316,6 +316,7 @@
 
   </section>
 
+  <%# === Popup bus (On Air ↔ Meaux), les deux directions === %>
   <div class="disclosure popup-fond" id="bus-retour-popup" data-auto-close="false">
     <div class="popup-boite bus-retour-popup">
       <div class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="onair-meaux">
@@ -391,22 +392,34 @@
           </div>
           <ul>
             <% busVersOnAir.forEach((bus) => { %>
-            <li data-arret="<%= bus.arretDescente || "" %>" data-marche="<%= bus.marcheMinutes ?? "" %>">
-              <div class="bus-vers-onair-ligne">
-                <strong class="bus-ligne bus-ligne-petite bvo-c1 bvo-r1" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
-                <span class="bus-quai-badge bvo-c1 bvo-r2">Quai <%= bus.quai %></span>
+            <li class="bus-rentre-item" data-bus-id="<%= bus.id %>" data-arret="<%= bus.arretDescente || "" %>" data-marche="<%= bus.marcheMinutes ?? "" %>">
+              <button type="button" class="bus-rentre-toggle" data-bus-toggle="<%= bus.id %>" aria-expanded="false" aria-label="Détails du bus <%= bus.ligne %> à <%= bus.departFormate %>">
+                <div class="bus-vers-onair-ligne">
+                  <strong class="bus-ligne bus-ligne-petite bvo-c1 bvo-r1" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
+                  <span class="bus-quai-badge bvo-c1 bvo-r2">Quai <%= bus.quai %></span>
 
-                <strong class="bus-option-heure bvo-c2 bvo-r1"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
-                <small class="bus-vers-onair-compte bvo-c2 bvo-r2"><%- icone("minuteur", { taille: 9 }) %> <%= bus.dansXMin %></small>
+                  <strong class="bus-option-heure bvo-c2 bvo-r1"><%= bus.departFormate %><% if (bus.retard > 0) { %> <em class="bus-retard">+<%= bus.retard %></em><% } %></strong>
+                  <small class="bus-vers-onair-compte bvo-c2 bvo-r2"><%- icone("minuteur", { taille: 9 }) %> <%= bus.dansXMin %></small>
 
-                <span class="bus-vers-onair-marche-icone bvo-c3 bvo-r1"><%- illustrationMarche({ taille: 16 }) %></span>
-                <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c3 bvo-r2"><%= bus.marcheMinutes %> min</small><% } %>
+                  <span class="bus-vers-onair-marche-icone bvo-c3 bvo-r1"><%- illustrationMarche({ taille: 16 }) %></span>
+                  <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c3 bvo-r2"><%= bus.marcheMinutes %> min</small><% } %>
 
-                <% if (bus.arretDescente) { %><span class="bus-option-arret bvo-c4 bvo-r1"><%= bus.arretDescente %></span><% } %>
-                <% if (bus.arriveeGymFormatee) { %>
-                <span class="bus-vers-onair-arrivee bvo-c4 bvo-r2"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                  <% if (bus.arretDescente) { %><span class="bus-option-arret bvo-c4 bvo-r1"><%= bus.arretDescente %></span><% } %>
+                  <% if (bus.arriveeGymFormatee) { %>
+                  <span class="bus-vers-onair-arrivee bvo-c4 bvo-r2"><%- icone("haltere", { taille: 13 }) %> <%= bus.arriveeGymFormatee %></span>
+                  <% } %>
+                </div>
+
+                <% if (bus.arriveeStop) { %>
+                <div class="bus-rentre-anim">
+                  <div class="bus-parcours<%= bus.retardNiveau ? " bus-parcours-" + bus.retardNiveau : "" %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arriveeStop %>">
+                    <span class="bus-rail"></span><span class="bus-progression"></span>
+                    <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
+                    <span class="bus-mobile"><%- illustrationBusCote() %></span>
+                  </div>
+                </div>
                 <% } %>
-              </div>
+              </button>
             </li>
             <% }) %>
           </ul>
@@ -432,7 +445,7 @@
           Meaux <%= Math.round(meteos[1].current.temperature_2m) %>°
         </span>
         <% } %>
-        <%# Prochain retour Meaux → Trilport, toujours affiché (LOOK-43). %>
+        <%# Prochain retour Meaux → Trilport, toujours affiché. %>
         <% if (departsRetourEntete && departsRetourEntete.length > 0) { %>
         <span class="meaux-retour<%= departsRetourEntete[0].retardNiveau ? " meaux-retour-" + departsRetourEntete[0].retardNiveau : "" %>">
           <%- icone("train", { taille: 13 }) %>

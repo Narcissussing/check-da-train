@@ -11,10 +11,10 @@ function nettoyerAcceleration(carte) {
 
 // Un seul multiplicateur (--vitesse-meteo, lu par toutes les animations
 // météo en CSS) accélère la scène affichée sans en démarrer une autre.
-// Un seul palier (pas de décroissance en plusieurs étapes) : chaque
-// changement de --vitesse-meteo force le recalcul de toutes les
-// animations qui en dépendent (gouttes, flocons, nuages…) — moins de
-// changements = moins d'à-coups sur du matériel ancien.
+// Un seul palier, pas de décroissance en plusieurs étapes, car chaque
+// changement de --vitesse-meteo force le recalcul de toutes les animations
+// qui en dépendent (gouttes, flocons, nuages), donc moins de changements
+// pour rester léger sur du matériel ancien.
 function accelererScene(carte) {
   nettoyerAcceleration(carte);
   carte.classList.add("vitesse-active", "couleur-tap-active");
@@ -60,8 +60,8 @@ function accelererPluie(pluie) {
   }, DUREE_REACTION_MS);
 }
 
-// Réaction au toucher de la carte entière : la scène affichée accélère ;
-// l'orage ajoute en plus un vrai coup de foudre, le calme (pas de fond
+// Réaction au toucher de la carte entière — la scène affichée accélère,
+// l'orage ajoute en plus un vrai coup de foudre, et le calme (pas de fond
 // animé) un éclat bref sur la carte elle-même.
 function reagirMeteo(carte) {
   const scene = carte.dataset.scene;

@@ -1,6 +1,8 @@
 // Fusion DOM ciblée pour préserver les animations entre deux actualisations.
 let miseAJourEnCours = false;
 
+// === Synchronisation des animations d'alerte ===
+
 // Synchronise les alertes de même durée si Web Animations est disponible.
 const SELECTEUR_ANIMATIONS_ALERTE =
   ".carte-glow-chaude, .carte-glow-alerte, .carte-trafic-info, .carte-trafic-ailleurs, .carte-trafic-alerte, .carte-trafic-alerte .statut-dot, .alerte-clignotante, .alerte-anneau";
@@ -48,7 +50,9 @@ function synchroniserAnimationsAlerte(conteneur = document) {
 
 synchroniserAnimationsAlerte();
 
-// Fusion positionnelle : le gabarit EJS ne réordonne pas ses nœuds.
+// === Fusion DOM ===
+
+// Fusion positionnelle, le gabarit EJS ne réordonne pas ses nœuds.
 function fusionnerNoeuds(actuel, nouveau) {
   if (actuel.nodeType !== nouveau.nodeType) {
     actuel.replaceWith(nouveau.cloneNode(true));
@@ -96,8 +100,10 @@ function fusionnerNoeuds(actuel, nouveau) {
   }
 }
 
-// 00h-6h : personne ne regarde l'iPad, on laisse la machine Fly dormir
-// (auto_stop_machines) au lieu de la maintenir éveillée pour rien.
+// === Veille nocturne (coût Fly) ===
+
+// De 0h à 6h, personne ne regarde l'iPad, donc on laisse la machine Fly
+// dormir (auto_stop_machines) au lieu de la maintenir éveillée pour rien.
 function dansFenetreVeilleNocturne() {
   const partieHeure = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Paris",
@@ -109,6 +115,8 @@ function dansFenetreVeilleNocturne() {
   const heure = Number(partieHeure?.value);
   return heure >= 0 && heure < 6;
 }
+
+// === Rafraîchissement 60s ===
 
 async function rafraichirTableauDeBord() {
   if (miseAJourEnCours) return;
@@ -152,11 +160,12 @@ async function rafraichirTableauDeBord() {
     });
 
     // La fusion remet .gym-fenetre-active sur la 1ère fenêtre (valeur du
-    // rendu serveur) : on relance la rotation plutôt que de la laisser figée.
+    // rendu serveur), donc on relance la rotation plutôt que de la laisser
+    // figée.
     if (window.gymRotation) window.gymRotation.redemarrer();
 
-    // Idem pour la direction/le filtre/le tri du popup bus (CDT-54) : la
-    // fusion réécrit ces attributs aux valeurs par défaut du serveur.
+    // Idem pour la direction/le filtre/le tri du popup bus, la fusion
+    // réécrit ces attributs aux valeurs par défaut du serveur.
     if (window.busPopupEtat) window.busPopupEtat.appliquer();
   } catch (error) {
     console.warn("Mise à jour du tableau de bord impossible :", error.message);
@@ -166,3 +175,11 @@ async function rafraichirTableauDeBord() {
 }
 
 setInterval(rafraichirTableauDeBord, 1 * 60 * 1000);
+
+// iOS suspend les timers d'un onglet en arrière-plan ou verrouillé, donc
+// dès que l'onglet redevient visible on rafraîchit tout de suite plutôt
+// que d'attendre un prochain tick qui peut ne jamais s'être déclenché
+// pendant l'absence.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") rafraichirTableauDeBord();
+});

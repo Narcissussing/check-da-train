@@ -5,7 +5,7 @@
    ============================================================ */
 
 /* ──────────────────────────────────────────
-   THÈME PAR DÉFAUT : BUREAU (sombre)
+   THÈME PAR DÉFAUT — BUREAU (sombre)
    ────────────────────────────────────────── */
 
 :root,
@@ -37,7 +37,7 @@
 }
 
 /* ──────────────────────────────────────────
-   THÈME ALTERNATIF : CINÉMA (clair)
+   THÈME ALTERNATIF — CINÉMA (clair)
    ────────────────────────────────────────── */
 
 :root[data-theme="cinema"] {
@@ -191,7 +191,7 @@ button {
 }
 
 /* ──────────────────────────────────────────
-   Barre démo (QA : forcer météo/trafic à l'affichage)
+   Barre démo (forcer météo/trafic à l'affichage pour la QA)
    ────────────────────────────────────────── */
 
 .barre-demo {
@@ -420,7 +420,7 @@ button {
 }
 
 /* ──────────────────────────────────────────
-   Rangée principale : météo / départ / arrivée
+   Rangée principale — météo, départ, arrivée
    ────────────────────────────────────────── */
 
 .grille-principale {
@@ -445,6 +445,10 @@ button {
   display: none;
 }
 
+/* ──────────────────────────────────────────
+   Popup bus (On Air ↔ Meaux)
+   ────────────────────────────────────────── */
+
 .rentre-bus-bouton {
   display: inline-flex;
   align-items: center;
@@ -461,22 +465,17 @@ button {
   cursor: pointer;
 }
 
-/* Taille fixe : sans ça, la boîte s'ajuste au contenu et change de hauteur
-   à chaque bascule de direction (une liste est toujours plus longue que
-   l'autre). `.popup-boite` fournit déjà le scroll (overflow-y: auto). */
+/* Hauteur fixe pour ne pas changer de taille à chaque bascule de direction,
+   une liste étant toujours plus longue que l'autre. */
 .bus-retour-popup {
   max-width: 460px;
   height: 80vh;
 }
 
-/* Rentre (On Air → Meaux) : une carte par passage — copie exacte de la
-   grille .bus-vers-onair-ligne de Meaux → On Air (mêmes colonnes, mêmes
-   classes, même taille), seul le sens des cellules change (Quai/arrêt
-   inversés). La seule chose propre à cette liste : chaque ligne garde sa
-   propre carte (bordure/fond), pas un simple séparateur entre lignes. Un
-   tap remplace le contenu replié par le tracé de bus animé, dans la même
-   carte (pas un panneau qui s'ouvre en dessous) ; la carte grandit juste
-   assez pour l'accueillir. */
+/* Une carte par passage, reprise de la grille .bus-vers-onair-ligne avec le
+   sens des colonnes inversé, où un tap remplace le contenu replié par le
+   tracé de bus animé dans la même carte plutôt que d'ouvrir un panneau en
+   dessous. */
 .bus-rentre-liste {
   display: grid;
   gap: 0.5rem;
@@ -501,9 +500,8 @@ button {
 }
 
 /* Colonne 1 élargie pour un nom d'arrêt complet ("Les Fauvettes", "Saints
-   Pères") au lieu du court "Quai X" d'origine ; colonne 3 (heure) reste
-   large comme côté Meaux → On Air pour que "+X" de retard ne bascule pas
-   sur sa propre ligne. */
+   Pères") au lieu du court "Quai X" d'origine, et colonne 3 (heure) restée
+   large pour que "+X" de retard ne bascule jamais sur sa propre ligne. */
 .bus-vers-onair-ligne.bus-rentre-grille {
   grid-template-columns: 5rem 2.6rem minmax(0, 1fr) minmax(0, 1fr);
 }
@@ -750,16 +748,6 @@ button {
   list-style: none;
 }
 
-.bus-autres li {
-  min-height: 2rem;
-  padding: 0.65rem 0.85rem;
-  border: 1px solid var(--carte-border);
-  border-radius: 8px;
-  background: var(--surface-2);
-  color: var(--texte-muted);
-  font-size: 0.72rem;
-}
-
 .bus-ligne-petite {
   min-width: 2.8rem;
   height: 1.35rem;
@@ -772,7 +760,7 @@ button {
   font-size: 0.75rem !important;
 }
 
-/* CDT-54 : bascule de direction On Air <-> Meaux */
+/* --- Bascule de direction On Air <-> Meaux --- */
 .bus-direction-toggle {
   display: inline-flex;
   align-items: center;
@@ -781,21 +769,17 @@ button {
   cursor: default;
 }
 
-/* Ce popup n'a plus de bouton "×" séparé : le titre prend toute la largeur,
-   "On Air" et "Gare de Meaux" collés aux deux bords ; fermer se fait en
-   tapant le fond du popup. Seule la flèche centrale (.bus-direction-swap,
-   un vrai <button>) bascule la direction — taper les libellés ne fait rien. */
+/* Le titre prend toute la largeur du popup, sans bouton "×" séparé, et
+   seule la flèche centrale (.bus-direction-swap) bascule la direction. */
 .bus-direction-toggle-pleine-largeur {
   width: 100%;
   justify-content: space-between;
   margin-right: 0;
 }
 
-/* Les libellés restent fixes de chaque côté (jamais de largeur qui bouge) ;
-   seule la flèche centrale indique et anime le sens. Un petit pictogramme
-   par lieu (haltère = On Air, train = Gare de Meaux) aide à distinguer les
-   deux d'un coup d'œil, cohérent avec les icônes déjà utilisées ailleurs
-   (carte Gym, carte trafic) plutôt qu'un nouveau langage visuel. */
+/* Les libellés restent fixes de chaque côté et seule la flèche centrale
+   anime le sens, chaque lieu gardant son pictogramme habituel (haltère
+   pour On Air, train pour Gare de Meaux). */
 .bus-direction-mot {
   display: inline-flex;
   align-items: center;
@@ -810,9 +794,8 @@ button {
   color: var(--texte-muted);
 }
 
-/* Décoratif uniquement, pas un bouton — le seul déclencheur de filtres est
-   l'icône train de "Gare de Meaux". Rouge seulement quand la salle est la
-   destination actuelle (meaux-onair) ; gris comme le train sinon. */
+/* Décoratif uniquement, pas un bouton, coloré en rouge seulement quand la
+   salle est la destination actuelle (meaux-onair). */
 .bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-picto-onair {
   color: var(--danger);
 }
@@ -835,11 +818,9 @@ button {
     background 0.2s ease;
 }
 
-/* Indice continu que la flèche "pointe" et est tapable : elle s'étire (scaleX)
-   et glisse davantage vers l'avant avant de revenir, comme un geste qui
-   pointe puis se relâche. `overflow: visible` sur le badge laisse l'icône
-   déborder légèrement du cercle au pic sans jamais changer la taille du
-   badge lui-même (donc "On Air"/"Gare de Meaux" ne bougent jamais). */
+/* La flèche s'étire et glisse vers l'avant avant de revenir, comme un
+   geste qui pointe puis se relâche, sans jamais changer la taille du
+   badge grâce à `overflow: visible`. */
 .bus-direction-swap {
   overflow: visible;
 }
@@ -905,9 +886,10 @@ button {
   }
 }
 
+/* --- Filtres & tri (par arrêt, par marche) --- */
+
 /* Le pictogramme "Gare de Meaux" de l'en-tête sert lui-même de bouton
-   filtres (plus de bouton dédié séparé) : mêmes réglages visuels que
-   .bus-direction-picto, juste rendu tapable. */
+   filtres, avec les mêmes réglages visuels que .bus-direction-picto. */
 .bus-filtres-toggle {
   display: inline-flex;
   align-items: center;
@@ -1028,11 +1010,11 @@ button {
   }
 }
 
-/* Grille explicite à 4 colonnes × 2 lignes : chaque élément est placé dans
-   sa cellule exacte (bvo-c<col> bvo-r<row>) plutôt que groupé dans un
-   conteneur flex par colonne — ligne 1 = icône/libellé, ligne 2 = valeur,
-   les 4 colonnes partagent les deux mêmes lignes. Permet de déplacer
-   n'importe quel élément vers une autre cellule sans toucher le reste. */
+/* --- Grille d'une ligne de bus (réutilisée par les deux directions) --- */
+
+/* Grille explicite à 4 colonnes × 2 lignes, chaque élément placé dans sa
+   propre cellule (bvo-c<col> bvo-r<row>) pour pouvoir le déplacer vers une
+   autre cellule sans toucher le reste. */
 .bus-vers-onair-ligne {
   display: grid;
   grid-template-columns: 2.8rem minmax(0, 1fr) 2.6rem minmax(0, 1.3fr);
@@ -1085,9 +1067,8 @@ button {
   color: var(--texte-muted);
 }
 
-/* Rapproche l'icône marche de sa valeur : les autres colonnes restent
-   centrées sur les mêmes lignes de la grille, seule cette paire se resserre
-   (icône collée au bas de la ligne 1, valeur collée au haut de la ligne 2). */
+/* Rapproche l'icône marche de sa valeur, seule paire resserrée pendant que
+   les autres colonnes restent centrées sur les deux lignes de la grille. */
 .bus-vers-onair-marche-icone {
   align-self: end;
 }
@@ -1102,9 +1083,9 @@ button {
   font-size: 0.6rem;
 }
 
-/* Cycle de marche : bras/jambes tournent en opposition de phase autour de
-   leur origine (épaule/hanche), tête et torse fixes. Cible iOS 26 (bus
-   uniquement) — pas de contrainte iOS 12 ici. */
+/* Bras et jambes tournent en opposition de phase autour de l'épaule/hanche
+   pour le cycle de marche, tête et torse restant fixes, ciblant iOS 26
+   uniquement (bus). */
 .marche-anim {
   display: block;
 }
@@ -1208,8 +1189,8 @@ button {
   overflow: hidden;
 }
 
-/* Le contenu doit rester lisible par-dessus l'animation de fond
-   (.meteo-fond, z-index:0) : chaque bloc direct passe en z-index:1. */
+/* Chaque bloc direct passe en z-index:1 pour rester lisible par-dessus
+   l'animation de fond (.meteo-fond, z-index:0). */
 .carte-meteo-haut,
 .carte-meteo-stats,
 .pluie-toggle {
@@ -1243,10 +1224,9 @@ button {
   transition: color 0.4s ease;
 }
 
-/* Sur un tap, le calque de fond entier (pluie, nuage, neige, brouillard,
-   orage, soleil) prend temporairement la couleur du vrai icône météo
-   (--couleur-icone-meteo, posée sur .carte-meteo) au lieu du gris —
-   s'ajoute à la réaction de vitesse existante, ne la remplace pas. */
+/* Sur un tap, le calque de fond entier prend temporairement la couleur du
+   vrai icône météo au lieu du gris, en plus de la réaction de vitesse
+   existante. */
 .carte-meteo.couleur-tap-active .meteo-fond {
   color: var(--couleur-icone-meteo);
 }
@@ -1639,10 +1619,8 @@ button {
   opacity: 1;
 }
 
-/* Pendant l'accélération : seul le libellé texte se remplace, en place, par
-   une petite pluie animée — la goutte reste visible tout du long (avant,
-   c'est tout le bouton qui s'effaçait pendant que l'effet ne jouait que
-   dans le fond de carte en arrière-plan, ailleurs sur l'écran). */
+/* Pendant l'accélération, seul le libellé texte se remplace en place par
+   une petite pluie animée qui reste visible tout du long. */
 .pluie-libelle-conteneur {
   position: relative;
   display: inline-block;
@@ -1706,18 +1684,16 @@ button {
 
 .carte-meteo {
   touch-action: manipulation;
-  /* iOS Safari (le vrai bug cible) ne délègue pas fiablement les clics
-     à un élément non interactif comme cet <article> sauf s'il a un
-     cursor:pointer — sans ça, le tap sur la carte peut ne rien faire
-     du tout, pas juste être lent. */
+  /* iOS Safari ne délègue pas fiablement les clics à un élément non
+     interactif comme cet <article> sans cursor:pointer, sinon le tap
+     peut ne rien faire du tout. */
   cursor: pointer;
 }
 
-/* Valeurs statiques (pas de calc()/var() dans animation-duration) : les
-   variables CSS référencées depuis les propriétés d'animation ne sont
-   pas fiables sur Safari iOS 12 — le clic s'exécutait mais l'effet
-   restait invisible. Un seul palier (pas de décroissance progressive)
-   pour rester léger sur du matériel ancien. */
+/* Valeurs statiques (pas de calc()/var() dans animation-duration) car les
+   variables CSS référencées dans les propriétés d'animation ne sont pas
+   fiables sur Safari iOS 12, et un seul palier pour rester léger sur du
+   matériel ancien. */
 .carte-meteo.vitesse-active .pluie-goutte {
   animation-duration: 0.5s;
 }
@@ -1735,8 +1711,8 @@ button {
   animation-duration: 17s;
 }
 
-/* Durée inline par flocon (icons.js) : !important nécessaire pour la
-   remplacer temporairement. */
+/* !important nécessaire pour remplacer temporairement la durée inline
+   posée par flocon dans icons.js. */
 .carte-meteo.vitesse-active .neige-flocon {
   animation-duration: 2.5s !important;
 }
@@ -1755,11 +1731,9 @@ button {
   pointer-events: none;
 }
 
-/* Deux copies du même éclair, sous deux noms différents : on alterne
-   entre elles à chaque tap plutôt que de forcer un reflow (void
-   el.offsetWidth) pour redémarrer la même animation — plus fiable sur
-   du vieux WebKit, où forcer un reflow peut avoir des effets de bord
-   imprévisibles. */
+/* Deux copies du même éclair sous des noms différents, alternées à chaque
+   tap pour redémarrer l'animation sans forcer de reflow, plus fiable sur
+   du vieux WebKit. */
 .orage-flash.orage-flash-actif-a {
   animation: orage-coup-de-foudre-a 0.7s ease-out;
 }
@@ -1871,9 +1845,9 @@ button {
   }
 }
 
-/* "calme" (nuit claire) n'a pas de fond animé — la réaction porte sur la
-   carte elle-même plutôt que sur un élément météo spécifique. Opacité
-   plutôt que filter() : moins coûteux à repeindre sur l'iPad. */
+/* "calme" (nuit claire) n'a pas de fond animé, donc la réaction porte sur
+   la carte elle-même, en opacité plutôt qu'en filter() pour rester léger
+   sur l'iPad. */
 .calme-flash {
   position: absolute;
   top: 0;
@@ -2215,9 +2189,9 @@ button {
   margin-right: 0.3rem;
 }
 
-/* Prochain retour Meaux → Trilport (LOOK-43) : mêmes seuils de retard que
-   les cartes départ/arrivée (`retardNiveau`), mais bleu au repos plutôt que
-   vert/rouge — ce badge n'est ni un départ ni une arrivée du trajet aller. */
+/* Le badge du prochain retour Meaux → Trilport reprend les mêmes seuils de
+   retard que les cartes départ/arrivée, mais bleu au repos puisque ce n'est
+   ni un départ ni une arrivée du trajet aller. */
 .meaux-retour {
   display: inline-flex;
   align-items: center;
@@ -2473,10 +2447,9 @@ button {
   margin-top: 0.9rem;
 }
 
-/* Les fenêtres se superposent dans la même cellule de grille : celle qui
-   va prendre la suite attend hors champ à droite, celle qui vient de
-   céder sa place sort à gauche — gym.js pose data-etat pour donner un
-   vrai effet de glissement (la suivante "tire" l'actuelle vers la sortie). */
+/* Les fenêtres se superposent dans la même cellule de grille, celle qui
+   arrive attendant hors champ à droite et celle qui part sortant à gauche,
+   selon le data-etat posé par gym.js. */
 .gym-fenetres {
   display: grid;
   overflow: hidden;
@@ -2507,9 +2480,9 @@ button {
   transform: translateX(0);
 }
 
-/* Variantes de la même heure (ex. :30/:38) : effet "horloge digitale",
-   un roulement vertical plutôt que le glissement latéral entre heures —
-   les deux animations doivent se lire comme deux mécanismes différents. */
+/* Les variantes d'une même heure (ex. :30/:38) utilisent un roulement
+   vertical façon horloge digitale, différent du glissement latéral entre
+   heures. */
 .gym-sous-stack {
   position: relative;
   display: grid;
@@ -2532,8 +2505,8 @@ button {
   transform: translateY(0);
 }
 
-/* La ligne correspondant à la fenêtre principale sort immédiatement du flux :
-   animer sa hauteur/padding faisait varier celle de toute la carte Gym. */
+/* La ligne de la fenêtre principale sort immédiatement du flux pour éviter
+   qu'animer sa hauteur ne redimensionne toute la carte Gym. */
 .gym-alternative {
   height: 1.55rem;
   box-sizing: border-box;
@@ -2597,9 +2570,9 @@ button {
   animation-delay: -2.13s;
 }
 
-/* Deux copies (mêmes keyframes, noms distincts) : on alterne entre elles
-   au lieu de forcer un reflow (void el.offsetWidth) pour redémarrer la
-   même animation — plus fiable sur du vieux WebKit. */
+/* Deux copies des mêmes keyframes sous des noms distincts, alternées pour
+   redémarrer l'animation sans forcer de reflow, plus fiable sur du vieux
+   WebKit. */
 @keyframes gym-secousse-a {
   0%,
   100% {
