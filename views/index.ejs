@@ -26,6 +26,18 @@
     <a href="/" class="logo-link">
       Check<span>.</span>Da<span>.</span>Train
     </a>
+    <%# iPad mural uniquement (refresh.js, gating par User-Agent) : indicateur
+        de connexion au serveur, pas du niveau de trafic — celui-ci
+        (.statut-dot/.carte-trafic-titre) n'est jamais touché, le dernier
+        état connu reste affiché tel quel même hors ligne, y compris une
+        vraie alerte. Masqué par défaut (un tap n'importe où sur l'écran le
+        révèle brièvement quand tout va bien) ; refresh.js le garde affiché
+        en continu dès que la connexion tombe, sans attendre de tap. Un tap
+        sur l'icône ELLE-MÊME (bouton, pas juste un tap générique) met en
+        pause/reprend le rafraîchissement 60s manuellement. %>
+    <button type="button" class="connexion-etat connecte" id="hors-ligne-badge" title="Connexion au serveur — appuyer pour mettre en pause" aria-pressed="false" hidden>
+      <%- icone("wifi", { taille: 15 }) %>
+    </button>
     <p class="header-date"><%= locals.dateAffichee %></p>
     <div class="header-actions">
       <% if (modeDemo) { %>

@@ -72,6 +72,10 @@ const PATHS = {
   train: `<path d="M.5,6.25H13.92a8.62,8.62,0,0,1,8.62,8.62h0a2.88,2.88,0,0,1-2.87,2.87H.5"/><polyline points="22.54 12.96 13.92 12.96 13.92 6.25"/><polyline points="10.08 9.13 10.08 12.96 6.25 12.96 6.25 9.13"/><polyline points="6.25 9.13 6.25 12.96 2.42 12.96 2.42 9.13"/><line x1="2.42" y1="12.96" x2="0.5" y2="12.96"/><line x1="17.75" y1="17.75" x2="19.67" y2="21.58"/><line x1="13.92" y1="17.75" x2="15.83" y2="21.58"/><line x1="10.08" y1="17.75" x2="12" y2="21.58"/><line x1="6.25" y1="17.75" x2="8.17" y2="21.58"/><line x1="2.42" y1="17.75" x2="4.33" y2="21.58"/><line x1="0.5" y1="21.58" x2="23.5" y2="21.58"/><line x1="8.17" y1="2.42" x2="10.08" y2="6.25"/><line x1="3.38" y1="2.42" x2="11.04" y2="2.42"/>`,
   marche: `<circle cx="13.5" cy="4" r="1.6"/><path d="M11.5 8 8 10l1 4.5L6 21M11.5 8l3.5 1.5 3 3.5M11 12.5l3 1.5-1 3.5"/>`,
   minuteur: `<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9.5 2.5h5M12 2.5V4.5"/>`,
+  // Trois arcs serrés + point plein, plus dense que le reste du set
+  // (stroke-width local plus épais) pour lire comme le symbole wifi natif
+  // iOS plutôt qu'une icône filaire générique.
+  wifi: `<g stroke-width="2.3"><circle cx="12" cy="18.3" r="1.4" fill="currentColor" stroke="none"/><path d="M8.3 14.6a5.4 5.4 0 0 1 7.4 0"/><path d="M5.3 11.1a10 10 0 0 1 13.4 0"/><path d="M2.4 7.7a14.5 14.5 0 0 1 19.2 0"/></g>`,
 };
 
 const VIEWBOXES = {

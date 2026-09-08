@@ -2904,6 +2904,79 @@ button {
     color var(--transition);
 }
 
+/* Indicateur de connexion, dans l'en-tête entre le logo et la date — juste
+   l'icône, pas de pilule/texte (façon icône de barre d'état iOS). Jamais
+   coloré comme une vraie alerte trafic (voir .carte-trafic plus bas, jamais
+   touchée par cet indicateur). Masqué par défaut, révélé au tap (voir
+   refresh.js) quand connecté ; toujours visible sans tap quand déconnecté. */
+.connexion-etat {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texte-dim);
+  font: inherit;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.connexion-etat.connecte {
+  color: var(--succes);
+}
+
+/* "Signal flou" plutôt qu'une icône barrée : filtre STATIQUE, posé une
+   seule fois au changement d'état (pas animé en continu comme le
+   filter: drop-shadow() du train, retiré ailleurs pour son coût de repaint
+   à chaque frame — voir decisions.md) donc sans le même problème de
+   performance sur l'iPad cible. */
+.connexion-etat.deconnecte {
+  color: var(--texte-dim);
+  filter: blur(1.5px);
+  opacity: 0.6;
+}
+
+/* Rejoué à chaque apparition (tap, ou passage hors ligne) — même esprit
+   ressort que le retournement de direction du popup bus
+   (bus-direction-nom-pop), pour que ça n'ait pas juste l'air de sauter à
+   l'écran. */
+.connexion-etat.apparait {
+  animation: connexion-etat-pop 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes connexion-etat-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Le train se fige là où il en était (pas de saut vers une position
+   "figée" comme en-panne/endormi, qui ont chacun leur propre sens) et se
+   ternit un peu plus — signal visuel distinct, jamais confondu avec la
+   sieste de fin de service ni un train en panne. Chaîne complète jusqu'à
+   .illustration-train-conteneur (4 classes), pas juste .carte-trafic.hors-ligne
+   (3 classes) : sinon égalité de spécificité exacte avec
+   .illustration-train-conteneur.en-panne .illustration-train-img (3 classes
+   aussi), qui gagnerait le conflit simplement parce qu'elle est déclarée
+   plus bas dans ce fichier — trouvé en testant en conditions réelles
+   (alerte active en même temps que hors-ligne). */
+.carte-trafic.hors-ligne .illustration-train-conteneur .illustration-train-glisseur {
+  animation-play-state: paused;
+}
+
+.carte-trafic.hors-ligne .illustration-train-conteneur .illustration-train-img {
+  opacity: 0.35;
+}
+
 @media (hover: hover) {
   .carte-trafic-travaux-bouton:hover {
     border-color: var(--accent);
