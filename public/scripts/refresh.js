@@ -119,7 +119,7 @@ if (!estIpadCible) {
 // d'un indicateur "tout va bien" affiché en permanence. Déconnecté : reste
 // affiché en continu tant que la connexion n'est pas revenue, sans dépendre
 // d'un tap (c'est justement l'info qu'on ne veut jamais manquer).
-const DUREE_AFFICHAGE_CONNEXION_MS = 3000;
+const DUREE_AFFICHAGE_CONNEXION_MS = 5000;
 let horsLigneActuellement = false;
 let minuterieConnexionEtat = null;
 
