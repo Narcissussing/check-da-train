@@ -278,6 +278,10 @@ export const DESCENTE_PAR_LIGNE = {
   7702: { nom: "La Hayette", minutes: 9 },
 };
 
+// Rangement matériel/casier/sac/sortie de la salle, avant même de commencer
+// la marche vers l'arrêt de bus (compte à rebours "Partir de la salle").
+const BUFFER_ARRET_ENTRAINEMENT_MINUTES = 4;
+
 // Marche la plus courte en premier, l'arrêt à privilégier quand un
 // trajet en boucle passe par plusieurs de nos arrêts (voir dédoublonnage
 // dans construireBusRetour). Cornillon n'y figure jamais (aucune ligne ne
@@ -367,13 +371,29 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       const retardNiveau =
         retardMeaux >= 10 ? "fort" : retardMeaux >= 5 ? "moyen" : undefined;
 
+      const marcheMinutes = MARCHE_MINUTES_PAR_ARRET[arret] ?? null;
+      // Vrai quand la marche jusqu'à l'arrêt dure plus longtemps que le
+      // temps restant avant le départ du bus : impossible à attraper à
+      // pied, signal visuel urgent (voir bus-vers-onair-marche-temps /
+      // bus-vers-onair-compte, main.css).
+      const marcheDepassee = marcheMinutes != null && marcheMinutes > Math.max(0, dansXMin);
+      const momentArretSalle =
+        marcheMinutes != null
+          ? new Date(
+              new Date(depart).getTime() -
+                (BUFFER_ARRET_ENTRAINEMENT_MINUTES + marcheMinutes) * MINUTE_EN_MS,
+            ).toISOString()
+          : null;
+
       return {
         id: `${ligne.nom}-${trajet ?? depart}`,
         trajet,
         ligne: ligne.nom,
         quai: QUAI_PAR_LIGNE[ligne.nom] ?? null,
         arret,
-        marcheMinutes: MARCHE_MINUTES_PAR_ARRET[arret] ?? null,
+        marcheMinutes,
+        marcheDepassee,
+        momentArretSalle,
         couleur: ligne.couleur,
         couleurTexte: ligne.texte,
         retardNiveau,

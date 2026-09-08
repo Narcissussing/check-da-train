@@ -319,17 +319,18 @@
   <%# === Popup bus (On Air ↔ Meaux), les deux directions === %>
   <div class="disclosure popup-fond" id="bus-retour-popup" data-auto-close="false">
     <div class="popup-boite bus-retour-popup">
-      <div class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="onair-meaux">
-        <span class="bus-direction-mot"><%- icone("haltere", { taille: 14, classe: "bus-direction-picto bus-direction-picto-onair" }) %> On Air</span>
-        <button type="button" class="bus-direction-swap" aria-label="Changer de direction"><%- icone("fleche", { taille: 13 }) %></button>
-        <span class="bus-direction-mot">Gare de Meaux
+      <div class="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur" data-direction-actuelle="meaux-onair">
+        <span class="bus-direction-mot">
           <button type="button" class="bus-filtres-toggle" aria-expanded="false" aria-label="Afficher ou masquer les filtres">
             <%- icone("train", { taille: 14, classe: "bus-direction-picto" }) %>
           </button>
+          <span class="bus-direction-nom bus-direction-nom-meaux">Meaux</span>
         </span>
+        <button type="button" class="bus-direction-swap" aria-label="Changer de direction"><%- icone("fleche", { taille: 13 }) %></button>
+        <span class="bus-direction-mot"><span class="bus-direction-nom bus-direction-nom-onair">On Air</span> <%- icone("haltere", { taille: 14, classe: "bus-direction-picto" }) %></span>
       </div>
 
-      <div class="bus-direction-panneau" data-direction-panneau="onair-meaux">
+      <div class="bus-direction-panneau" data-direction-panneau="onair-meaux" hidden>
       <% if (busRetour.length > 0) { %>
       <div class="bus-rentre-controles bus-controles-cache" id="bus-rentre-filtres" data-filtres-cote="onair-meaux" hidden>
         <div class="bus-filtre-chips" role="group" aria-label="Filtrer par arrêt">
@@ -350,8 +351,8 @@
               <strong class="bus-ligne bus-ligne-petite bvo-c1 bvo-r1" style="--ligne-fond:<%= bus.couleur %>;--ligne-texte:<%= bus.couleurTexte %>"><%= bus.ligne %></strong>
               <span class="bus-quai-badge bus-rentre-arret bvo-c1 bvo-r2"><%= bus.arret %></span>
 
-              <span class="bus-vers-onair-marche-icone bvo-c2 bvo-r1"><%- illustrationMarche({ taille: 16 }) %></span>
-              <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c2 bvo-r2"><%= bus.marcheMinutes %> min</small><% } %>
+              <span class="bus-vers-onair-marche-icone bvo-c2 bvo-r1<%= bus.marcheDepassee ? " alerte-clignotante" : "" %>"><%- illustrationMarche({ taille: 16 }) %></span>
+              <% if (bus.marcheMinutes != null) { %><small class="bus-vers-onair-marche-temps bvo-c2 bvo-r2<%= bus.marcheDepassee ? " alerte-clignotante" : "" %>"><%= bus.marcheMinutes %> min</small><% } %>
 
               <strong class="bus-option-heure bus-rentre-heure bvo-c3 bvo-r1"><%= bus.departFormate %><% if (bus.retardHayette > 0) { %> <em class="bus-retard">+<%= bus.retardHayette %></em><% } %></strong>
               <small class="bus-vers-onair-compte bvo-c3 bvo-r2"><%- icone("minuteur", { taille: 9 }) %> <%= bus.dansXMin %></small>
@@ -360,11 +361,13 @@
               <span class="bus-vers-onair-arrivee bvo-c4 bvo-r2"><%- icone("train", { taille: 13 }) %> <%= bus.arriveeFormatee %></span>
             </div>
 
-            <div class="bus-rentre-anim">
-              <div class="bus-parcours<%= bus.retardNiveau ? " bus-parcours-" + bus.retardNiveau : "" %>" data-depart="<%= bus.depart %>" data-arrivee="<%= bus.arrivee %>">
-                <span class="bus-rail"></span><span class="bus-progression"></span>
-                <span class="bus-arret bus-arret-hayette"></span><span class="bus-arret bus-arret-meaux"></span>
-                <span class="bus-mobile"><%- illustrationBusCote() %></span>
+            <div class="bus-rentre-anim bus-rentre-anim-compte">
+              <div class="bus-depart-salle" data-cible="<%= bus.momentArretSalle ?? "" %>">
+                <span class="bus-depart-salle-libelle">Lâcher les machines</span>
+                <span class="bus-depart-salle-heure-groupe">
+                  <strong class="bus-depart-salle-valeur">--h--</strong>
+                  <small class="bus-depart-salle-compte"><%- icone("minuteur", { taille: 9 }) %> <span class="bus-depart-salle-compte-valeur">--:--</span></small>
+                </span>
               </div>
             </div>
           </button>
@@ -376,7 +379,7 @@
       <% } %>
       </div>
 
-      <div class="bus-direction-panneau" data-direction-panneau="meaux-onair" hidden>
+      <div class="bus-direction-panneau" data-direction-panneau="meaux-onair">
         <div class="bus-autres bus-vers-onair">
           <% if (busVersOnAir.length > 0) { %>
           <div class="bus-vers-onair-controles bus-controles-cache" id="bus-vers-onair-filtres" data-filtres-cote="meaux-onair" hidden>

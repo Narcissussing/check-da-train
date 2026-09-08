@@ -531,6 +531,14 @@ button {
   opacity: 1;
 }
 
+/* Plus spécifique que la règle générique ci-dessus (2 classes, pas 1) :
+   .bus-depart-salle a besoin d'un peu plus de hauteur pour son heure +
+   compte à rebours sur 2 lignes, sans toucher .bus-parcours (l'autre
+   panneau, Meaux → On Air, garde sa hauteur d'origine). */
+.bus-rentre-item.bus-rentre-ouvert .bus-rentre-anim-compte {
+  max-height: 3.25rem;
+}
+
 .bus-rentre-item.bus-rentre-ouvert .bus-vers-onair-ligne {
   color: var(--texte);
 }
@@ -626,6 +634,54 @@ button {
   height: 2.65rem;
   margin-top: 0.65rem;
   overflow: hidden;
+}
+
+.bus-depart-salle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  min-height: 2.65rem;
+  margin-top: 0.65rem;
+  padding: 0.3rem 0.2rem;
+  border-top: 1px solid var(--carte-border);
+}
+
+.bus-depart-salle-libelle {
+  color: var(--texte-muted);
+  font-size: 0.7rem;
+}
+
+/* Heure cible + compte à rebours live, empilés et alignés à droite — même
+   langage visuel que .bus-option-heure/.bus-vers-onair-compte utilisé
+   partout ailleurs pour "grande heure + petit compte à rebours dessous". */
+.bus-depart-salle-heure-groupe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+}
+
+.bus-depart-salle-valeur {
+  color: var(--info);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.bus-depart-salle-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--texte-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+}
+
+.bus-depart-salle-passe .bus-depart-salle-valeur,
+.bus-depart-salle-passe .bus-depart-salle-compte {
+  color: var(--texte-muted);
 }
 
 .bus-rail {
@@ -769,24 +825,49 @@ button {
   cursor: default;
 }
 
-/* Le titre prend toute la largeur du popup, sans bouton "×" séparé, et
-   seule la flèche centrale (.bus-direction-swap) bascule la direction. */
+/* Grille à 3 colonnes (1fr / auto / 1fr) : la flèche centrale reste
+   toujours au milieu géométrique du titre, quelle que soit la longueur
+   des deux libellés ("On Air" vs "Meaux") — un simple
+   `justify-content: space-between` ne centre PAS un élément du milieu
+   flanqué de deux éléments de largeurs différentes, seulement l'espace
+   entre eux. Le titre prend toute la largeur du popup, sans bouton "×"
+   séparé. */
 .bus-direction-toggle-pleine-largeur {
+  display: grid;
+  /* minmax(0, 1fr), pas juste 1fr : un track `Nfr` nu ne rétrécit pas sous
+     la largeur min-content de son contenu (même piège que .grille-principale,
+     voir decisions.md) — "Meaux" est plus court que "On Air" mais garde ses
+     marges asymétriques ; sans le clamp la colonne pouvait s'étirer et
+     décentrer la flèche. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
   width: 100%;
-  justify-content: space-between;
   margin-right: 0;
 }
 
-/* Les libellés restent fixes de chaque côté et seule la flèche centrale
-   anime le sens, chaque lieu gardant son pictogramme habituel (haltère
-   pour On Air, train pour Gare de Meaux). */
+/* Les deux libellés restent chacun fixes de leur côté ("Meaux" à gauche,
+   "On Air" à droite, jamais échangés) — seule la flèche centrale
+   (.bus-direction-swap) tourne pour indiquer le sens réel du bus. */
 .bus-direction-mot {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   gap: 0.3rem;
   color: var(--texte);
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.bus-direction-mot:first-of-type {
+  justify-self: start;
+}
+
+.bus-direction-swap {
+  justify-self: center;
+}
+
+.bus-direction-mot:last-of-type {
+  justify-self: end;
 }
 
 .bus-direction-picto {
@@ -794,10 +875,48 @@ button {
   color: var(--texte-muted);
 }
 
-/* Décoratif uniquement, pas un bouton, coloré en rouge seulement quand la
-   salle est la destination actuelle (meaux-onair). */
-.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-picto-onair {
+/* Couleur portée par le NOM (.bus-direction-nom), pas par le pictogramme —
+   coloré seulement quand ce lieu est la destination actuelle. Transition
+   douce + display inline-block (nécessaire pour que le scale() du pop
+   ci-dessous s'applique correctement à une boîte inline). */
+.bus-direction-nom {
+  display: inline-block;
+  transition: color 0.25s ease;
+}
+
+.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-nom-onair {
   color: var(--danger);
+}
+
+/* Même principe côté Meaux ; hex Ligne P réel (#f28e42), pas un token de
+   thème — couleur de marque externe, comme ligne.couleur pour les bus, pas
+   une couleur sémantique de l'appli. */
+.bus-direction-toggle[data-direction-actuelle="onair-meaux"] .bus-direction-nom-meaux {
+  color: #f28e42;
+}
+
+/* Petit "pop" au moment où un nom DEVIENT la destination — posé/retiré par
+   bus-return.js sur le nom qui vient de le devenir, en même temps que le
+   retournement de la flèche (main.css, bus-direction-flip-vers-*), pour que
+   le libellé qui s'allume ait, lui aussi, un peu de vie plutôt qu'un
+   changement de couleur instantané. */
+.bus-direction-nom-pop {
+  animation: bus-direction-nom-pop 0.5s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes bus-direction-nom-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .bus-direction-swap {
@@ -844,38 +963,95 @@ button {
   }
 }
 
-.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-swap {
+/* Libellés fixes des deux côtés (voir plus haut) : c'est la flèche seule
+   qui tourne pour montrer le sens réel du bus. Meaux est maintenant à
+   gauche et On Air à droite (par défaut, meaux-onair, flèche non tournée =
+   pointe vers la droite = vers On Air) ; le sens retour (onair-meaux,
+   destination Meaux, maintenant à gauche) tourne la flèche pour qu'elle
+   pointe vers la gauche. Cette valeur au repos n'est utilisée QUE si le
+   clic n'a pas (encore) rejoué l'animation ressort ci-dessous — celle-ci
+   porte elle-même l'angle final dans sa dernière image. */
+.bus-direction-toggle[data-direction-actuelle="onair-meaux"] .bus-direction-swap {
   transform: rotate(180deg);
 }
 
-.bus-direction-toggle-anime {
-  animation: bus-direction-pulse 0.4s ease;
+/* Retourne la pièce comme une pièce de monnaie qu'on lance, avec un
+   dépassement franc avant de se stabiliser sur l'angle final — beaucoup
+   plus vivant qu'un simple aller-retour d'échelle. Une seule et même
+   keyframe DOIT porter la rotation ET l'échelle : une `animation` sur
+   `transform` remplace entièrement la valeur (y compris celle posée par
+   `[data-direction-actuelle]` ci-dessus), une keyframe qui ne porterait que
+   `scale(...)` ferait donc sauter la flèche à 0° pendant tout le clic
+   (bug trouvé en construisant cette version). Deux variantes selon le sens
+   choisi par bus-return.js (`bus-direction-flip-vers-*`), pas une seule
+   generique, car chacune doit connaître son angle de départ ET d'arrivée. */
+.bus-direction-flip-vers-meaux {
+  animation: bus-direction-flip-vers-meaux 0.55s cubic-bezier(0.3, 0, 0.2, 1);
 }
 
-@keyframes bus-direction-pulse {
+.bus-direction-flip-vers-onair {
+  animation: bus-direction-flip-vers-onair 0.55s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes bus-direction-flip-vers-meaux {
   0% {
-    transform: scale(1);
+    transform: rotate(0deg) scale(1);
+    background: var(--surface-2);
   }
-  40% {
-    transform: scale(0.93);
+  35% {
+    background: var(--accent);
+  }
+  55% {
+    transform: rotate(205deg) scale(1.3);
+  }
+  78% {
+    transform: rotate(163deg) scale(0.9);
   }
   100% {
-    transform: scale(1);
+    transform: rotate(180deg) scale(1);
+    background: var(--surface-2);
+  }
+}
+
+@keyframes bus-direction-flip-vers-onair {
+  0% {
+    transform: rotate(180deg) scale(1);
+    background: var(--surface-2);
+  }
+  35% {
+    background: var(--accent);
+  }
+  55% {
+    transform: rotate(-25deg) scale(1.3);
+  }
+  78% {
+    transform: rotate(17deg) scale(0.9);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    background: var(--surface-2);
   }
 }
 
 .bus-direction-panneau {
-  animation: bus-direction-entree 0.3s ease;
+  animation: bus-direction-entree 0.4s cubic-bezier(0.3, 0, 0.2, 1);
 }
 
+/* Léger dépassement (scale 1.02 puis retour à 1) plutôt qu'un simple fondu
+   linéaire — même esprit "ressort" que la flèche juste au-dessus, pour que
+   le contenu qui apparaît ait un peu de rebond au lieu de juste apparaître. */
 @keyframes bus-direction-entree {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(10px) scale(0.97);
   }
-  to {
+  60% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -888,8 +1064,8 @@ button {
 
 /* --- Filtres & tri (par arrêt, par marche) --- */
 
-/* Le pictogramme "Gare de Meaux" de l'en-tête sert lui-même de bouton
-   filtres, avec les mêmes réglages visuels que .bus-direction-picto. */
+/* Le pictogramme "Meaux" de l'en-tête sert lui-même de bouton filtres,
+   avec les mêmes réglages visuels que .bus-direction-picto. */
 .bus-filtres-toggle {
   display: inline-flex;
   align-items: center;

@@ -55,6 +55,51 @@ function positionnerBus() {
   });
 }
 
+// === Heure "Partir de la salle" (.bus-depart-salle) ===
+
+// "17h46", pas "17:46" — même convention "XhYY" que le reste du site pour
+// une heure d'horloge (ex. HORAIRES_RETOUR_SEMAINE côté serveur).
+function formaterHeureDepartSalle(iso) {
+  return new Date(iso)
+    .toLocaleTimeString("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" })
+    .replace(":", "h");
+}
+
+// mm:ss, secondes toujours sur 2 chiffres ("2:07", "0:42") ; jamais négatif,
+// une cible dépassée reste affichée à "0:00" (la classe "-passe" grise
+// alors toute la ligne, y compris ce compte à rebours).
+function formaterCompteADeboursDepartSalle(msRestants) {
+  const total = Math.max(0, Math.round(msRestants / 1000));
+  const minutes = Math.floor(total / 60);
+  const secondes = total % 60;
+  return minutes + ":" + String(secondes).padStart(2, "0");
+}
+
+// Met à jour, chaque seconde, CHAQUE ligne Rentre actuellement dépliée
+// (jusqu'à 2 à la fois) — même portée que positionnerBus(), remplace
+// l'ancienne animation de progression dans la modale Rentre (CDT-47).
+// Affiche à la fois l'heure cible elle-même (repère stable, ne bouge pas
+// toutes les secondes) ET, en dessous, un compte à rebours live jusqu'à la
+// seconde (même langage visuel que .bus-option-heure/.bus-vers-onair-compte
+// utilisé partout ailleurs pour "grande heure + petit compte à rebours") ;
+// la classe "-passe" grise l'ensemble une fois ce moment dépassé.
+function mettreAJourComptesDepartSalle() {
+  document.querySelectorAll(".bus-rentre-ouvert .bus-depart-salle").forEach(function (bloc) {
+    const valeur = bloc.querySelector(".bus-depart-salle-valeur");
+    const compte = bloc.querySelector(".bus-depart-salle-compte-valeur");
+    if (!valeur) return;
+    const cible = new Date(bloc.dataset.cible).getTime();
+    if (!bloc.dataset.cible || !Number.isFinite(cible)) {
+      valeur.textContent = "--h--";
+      if (compte) compte.textContent = "--:--";
+      return;
+    }
+    bloc.classList.toggle("bus-depart-salle-passe", cible <= Date.now());
+    valeur.textContent = formaterHeureDepartSalle(bloc.dataset.cible);
+    if (compte) compte.textContent = formaterCompteADeboursDepartSalle(cible - Date.now());
+  });
+}
+
 // === État partagé du popup (survit à la fusion DOM 60s) ===
 
 // Perdu par la fusion DOM du rafraîchissement 60s
@@ -62,7 +107,7 @@ function positionnerBus() {
 // réappliqué par `appliquerEtatPopupBus()`, appelée depuis refresh.js après
 // chaque fusion, exactement comme le verrouillage gym se réapplique déjà.
 const etatPopupBus = {
-  direction: "onair-meaux",
+  direction: "meaux-onair",
   ouverts: [], // ids de lignes Rentre dépliées, plus ancienne en premier (FIFO)
   // Filtres/tri sont indépendants par direction (chacune a sa propre liste,
   // ses propres arrêts et son propre bouton dans l'en-tête).
@@ -114,6 +159,7 @@ function basculerOuvertureBus(item) {
   }
   appliquerOuverts(item.closest(".bus-retour-popup"));
   positionnerBus();
+  mettreAJourComptesDepartSalle();
 }
 
 function basculerDirectionBus(flecheBouton) {
@@ -136,10 +182,30 @@ function basculerDirectionBus(flecheBouton) {
   appliquerDirection(popup, conteneur, actuelle);
   appliquerOuverts(popup);
 
-  // Petit pulse au tap ; retiré à la fin pour pouvoir se rejouer au prochain clic.
-  flecheBouton.classList.remove("bus-direction-toggle-anime");
+  // Retournement ressort au tap ; deux variantes (voir main.css) car chacune
+  // doit connaître son angle de départ ET d'arrivée dans la même keyframe —
+  // une animation sur `transform` remplace la valeur entière, elle ne peut
+  // pas juste ajouter un rebond par-dessus l'angle déjà posé par
+  // [data-direction-actuelle]. Retire les deux avant de rejouer, pour
+  // pouvoir se relancer même en pleine animation sur un double-tap rapide.
+  const classeRetournement =
+    actuelle === "meaux-onair" ? "bus-direction-flip-vers-onair" : "bus-direction-flip-vers-meaux";
+  flecheBouton.classList.remove("bus-direction-flip-vers-onair", "bus-direction-flip-vers-meaux");
   void flecheBouton.offsetWidth;
-  flecheBouton.classList.add("bus-direction-toggle-anime");
+  flecheBouton.classList.add(classeRetournement);
+
+  // Même rebond sur le nom qui DEVIENT la destination (voir main.css,
+  // bus-direction-nom-pop) — sa couleur change déjà instantanément via
+  // [data-direction-actuelle] (posé par appliquerDirection ci-dessus), ce
+  // pop lui donne juste un peu de vie en plus, synchronisé avec la flèche.
+  const nomDestination = conteneur.querySelector(
+    actuelle === "meaux-onair" ? ".bus-direction-nom-onair" : ".bus-direction-nom-meaux",
+  );
+  if (nomDestination) {
+    nomDestination.classList.remove("bus-direction-nom-pop");
+    void nomDestination.offsetWidth;
+    nomDestination.classList.add("bus-direction-nom-pop");
+  }
 }
 
 // === Filtres par arrêt ===
@@ -307,10 +373,17 @@ document.addEventListener("click", function (event) {
   }
 
   if (event.target.closest("[data-toggle-target='bus-retour-popup']")) {
-    setTimeout(positionnerBus, 0);
+    setTimeout(function () {
+      positionnerBus();
+      mettreAJourComptesDepartSalle();
+    }, 0);
   }
 });
 
 positionnerBus();
-setInterval(positionnerBus, 1000);
+mettreAJourComptesDepartSalle();
+setInterval(function () {
+  positionnerBus();
+  mettreAJourComptesDepartSalle();
+}, 1000);
 window.addEventListener("resize", positionnerBus);
