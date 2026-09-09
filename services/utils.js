@@ -546,6 +546,22 @@ export function formaterDelaiPluie(minutes, debut) {
 }
 
 export function trouverProchainePluie(prevision, maintenant = new Date()) {
+  // Vérifie d'abord le relevé "current" (quasi temps réel) avant la grille
+  // "hourly" (modèle prévisionnel par heure pleine) — les deux sources
+  // d'Open-Meteo peuvent diverger sur l'heure en cours (une averse qui
+  // démarre localement, captée par current.precipitation, avant que le
+  // modèle horaire plus grossier ne s'aligne). Sans ce test, la scène météo
+  // (pilotée par current.weather_code, voir sceneMeteo) pouvait afficher la
+  // pluie pendant que ce texte ignorait le relevé actuel et cherchait
+  // uniquement la prochaine case "hourly" au-dessus du seuil, parfois des
+  // jours plus tard.
+  if ((prevision?.current?.precipitation ?? 0) >= 0.1) {
+    return {
+      resume: "Pluie en cours",
+      dateExacte: null,
+    };
+  }
+
   const heures = prevision?.hourly?.time ?? [];
   const precipitations = prevision?.hourly?.precipitation ?? [];
 

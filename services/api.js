@@ -47,7 +47,9 @@ export async function recupererDonneesMeteo(ville) {
       longitude: ville.longitude,
       current:
         "temperature_2m,apparent_temperature,weather_code,precipitation,is_day,relative_humidity_2m,wind_speed_10m",
-      daily: "sunrise,sunset,temperature_2m_min,temperature_2m_max",
+      // weather_code ajouté pour le résumé "météo du lendemain" affiché en
+      // mode hors-ligne (index [1] du tableau daily) — voir refresh.js.
+      daily: "sunrise,sunset,temperature_2m_min,temperature_2m_max,weather_code",
       hourly: "temperature_2m,precipitation,cloud_cover,weather_code",
       timezone: "Europe/Paris",
     },

@@ -34,9 +34,13 @@
         révèle brièvement quand tout va bien) ; refresh.js le garde affiché
         en continu dès que la connexion tombe, sans attendre de tap. Un tap
         sur l'icône ELLE-MÊME (bouton, pas juste un tap générique) met en
-        pause/reprend le rafraîchissement 60s manuellement. %>
-    <button type="button" class="connexion-etat connecte" id="hors-ligne-badge" title="Connexion au serveur — appuyer pour mettre en pause" aria-pressed="false" hidden>
-      <%- icone("wifi", { taille: 15 }) %>
+        pause/reprend le rafraîchissement 60s manuellement. Invisible
+        (opacity, pas hidden) tant que connecté, pour que la zone reste
+        tapable au bon endroit sans qu'il y ait besoin de la voir d'abord —
+        elle redevient visible dès l'activation, pour savoir où retaper
+        ensuite. %>
+    <button type="button" class="connexion-etat connecte" id="hors-ligne-badge" title="Connexion au serveur — appuyer pour mettre en pause" aria-pressed="false">
+      <%- icone("wifi", { taille: 22 }) %>
     </button>
     <p class="header-date"><%= locals.dateAffichee %></p>
     <div class="header-actions">
@@ -139,7 +143,7 @@
     <% const sceneMeteoActuelle = sceneMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1); %>
     <article class="carte carte-meteo" data-scene="<%= sceneMeteoActuelle %>" style="--couleur-icone-meteo: <%= couleurTemperature(meteos[0].current.temperature_2m) %>">
       <%- animationMeteoFond(sceneMeteoActuelle, meteos[0].current.temperature_2m) %>
-      <div class="carte-meteo-haut">
+      <div class="carte-meteo-haut carte-meteo-haut-actuel">
         <div class="carte-meteo-icone" style="color: <%= couleurTemperature(meteos[0].current.temperature_2m) %>"><%- icone(iconeMeteo(meteos[0].current.weather_code, meteos[0].current.is_day === 1), { taille: 56, temperature: meteos[0].current.temperature_2m }) %></div>
         <div>
           <p class="temp"><%= Math.round(meteos[0].current.temperature_2m) %>°</p>
@@ -147,6 +151,26 @@
           <p class="ressenti">Ressenti <%= Math.round(meteos[0].current.apparent_temperature) %>°</p>
         </div>
       </div>
+
+      <%# Hors ligne (refresh.js) uniquement : résumé du lendemain (pas de
+          "current" qui resterait figé en se faisant passer pour du direct).
+          Pré-rendu côté serveur avec les mêmes fonctions que le bloc
+          "actuel" (traduireCodeMeteo/iconeMeteo/couleurTemperature), affiché
+          seulement via la classe .hors-ligne — pas de logique dupliquée
+          côté client. %>
+      <% if (meteos[0].daily.weather_code && meteos[0].daily.weather_code[1] !== undefined) { %>
+      <% const codeDemain = meteos[0].daily.weather_code[1]; %>
+      <% const maxDemain = Math.round(meteos[0].daily.temperature_2m_max[1]); %>
+      <% const minDemain = Math.round(meteos[0].daily.temperature_2m_min[1]); %>
+      <div class="carte-meteo-haut carte-meteo-haut-demain" hidden>
+        <div class="carte-meteo-icone" style="color: <%= couleurTemperature(maxDemain) %>"><%- icone(iconeMeteo(codeDemain, true), { taille: 56 }) %></div>
+        <div>
+          <p class="temp"><%= maxDemain %>° <span class="temp-min-demain"><%= minDemain %>°</span></p>
+          <p class="condition"><%= traduireCodeMeteo(codeDemain).replace(/^\S+\s*/u, "") %></p>
+          <p class="ressenti">Demain</p>
+        </div>
+      </div>
+      <% } %>
 
       <div class="carte-meteo-stats">
         <div class="stat">
