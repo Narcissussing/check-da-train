@@ -24,6 +24,7 @@ pnpm-debug.log*
 .AppleDouble
 .LSOverride
 Icon
+!/frontend/src/components/Icon/
 ._*
 
 # Fichiers système Windows (au cas où)
