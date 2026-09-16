@@ -9,11 +9,12 @@ const TITRES_PAR_NIVEAU = {
   info: 'Perturbation sur la ligne P',
 }
 
-export default function TrafficCard({ niveauTrafic, phaseServiceActuelle, texteAlerte, detailAlerte, prochaineTravaux, travauxFuturs }) {
+export default function TrafficCard({ niveauTrafic, phaseServiceActuelle, texteAlerte, detailAlerte, messageInfoRetard, prochaineTravaux, travauxFuturs }) {
   const trafic = useDisclosure()
   const travaux = useDisclosure()
 
   const titre =
+    messageInfoRetard ??
     TITRES_PAR_NIVEAU[niveauTrafic] ??
     (niveauTrafic === 'ailleurs' || niveauTrafic === 'alerte'
       ? texteAlerte
@@ -105,6 +106,7 @@ TrafficCard.propTypes = {
   niveauTrafic: PropTypes.string.isRequired,
   phaseServiceActuelle: PropTypes.string,
   texteAlerte: PropTypes.string,
+  messageInfoRetard: PropTypes.string,
   detailAlerte: PropTypes.shape({
     details: PropTypes.string,
     trajet: PropTypes.string,

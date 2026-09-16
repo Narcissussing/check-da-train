@@ -779,6 +779,7 @@ async function calculerDonneesTableauDeBord(req) {
       resultatTrafic.status === "fulfilled" ? "fluide" : "indisponible";
     let texteAlerte = null;
     let detailAlerte = null;
+    let messageInfoRetard = null;
     if (perturbations.length > 0) {
       niveauTrafic = "alerte";
       texteAlerte = perturbations[0].texte;
@@ -858,6 +859,21 @@ async function calculerDonneesTableauDeBord(req) {
       serviceDemoActif && serviceDemoActif !== "actif" ? [] : departsRetour;
     if (retourMeauxDemoActif) {
       departsRetourEntete = creerRetourMeauxDemo(retourMeauxDemoActif);
+    }
+
+    // Un vrai retard (>3 min) sur le prochain train ne doit jamais s'afficher
+    // comme "trafic fluide", même sans perturbation IDFM — mais avec un
+    // message neutre, distinct du ton alarmiste des vraies perturbations.
+    if (niveauTrafic === "fluide") {
+      const retardMax = Math.max(
+        departsTrilportDepart[0]?.ecartMinutes ?? 0,
+        arrivesTrilport[0]?.ecartMinutes ?? 0,
+        departsRetourEntete[0]?.ecartMinutes ?? 0,
+      );
+      if (retardMax > 3) {
+        niveauTrafic = "info";
+        messageInfoRetard = "Léger retard sur un prochain train";
+      }
     }
 
     // Départs utiles depuis Trilport
@@ -996,6 +1012,7 @@ async function calculerDonneesTableauDeBord(req) {
       statutArrivees,
       statutRetourMeaux,
       niveauTrafic,
+      messageInfoRetard,
       phaseServiceActuelle,
       prochaineTravaux,
       travauxFuturs,
@@ -1036,6 +1053,7 @@ function donneesTableauDeBordErreur(error) {
     detailAlerte: null,
     erreur: error.message,
     niveauTrafic: "fluide",
+    messageInfoRetard: null,
     phaseServiceActuelle: "actif",
     prochaineTravaux: null,
     prochainePluieTrilport: null,

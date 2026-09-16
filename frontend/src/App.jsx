@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import Header from './components/Header/Header'
 import WeatherCard from './features/weather/WeatherCard'
 import TrafficCard from './features/traffic/TrafficCard'
+import TrainIllustration from './features/traffic/TrainIllustration'
 import TrainCard from './features/trains/TrainCard'
 import GymCard from './features/gym/GymCard'
 import BusPopup from './features/bus/BusPopup'
@@ -10,6 +11,7 @@ import DemoBar from './features/DemoBar'
 import useDisclosure from './hooks/useDisclosure'
 import useAlerteSync from './hooks/useAlerteSync'
 import { SleepModeProvider } from './context/SleepModeContext'
+import trainLigneP from './assets/images/train-ligne-p.png'
 
 const REFRESH_MS = 60 * 1000
 const EST_IPAD = typeof navigator !== 'undefined' && /iPad/.test(navigator.userAgent)
@@ -77,7 +79,11 @@ export default function App() {
   useAlerteSync([donnees])
 
   if (!donnees && !horsLigne) {
-    return <main className="etat-chargement">Chargement…</main>
+    return (
+      <main className="etat-chargement" aria-label="Chargement en cours">
+        <img className="etat-chargement-train" src={trainLigneP} alt="" aria-hidden="true" />
+      </main>
+    )
   }
 
   if (!donnees && horsLigne) {
@@ -106,6 +112,11 @@ export default function App() {
         }}
       />
       <main id="dashboard-content" className="page">
+        <div className="illustration-train-flottante">
+          <div className="illustration-train-flottante-interieur">
+            <TrainIllustration niveauTrafic={donnees.niveauTrafic} phaseServiceActuelle={donnees.phaseServiceActuelle} />
+          </div>
+        </div>
         {donnees.modeDemo && (
           <DemoBar
             boutonsMeteo={donnees.boutonsMeteo}
@@ -127,6 +138,7 @@ export default function App() {
             )}
           />
         )}
+
         {donnees.meteos?.length === 2 && (
           <section className="grille-principale">
             <WeatherCard
@@ -172,6 +184,7 @@ export default function App() {
           niveauTrafic={donnees.niveauTrafic}
           phaseServiceActuelle={donnees.phaseServiceActuelle}
           texteAlerte={donnees.texteAlerte}
+          messageInfoRetard={donnees.messageInfoRetard}
           detailAlerte={donnees.detailAlerte}
           prochaineTravaux={donnees.prochaineTravaux}
           travauxFuturs={donnees.travauxFuturs}

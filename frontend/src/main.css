@@ -119,6 +119,46 @@ body {
   margin-right: auto;
 }
 
+.etat-erreur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 60vh;
+  text-align: center;
+  color: var(--texte-muted);
+}
+
+.etat-erreur p:first-child {
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.etat-chargement {
+  position: relative;
+  overflow: hidden;
+  min-height: 60vh;
+}
+
+.etat-chargement-train {
+  position: absolute;
+  top: 50%;
+  width: 160px;
+  animation: chargement-train-zoom 1.3s linear infinite;
+}
+
+@keyframes chargement-train-zoom {
+  0% {
+    left: 0;
+    transform: translate(-100%, -50%);
+  }
+  100% {
+    left: 100%;
+    transform: translate(0, -50%);
+  }
+}
+
 ul {
   list-style: none;
 }
@@ -3389,6 +3429,10 @@ button {
   }
 }
 
+.illustration-train-flottante {
+  display: none;
+}
+
 @media (max-width: 700px) {
   /* Le seuil reste sous les 768 px du plus petit iPad cible. */
   .grille-principale .carte-arrivee-classique {
@@ -3396,6 +3440,16 @@ button {
   }
   .grille-principale .carte-rentre-mobile {
     display: flex;
+  }
+  .illustration-train-flottante {
+    display: block;
+    height: 30px;
+    pointer-events: none;
+  }
+  .illustration-train-flottante-interieur {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
@@ -3445,7 +3499,7 @@ button {
     flex-direction: column;
     align-items: flex-start;
   }
-  .illustration-train-conteneur {
+  .carte-trafic .illustration-train-conteneur {
     display: none;
   }
   .carte-trafic {
