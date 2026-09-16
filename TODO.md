@@ -64,6 +64,6 @@
 - [X] Badge "estimé" (départ/retour gym) systématiquement sur sa propre ligne sous l'heure, dans le même ordre pour les deux colonnes — évite le désalignement selon que le badge tombait avant ou après l'heure et selon la largeur disponible.
 - [X] Bug fly.io : deux machines tournaient en parallèle sans état partagé (`gymTermineDate`/`gymVerrouille` sont de simples variables mémoire par process) — provoquait un retour aléatoire à "séance terminée" sur tous les appareils selon la machine qui répondait à chaque requête. Corrigé en ramenant l'app à une seule machine (`fly scale count 1`), seule configuration cohérente avec ce modèle d'état.
 - [X] Animations de fond météo (soleil, pluie, orage, neige, brouillard, nuage) : un tap teinte temporairement (3s) tout le calque `.meteo-fond` vers la couleur réelle de l'icône affichée (`couleurTemperature()`, dégradé bleu→vert→orange→rouge selon la température, déjà utilisé sur le grand icône) au lieu du gris de fond fixe — s'ajoute à l'accélération de vitesse existante, ne la remplace pas. Couleur exposée en variable CSS `--couleur-icone-meteo` sur `.carte-meteo`, tous les éléments SVG des scènes utilisant déjà `currentColor` pour leur `fill`/`stroke`, une seule règle CSS (`.carte-meteo.couleur-tap-active .meteo-fond`) couvre toutes les scènes.
-- [ ] Migration vers React (composants, countdown temps réel)
+- [X] Migration vers React (composants, countdown temps réel) — EJS/vanilla JS retirés, frontend/ React + Vite (voir docs/react-migration-plan.md)
 - [ ] Lunettes : tenir compte de l'heure aussi en hiver
-- [ ] Météo de demain (toggle ou onglets)
+- [X] Météo de demain (toggle ou onglets)
