@@ -1,0 +1,3470 @@
+/* ============================================================
+   CHECK.DA.TRAIN
+   Calme, minimal, rapide — voir docs/ui-design.md.
+   Tout est piloté par variables CSS — un seul endroit à modifier.
+   ============================================================ */
+
+/* ──────────────────────────────────────────
+   THÈME PAR DÉFAUT — BUREAU (sombre)
+   ────────────────────────────────────────── */
+
+:root,
+:root[data-theme="bureau"] {
+  --bg: #0d1117;
+  --carte: #151c26;
+  --carte-border: rgba(255, 255, 255, 0.05);
+  --surface-2: #1b2330;
+
+  --texte: #f5f7fa;
+  --texte-muted: #8a93a3;
+  --texte-dim: #5a6373;
+
+  --accent: #57d364;
+  --accent-glow: rgba(87, 211, 100, 0.15);
+  --succes: #57d364;
+  --succes-doux: #8fe89a;
+  --avertissement: #f5a524;
+  --danger: #f2555a;
+  --danger-doux: #f79a9d;
+  --info: #5b9fef;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+
+  --rayon: 18px;
+  --rayon-sm: 12px;
+  --transition: 0.18s ease;
+  --ombre: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* ──────────────────────────────────────────
+   THÈME ALTERNATIF — CINÉMA (clair)
+   ────────────────────────────────────────── */
+
+:root[data-theme="cinema"] {
+  --bg: #f4f6f9;
+  --carte: #ffffff;
+  --carte-border: rgba(13, 17, 23, 0.06);
+  --surface-2: #eef1f5;
+
+  --texte: #0d1117;
+  --texte-muted: #5c6673;
+  --texte-dim: #8a93a3;
+
+  --accent: #1f9d46;
+  --accent-glow: rgba(31, 157, 70, 0.14);
+  --succes: #1f9d46;
+  --succes-doux: #167a37;
+  --avertissement: #b9740a;
+  --danger: #d8393e;
+  --danger-doux: #b52e32;
+  --info: #2563eb;
+
+  --ombre: 0 16px 40px rgba(13, 17, 23, 0.08);
+}
+
+/* ──────────────────────────────────────────
+   Base
+   ────────────────────────────────────────── */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Supprime le délai tactile de WebKit sur l'iPad mural. */
+button,
+a,
+[role="button"],
+.popup-fond {
+  touch-action: manipulation;
+}
+
+/* Garde-fou général : l'attribut [hidden] et la règle UA [hidden]{display:none}
+   ont la même spécificité (0,1,0) qu'un simple sélecteur de classe — un
+   author-rule à égalité de spécificité gagne TOUJOURS sur le user-agent,
+   donc n'importe quel élément portant son propre `display: ...` (flex, grid,
+   block...) ignore silencieusement `hidden`, sans erreur ni avertissement.
+   Déjà rencontré une fois (CDT-54, ligne de filtres) et corrigé localement
+   sur cet unique élément à l'époque plutôt que généralisé — recroisé depuis
+   sur d'autres éléments (mode hors ligne, refresh.js). Un seul garde-fou ici
+   règle toute la classe de bug une fois pour toutes plutôt que de la
+   re-découvrir élément par élément. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--texte);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.4;
+  padding: 32px;
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.page,
+.header {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+ul {
+  list-style: none;
+}
+
+button {
+  font-family: inherit;
+}
+
+.icone {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────
+   Header
+   ────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+}
+
+/* Marges utilisées car Safari iOS 12 ne gère pas `gap` sur flexbox. */
+.header > * + * {
+  margin-left: 1rem;
+}
+
+.logo-link,
+.logo-link:visited {
+  text-decoration: none;
+  color: var(--texte);
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.logo-link span {
+  color: var(--accent);
+}
+
+.header-date {
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-actions > * + * {
+  margin-left: 0.6rem;
+}
+
+.badge-demo {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--carte);
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+/* Évite les survols bloqués après un tap sur iPad. */
+@media (hover: hover) {
+  .badge-demo:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
+.badge-demo:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+/* ──────────────────────────────────────────
+   Barre démo (forcer météo/trafic à l'affichage pour la QA)
+   ────────────────────────────────────────── */
+
+.barre-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px 14px;
+  border: 1px dashed var(--carte-border);
+  border-radius: var(--rayon-sm);
+  background: var(--carte);
+}
+
+.barre-demo-titre {
+  margin: 2px 12px 2px 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--texte-dim);
+}
+
+.barre-demo-groupe {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 12px 0 0;
+}
+
+.barre-demo-groupe li {
+  margin: 2px 6px 2px 0;
+}
+
+.barre-demo-bouton {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.65rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  text-decoration: none;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+
+.barre-demo-bouton .icone {
+  margin-right: 0.3rem;
+}
+
+@media (hover: hover) {
+  .barre-demo-bouton:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
+.barre-demo-bouton:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+.barre-demo-bouton.actif {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.barre-demo-point {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: var(--texte-dim);
+}
+
+.barre-demo-bouton-fluide .barre-demo-point {
+  background: var(--succes);
+}
+
+.barre-demo-bouton-info .barre-demo-point {
+  background: var(--avertissement);
+}
+
+.barre-demo-bouton-ailleurs .barre-demo-point {
+  background: var(--avertissement);
+}
+
+.barre-demo-bouton-alerte .barre-demo-point {
+  background: var(--danger);
+}
+
+.barre-demo-bouton.actif .barre-demo-point {
+  background: #0d1117;
+}
+
+.barre-demo-reinit {
+  margin-left: auto;
+}
+
+.theme-toggle {
+  background: var(--carte);
+  color: var(--texte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon-sm);
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color var(--transition),
+    background var(--transition);
+}
+
+@media (hover: hover) {
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    background: var(--surface-2);
+  }
+}
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ──────────────────────────────────────────
+   Cartes — base commune
+   ────────────────────────────────────────── */
+
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon);
+  padding: 15px;
+  box-shadow: var(--ombre);
+  animation: apparition 0.25s ease;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Lueurs internes; seule l'opacité s'anime pour limiter les repaints. */
+.carte-glow-chaude,
+.carte-glow-alerte {
+  position: relative;
+}
+
+.carte-glow-chaude::after,
+.carte-glow-alerte::after,
+.carte-trafic-info::after,
+.carte-trafic-ailleurs::after,
+.carte-trafic-alerte::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  animation: lueur-opacite 1.4s ease-in-out infinite;
+  animation-delay: var(--alerte-delay, 0ms);
+}
+
+.carte-glow-chaude::after {
+  box-shadow: inset 0 0 22px 4px rgba(255, 176, 82, 0.28);
+}
+
+.carte-glow-alerte::after {
+  box-shadow: inset 0 0 28px 7px rgba(255, 100, 66, 0.55);
+}
+
+/* Alerte trafic volontairement moins forte qu'un retard critique. */
+.carte-trafic-alerte::after {
+  box-shadow: inset 0 0 22px 4px rgba(255, 100, 66, 0.35);
+}
+
+@keyframes lueur-opacite {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-muted);
+}
+
+/* Le texte voisin est un nœud brut; la marge reste sur l'icône. */
+.eyebrow .icone {
+  margin-right: 0.4rem;
+}
+
+.erreur {
+  background: var(--carte);
+  color: var(--danger);
+  padding: 1rem 1.25rem;
+  border-radius: var(--rayon);
+  text-align: center;
+  font-size: 0.9rem;
+  border: 1px solid var(--danger);
+}
+
+/* ──────────────────────────────────────────
+   Rangée principale — météo, départ, arrivée
+   ────────────────────────────────────────── */
+
+.grille-principale {
+  display: grid;
+  /* Le minimum nul empêche les destinations d'élargir leur colonne. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 3.5fr) minmax(0, 3.5fr);
+  gap: 15px;
+  margin-bottom: 15px;
+  /* Un panneau ouvert ne doit pas étirer les cartes voisines. */
+  align-items: start;
+}
+
+.grille-principale .carte {
+  display: flex;
+  flex-direction: column;
+  /* Autorise la carte à rétrécir dans sa colonne. */
+  min-width: 0;
+}
+
+/* Arrivée (iPad) vs Rentre+bus (mobile) : une seule des deux à la fois. */
+.grille-principale .carte-rentre-mobile {
+  display: none;
+}
+
+/* ──────────────────────────────────────────
+   Popup bus (On Air ↔ Meaux)
+   ────────────────────────────────────────── */
+
+.rentre-bus-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: auto;
+  margin-right: 0.65rem;
+  padding: 0;
+  border: 0;
+  color: var(--info);
+  background: transparent;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Hauteur fixe pour ne pas changer de taille à chaque bascule de direction,
+   une liste étant toujours plus longue que l'autre. */
+.bus-retour-popup {
+  max-width: 460px;
+  height: 80vh;
+}
+
+/* Une carte par passage, reprise de la grille .bus-vers-onair-ligne avec le
+   sens des colonnes inversé, où un tap remplace le contenu replié par le
+   tracé de bus animé dans la même carte plutôt que d'ouvrir un panneau en
+   dessous. */
+.bus-rentre-liste {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  list-style: none;
+}
+
+.bus-rentre-item {
+  border: 1px solid var(--carte-border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.bus-rentre-toggle {
+  all: unset;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+}
+
+/* Colonne 1 élargie pour un nom d'arrêt complet ("Les Fauvettes", "Saints
+   Pères") au lieu du court "Quai X" d'origine, et colonne 3 (heure) restée
+   large pour que "+X" de retard ne bascule jamais sur sa propre ligne. */
+.bus-vers-onair-ligne.bus-rentre-grille {
+  grid-template-columns: 5rem 2.6rem minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.bus-rentre-arret {
+  max-width: 100%;
+  padding: 0.05rem 0.3rem;
+  overflow: hidden;
+  font-size: 0.58rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bus-rentre-anim {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.25s ease,
+    margin-top 0.3s ease;
+}
+
+.bus-rentre-item.bus-rentre-ouvert .bus-rentre-anim {
+  max-height: 2.65rem;
+  margin-top: 0.5rem;
+  opacity: 1;
+}
+
+/* Plus spécifique que la règle générique ci-dessus (2 classes, pas 1) :
+   .bus-depart-salle a besoin d'un peu plus de hauteur pour son heure +
+   compte à rebours sur 2 lignes, sans toucher .bus-parcours (l'autre
+   panneau, Meaux → On Air, garde sa hauteur d'origine). */
+.bus-rentre-item.bus-rentre-ouvert .bus-rentre-anim-compte {
+  max-height: 3.25rem;
+}
+
+.bus-rentre-item.bus-rentre-ouvert .bus-vers-onair-ligne {
+  color: var(--texte);
+}
+
+.bus-option-arret {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bus-horaires {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bus-ligne {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2rem;
+  height: 1.7rem;
+  padding: 0 0.45rem;
+  border-radius: 4px;
+  color: var(--ligne-texte);
+  background: var(--ligne-fond);
+  font-size: 0.85rem;
+}
+
+.bus-correspondance {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 1rem;
+  margin-top: 0.45rem;
+  color: var(--texte-muted);
+  font-size: 0.75rem;
+}
+
+.bus-correspondance .icone {
+  margin-right: 0.25rem;
+}
+
+.bus-depart-onair {
+  margin-top: 0.55rem;
+  color: var(--texte-muted) !important;
+  font-size: 0.75rem !important;
+}
+
+.bus-depart-onair strong {
+  color: var(--texte);
+}
+
+.bus-horaires {
+  margin-top: 0.75rem;
+}
+
+.bus-horaires > div:last-child {
+  text-align: right;
+}
+
+.bus-horaires span,
+.bus-horaires small {
+  display: block;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+}
+
+.bus-horaires strong {
+  display: block;
+  margin: 0.1rem 0;
+  color: var(--texte);
+  font-size: 1.1rem;
+}
+
+.bus-retard {
+  color: var(--avertissement);
+  font-size: 0.65rem;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.bus-autres .bus-retard,
+.bus-rentre-toggle .bus-retard {
+  margin-left: 0.1rem;
+  font-size: 0.48rem;
+  vertical-align: 0.08rem;
+}
+
+.bus-parcours {
+  position: relative;
+  height: 2.65rem;
+  margin-top: 0.65rem;
+  overflow: hidden;
+}
+
+.bus-depart-salle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: auto;
+  min-height: 2.65rem;
+  margin-top: 0.65rem;
+  padding: 0.3rem 0.2rem;
+  border-top: 1px solid var(--carte-border);
+}
+
+.bus-depart-salle-libelle {
+  color: var(--texte-muted);
+  font-size: 0.7rem;
+}
+
+/* Heure cible + compte à rebours live, empilés et alignés à droite — même
+   langage visuel que .bus-option-heure/.bus-vers-onair-compte utilisé
+   partout ailleurs pour "grande heure + petit compte à rebours dessous". */
+.bus-depart-salle-heure-groupe {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+}
+
+.bus-depart-salle-valeur {
+  color: var(--info);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.bus-depart-salle-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--texte-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.68rem;
+}
+
+.bus-depart-salle-passe .bus-depart-salle-valeur,
+.bus-depart-salle-passe .bus-depart-salle-compte {
+  color: var(--texte-muted);
+}
+
+.bus-rail {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--carte-border);
+}
+
+.bus-progression {
+  position: absolute;
+  top: 1rem;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--info);
+  opacity: 0.45;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1s linear;
+}
+
+.bus-arret {
+  position: absolute;
+  top: 0.72rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--texte-muted);
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+.bus-arret-hayette {
+  left: 12%;
+}
+
+.bus-arret-meaux {
+  right: 12%;
+}
+
+.bus-mobile {
+  position: absolute;
+  top: 0.6rem;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  color: var(--info);
+  transform: translate3d(0, 0, 0);
+  transition: transform 1s linear, color 0.4s ease;
+  will-change: transform;
+}
+
+.bus-cote {
+  width: 2.6rem;
+  height: 1.22rem;
+  overflow: visible;
+}
+
+.bus-cote-vitre {
+  fill: var(--surface-2);
+}
+
+.bus-cote-roue {
+  fill: var(--texte);
+}
+
+.bus-parcours-moyen .bus-mobile {
+  color: var(--avertissement);
+}
+
+.bus-parcours-fort .bus-mobile {
+  color: var(--danger);
+}
+
+.bus-parcours-moyen .bus-progression {
+  background: var(--avertissement);
+  opacity: 0.6;
+}
+
+.bus-parcours-fort .bus-progression {
+  background: var(--danger);
+  opacity: 0.6;
+}
+
+.bus-parcours.bus-approche .bus-mobile .bus-cote,
+.bus-parcours.bus-en-route .bus-mobile .bus-cote {
+  animation: bus-roule 0.7s ease-in-out infinite;
+}
+
+.bus-parcours.bus-arrive .bus-arret-meaux {
+  border-color: var(--succes);
+  background: var(--succes);
+}
+
+@keyframes bus-roule {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+
+.bus-autres {
+  margin-top: 1rem;
+}
+
+.bus-autres-titre {
+  margin-bottom: 0.55rem;
+  color: var(--texte) !important;
+  font-weight: 600;
+}
+
+.bus-autres ul {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.bus-ligne-petite {
+  min-width: 2.8rem;
+  height: 1.35rem;
+  font-size: 0.7rem;
+}
+
+.bus-indisponible {
+  margin-top: 0.75rem;
+  color: var(--texte-dim) !important;
+  font-size: 0.75rem !important;
+}
+
+/* --- Bascule de direction On Air <-> Meaux --- */
+.bus-direction-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  cursor: default;
+}
+
+/* Grille à 3 colonnes (1fr / auto / 1fr) : la flèche centrale reste
+   toujours au milieu géométrique du titre, quelle que soit la longueur
+   des deux libellés ("On Air" vs "Meaux") — un simple
+   `justify-content: space-between` ne centre PAS un élément du milieu
+   flanqué de deux éléments de largeurs différentes, seulement l'espace
+   entre eux. Le titre prend toute la largeur du popup, sans bouton "×"
+   séparé. */
+.bus-direction-toggle-pleine-largeur {
+  display: grid;
+  /* minmax(0, 1fr), pas juste 1fr : un track `Nfr` nu ne rétrécit pas sous
+     la largeur min-content de son contenu (même piège que .grille-principale,
+     voir decisions.md) — "Meaux" est plus court que "On Air" mais garde ses
+     marges asymétriques ; sans le clamp la colonne pouvait s'étirer et
+     décentrer la flèche. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  margin-right: 0;
+}
+
+/* Les deux libellés restent chacun fixes de leur côté ("Meaux" à gauche,
+   "On Air" à droite, jamais échangés) — seule la flèche centrale
+   (.bus-direction-swap) tourne pour indiquer le sens réel du bus. */
+.bus-direction-mot {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.3rem;
+  color: var(--texte);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.bus-direction-mot:first-of-type {
+  justify-self: start;
+}
+
+.bus-direction-swap {
+  justify-self: center;
+}
+
+.bus-direction-mot:last-of-type {
+  justify-self: end;
+}
+
+.bus-direction-picto {
+  flex-shrink: 0;
+  color: var(--texte-muted);
+}
+
+/* Couleur portée par le NOM (.bus-direction-nom), pas par le pictogramme —
+   coloré seulement quand ce lieu est la destination actuelle. Transition
+   douce + display inline-block (nécessaire pour que le scale() du pop
+   ci-dessous s'applique correctement à une boîte inline). */
+.bus-direction-nom {
+  display: inline-block;
+  transition: color 0.25s ease;
+}
+
+.bus-direction-toggle[data-direction-actuelle="meaux-onair"] .bus-direction-nom-onair {
+  color: var(--danger);
+}
+
+/* Même principe côté Meaux ; hex Ligne P réel (#f28e42), pas un token de
+   thème — couleur de marque externe, comme ligne.couleur pour les bus, pas
+   une couleur sémantique de l'appli. */
+.bus-direction-toggle[data-direction-actuelle="onair-meaux"] .bus-direction-nom-meaux {
+  color: #f28e42;
+}
+
+/* Petit "pop" au moment où un nom DEVIENT la destination — posé/retiré par
+   bus-return.js sur le nom qui vient de le devenir, en même temps que le
+   retournement de la flèche (main.css, bus-direction-flip-vers-*), pour que
+   le libellé qui s'allume ait, lui aussi, un peu de vie plutôt qu'un
+   changement de couleur instantané. */
+.bus-direction-nom-pop {
+  animation: bus-direction-nom-pop 0.5s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes bus-direction-nom-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  70% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bus-direction-swap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.3s ease,
+    background 0.2s ease;
+}
+
+/* La flèche s'étire et glisse vers l'avant avant de revenir, comme un
+   geste qui pointe puis se relâche, sans jamais changer la taille du
+   badge grâce à `overflow: visible`. */
+.bus-direction-swap {
+  overflow: visible;
+}
+
+.bus-direction-swap .icone {
+  transform-origin: center;
+  animation: bus-direction-pointe 2.4s cubic-bezier(0.45, 0, 0.15, 1) infinite;
+}
+
+@keyframes bus-direction-pointe {
+  0%,
+  15% {
+    transform: translateX(0) scaleX(1);
+  }
+  55% {
+    transform: translateX(9px) scaleX(1.85);
+  }
+  80%,
+  100% {
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+/* Libellés fixes des deux côtés (voir plus haut) : c'est la flèche seule
+   qui tourne pour montrer le sens réel du bus. Meaux est maintenant à
+   gauche et On Air à droite (par défaut, meaux-onair, flèche non tournée =
+   pointe vers la droite = vers On Air) ; le sens retour (onair-meaux,
+   destination Meaux, maintenant à gauche) tourne la flèche pour qu'elle
+   pointe vers la gauche. Cette valeur au repos n'est utilisée QUE si le
+   clic n'a pas (encore) rejoué l'animation ressort ci-dessous — celle-ci
+   porte elle-même l'angle final dans sa dernière image. */
+.bus-direction-toggle[data-direction-actuelle="onair-meaux"] .bus-direction-swap {
+  transform: rotate(180deg);
+}
+
+/* Retourne la pièce comme une pièce de monnaie qu'on lance, avec un
+   dépassement franc avant de se stabiliser sur l'angle final — beaucoup
+   plus vivant qu'un simple aller-retour d'échelle. Une seule et même
+   keyframe DOIT porter la rotation ET l'échelle : une `animation` sur
+   `transform` remplace entièrement la valeur (y compris celle posée par
+   `[data-direction-actuelle]` ci-dessus), une keyframe qui ne porterait que
+   `scale(...)` ferait donc sauter la flèche à 0° pendant tout le clic
+   (bug trouvé en construisant cette version). Deux variantes selon le sens
+   choisi par bus-return.js (`bus-direction-flip-vers-*`), pas une seule
+   generique, car chacune doit connaître son angle de départ ET d'arrivée. */
+.bus-direction-flip-vers-meaux {
+  animation: bus-direction-flip-vers-meaux 0.55s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.bus-direction-flip-vers-onair {
+  animation: bus-direction-flip-vers-onair 0.55s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes bus-direction-flip-vers-meaux {
+  0% {
+    transform: rotate(0deg) scale(1);
+    background: var(--surface-2);
+  }
+  35% {
+    background: var(--accent);
+  }
+  55% {
+    transform: rotate(205deg) scale(1.3);
+  }
+  78% {
+    transform: rotate(163deg) scale(0.9);
+  }
+  100% {
+    transform: rotate(180deg) scale(1);
+    background: var(--surface-2);
+  }
+}
+
+@keyframes bus-direction-flip-vers-onair {
+  0% {
+    transform: rotate(180deg) scale(1);
+    background: var(--surface-2);
+  }
+  35% {
+    background: var(--accent);
+  }
+  55% {
+    transform: rotate(-25deg) scale(1.3);
+  }
+  78% {
+    transform: rotate(17deg) scale(0.9);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+    background: var(--surface-2);
+  }
+}
+
+.bus-direction-panneau {
+  animation: bus-direction-entree 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+/* Léger dépassement (scale 1.02 puis retour à 1) plutôt qu'un simple fondu
+   linéaire — même esprit "ressort" que la flèche juste au-dessus, pour que
+   le contenu qui apparaît ait un peu de rebond au lieu de juste apparaître. */
+@keyframes bus-direction-entree {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (hover: hover) {
+  .bus-direction-swap:hover {
+    background: var(--accent);
+    color: #0d1117;
+  }
+}
+
+/* --- Filtres & tri (par arrêt, par marche) --- */
+
+/* Le pictogramme "Meaux" de l'en-tête sert lui-même de bouton filtres,
+   avec les mêmes réglages visuels que .bus-direction-picto. */
+.bus-filtres-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bus-filtres-toggle .icone {
+  color: var(--texte-muted);
+  transition: color 0.2s ease;
+}
+
+.bus-filtres-toggle.actif .icone {
+  color: var(--accent);
+}
+
+.bus-vers-onair-controles,
+.bus-rentre-controles {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  max-height: 3rem;
+  margin-bottom: 0.85rem;
+  opacity: 1;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    margin-bottom 0.25s ease;
+}
+
+/* Le panneau Rentre n'a pas de bandeau .bus-autres au-dessus pour fournir
+   l'espacement du haut — ajouté ici directement. */
+.bus-rentre-controles {
+  margin-top: 1rem;
+}
+
+.bus-vers-onair-controles[hidden],
+.bus-rentre-controles[hidden] {
+  display: none;
+}
+
+.bus-vers-onair-controles.bus-controles-cache,
+.bus-rentre-controles.bus-controles-cache {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bus-rentre-controles.bus-controles-cache {
+  margin-top: 0;
+}
+
+.bus-filtre-chips {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+
+.bus-filtre-chip,
+.bus-tri-bouton {
+  flex-shrink: 0;
+  padding: 0.28rem 0.6rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--texte-muted);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color var(--transition),
+    color var(--transition),
+    background var(--transition);
+}
+
+.bus-tri-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.2rem;
+}
+
+.bus-tri-bouton::before {
+  content: "";
+  flex-shrink: 0;
+  width: 1px;
+  height: 0.9rem;
+  margin-right: 0.2rem;
+  background: var(--carte-border);
+}
+
+.bus-filtre-chip.actif {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0d1117;
+}
+
+.bus-tri-bouton.actif {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .bus-filtre-chip:hover,
+  .bus-tri-bouton:hover,
+  .bus-filtres-toggle:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
+/* --- Grille d'une ligne de bus (réutilisée par les deux directions) --- */
+
+/* Grille explicite à 4 colonnes × 2 lignes, chaque élément placé dans sa
+   propre cellule (bvo-c<col> bvo-r<row>) pour pouvoir le déplacer vers une
+   autre cellule sans toucher le reste. */
+.bus-vers-onair-ligne {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr) 2.6rem minmax(0, 1.3fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.55rem;
+  row-gap: 0.25rem;
+  min-height: 2.4rem;
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+}
+
+.bvo-c1 {
+  grid-column: 1;
+}
+
+.bvo-c2 {
+  grid-column: 2;
+}
+
+.bvo-c3 {
+  grid-column: 3;
+}
+
+.bvo-c4 {
+  grid-column: 4;
+}
+
+.bvo-r1 {
+  grid-row: 1;
+}
+
+.bvo-r2 {
+  grid-row: 2;
+}
+
+.bus-vers-onair-ligne .bus-ligne-petite,
+.bus-quai-badge {
+  justify-self: start;
+}
+
+.bus-vers-onair-ligne .bus-option-heure,
+.bus-vers-onair-compte {
+  justify-self: center;
+}
+
+.bus-vers-onair-marche-icone,
+.bus-vers-onair-marche-temps {
+  justify-self: center;
+  color: var(--texte-muted);
+}
+
+/* Rapproche l'icône marche de sa valeur, seule paire resserrée pendant que
+   les autres colonnes restent centrées sur les deux lignes de la grille. */
+.bus-vers-onair-marche-icone {
+  align-self: end;
+}
+
+.bus-vers-onair-marche-icone .marche-anim {
+  opacity: 0.8;
+}
+
+.bus-vers-onair-marche-temps {
+  align-self: start;
+  color: var(--texte-dim);
+  font-size: 0.6rem;
+}
+
+/* Bras et jambes tournent en opposition de phase autour de l'épaule/hanche
+   pour le cycle de marche, tête et torse restant fixes, ciblant iOS 26
+   uniquement (bus). */
+.marche-anim {
+  display: block;
+}
+
+.marche-anim-bras,
+.marche-anim-jambe {
+  transform-box: view-box;
+}
+
+.marche-anim-phase-a {
+  animation: marche-cycle-a 0.85s ease-in-out infinite;
+}
+
+.marche-anim-phase-b {
+  animation: marche-cycle-b 0.85s ease-in-out infinite;
+}
+
+@keyframes marche-cycle-a {
+  0%,
+  100% {
+    transform: rotate(22deg);
+  }
+  50% {
+    transform: rotate(-22deg);
+  }
+}
+
+@keyframes marche-cycle-b {
+  0%,
+  100% {
+    transform: rotate(-22deg);
+  }
+  50% {
+    transform: rotate(22deg);
+  }
+}
+
+.bus-vers-onair-ligne .bus-option-arret,
+.bus-vers-onair-arrivee {
+  justify-self: end;
+}
+
+.bus-vers-onair-ligne .bus-option-heure {
+  color: var(--texte-muted);
+  font-size: 0.95rem;
+}
+
+.bus-vers-onair-compte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.bus-vers-onair-ligne .bus-option-arret {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bus-quai-badge {
+  align-self: flex-start;
+  flex-shrink: 0;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--texte-dim);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.bus-vers-onair-compte {
+  color: var(--texte-dim);
+  font-size: 0.6rem;
+}
+
+.bus-vers-onair-arrivee {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--texte-muted);
+  font-weight: 600;
+}
+
+.bus-vers-onair-arrivee .icone {
+  color: var(--texte-muted);
+}
+
+@media (max-width: 420px) {
+  .bus-retour-popup {
+    padding: 16px;
+  }
+}
+
+/* --- Carte météo --- */
+
+.carte-meteo {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Chaque bloc direct passe en z-index:1 pour rester lisible par-dessus
+   l'animation de fond (.meteo-fond, z-index:0). */
+.carte-meteo-haut,
+.carte-meteo-stats,
+.pluie-toggle {
+  position: relative;
+  z-index: 1;
+}
+
+.carte-meteo-haut {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.1rem;
+}
+
+.carte-meteo-haut > * + * {
+  margin-left: 1rem;
+}
+
+/* ── Animation de fond météo — discrète, sous le contenu ── */
+
+.meteo-fond {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--texte);
+  pointer-events: none;
+  transition: color 0.4s ease;
+}
+
+/* Sur un tap, le calque de fond entier prend temporairement la couleur du
+   vrai icône météo au lieu du gris, en plus de la réaction de vitesse
+   existante. */
+.carte-meteo.couleur-tap-active .meteo-fond {
+  color: var(--couleur-icone-meteo);
+}
+
+.meteo-fond-soleil .soleil-lueur {
+  opacity: 0.1;
+  transform-origin: 338px 154px;
+  animation: soleil-lueur-pulser 4.8s ease-in-out infinite;
+}
+
+.meteo-fond-soleil .soleil-coeur {
+  opacity: 0.2;
+  transform-origin: 338px 154px;
+  animation: soleil-coeur-pulser 4.8s ease-in-out infinite;
+}
+
+.meteo-fond-soleil-chaud .soleil-lueur {
+  opacity: 0.16;
+  animation-name: soleil-lueur-chaud-pulser;
+  animation-duration: 3.8s;
+}
+
+.meteo-fond-soleil-chaud .soleil-coeur {
+  opacity: 0.3;
+  animation-name: soleil-chaud-rayonner;
+  animation-duration: 3.2s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes soleil-lueur-pulser {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.08;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.16;
+  }
+}
+
+@keyframes soleil-lueur-chaud-pulser {
+  0%,
+  100% {
+    transform: scale(0.92);
+    opacity: 0.12;
+  }
+  50% {
+    transform: scale(1.16);
+    opacity: 0.24;
+  }
+}
+
+@keyframes soleil-coeur-pulser {
+  0%,
+  100% {
+    transform: scale(0.96);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes soleil-chaud-rayonner {
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.26;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.36;
+  }
+}
+
+.meteo-fond .nuage-forme {
+  animation: nuage-derive 60s linear infinite;
+}
+
+.meteo-fond .nuage-2 {
+  animation-duration: 85s;
+  animation-delay: -20s;
+}
+
+@keyframes nuage-derive {
+  from {
+    transform: translateX(-60px);
+  }
+  to {
+    transform: translateX(460px);
+  }
+}
+
+.meteo-fond .nuage-forme {
+  /* Même opacité discrète dans chaque scène. */
+  opacity: 0.1;
+}
+
+.meteo-fond-pluie .nuage-forme,
+.meteo-fond-orage .nuage-forme {
+  animation: none;
+}
+
+.pluie-gouttes .pluie-goutte {
+  opacity: 0;
+  animation: goutte-tomber 1s linear infinite;
+}
+.pluie-gouttes .pluie-goutte:nth-child(2) {
+  animation-delay: -0.1s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(3) {
+  animation-delay: -0.2s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(4) {
+  animation-delay: -0.3s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(5) {
+  animation-delay: -0.4s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(6) {
+  animation-delay: -0.5s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(7) {
+  animation-delay: -0.6s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(8) {
+  animation-delay: -0.7s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(9) {
+  animation-delay: -0.8s;
+}
+.pluie-gouttes .pluie-goutte:nth-child(10) {
+  animation-delay: -0.9s;
+}
+
+@keyframes goutte-tomber {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  15% {
+    opacity: 0.3;
+  }
+  85% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(200px);
+  }
+}
+
+.meteo-fond-orage .orage-gouttes .pluie-goutte {
+  animation-duration: 0.6s;
+}
+
+/* Durées différentes pour masquer la répétition des éclairs. */
+.orage-eclair {
+  opacity: 0;
+}
+
+.orage-eclair-1 {
+  animation: eclair-1 4.7s ease-in-out infinite;
+}
+
+.orage-eclair-2 {
+  animation: eclair-2 7.3s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+.orage-eclair-3 {
+  animation: eclair-3 9.1s ease-in-out infinite;
+  animation-delay: -5.6s;
+}
+
+/* Blip net et bref. */
+@keyframes eclair-1 {
+  0%,
+  96%,
+  100% {
+    opacity: 0;
+  }
+  97% {
+    opacity: 0.26;
+  }
+  97.6% {
+    opacity: 0;
+  }
+}
+
+/* Double-flash rapide, plus discret. */
+@keyframes eclair-2 {
+  0%,
+  90%,
+  100% {
+    opacity: 0;
+  }
+  91% {
+    opacity: 0.15;
+  }
+  91.8% {
+    opacity: 0.03;
+  }
+  92.6% {
+    opacity: 0.18;
+  }
+  93.4% {
+    opacity: 0;
+  }
+}
+
+/* Flash prolongé. */
+@keyframes eclair-3 {
+  0%,
+  88%,
+  100% {
+    opacity: 0;
+  }
+  89% {
+    opacity: 0.2;
+  }
+  90.5% {
+    opacity: 0.2;
+  }
+  92% {
+    opacity: 0;
+  }
+}
+
+/* Rythmes générés dans icons.js. */
+.neige-flocons .neige-flocon {
+  opacity: 0;
+  animation-name: flocon-tomber;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes flocon-tomber {
+  0% {
+    opacity: 0;
+    transform: translate(0, -10px);
+  }
+  10% {
+    opacity: 0.35;
+  }
+  90% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(14px, 200px);
+  }
+}
+
+/* Nappes indépendantes dans les deux directions. */
+.meteo-fond-brouillard .brouillard-nappe {
+  opacity: 0.18;
+  animation: brouillard-derive 34s linear infinite;
+}
+.meteo-fond-brouillard .n2 {
+  animation-duration: 44s;
+  animation-delay: -12s;
+  animation-direction: reverse;
+  opacity: 0.13;
+}
+.meteo-fond-brouillard .n3 {
+  animation-duration: 26s;
+  animation-delay: -6s;
+  opacity: 0.15;
+}
+.meteo-fond-brouillard .n4 {
+  animation-duration: 38s;
+  animation-delay: -20s;
+  animation-direction: reverse;
+  opacity: 0.11;
+}
+
+@keyframes brouillard-derive {
+  from {
+    transform: translateX(-70px);
+  }
+  to {
+    transform: translateX(470px);
+  }
+}
+
+.carte-meteo-icone {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.temp {
+  font-weight: 700;
+  font-size: 3.4rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.condition {
+  color: var(--texte-muted);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+}
+
+.ressenti {
+  color: var(--texte-dim);
+  font-size: 0.8rem;
+  margin-top: 0.15rem;
+}
+
+.temp-min-demain {
+  color: var(--texte-dim);
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+/* Hors ligne (refresh.js) : bascule le résumé "actuel" (qui resterait figé
+   et se ferait passer pour du direct) vers le résumé du lendemain, déjà
+   pré-rendu par le serveur (.carte-meteo-haut-demain) — pas de nouvelle
+   requête possible hors ligne, donc rien à calculer côté client. Stats
+   (humidité/vent/max/min du jour) et pluie masquées : ce sont des valeurs
+   "maintenant" qui n'ont pas de sens une fois qu'on affiche demain. */
+.carte-meteo.hors-ligne .carte-meteo-haut-actuel,
+.carte-meteo.hors-ligne .carte-meteo-stats,
+.carte-meteo.hors-ligne .pluie-toggle {
+  display: none;
+}
+
+.carte-meteo.hors-ligne .carte-meteo-haut-demain {
+  display: flex;
+}
+
+.carte-meteo-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding-top: 1rem;
+  margin-top: auto;
+  border-top: 1px solid var(--carte-border);
+}
+
+.stat {
+  min-width: 0;
+}
+
+.stat span {
+  display: block;
+  color: var(--texte-dim);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stat strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pluie-toggle {
+  -webkit-appearance: none;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texte-dim);
+  font-family: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pluie-toggle > * + * {
+  margin-left: 0.4rem;
+}
+
+@media (hover: hover) {
+  .pluie-toggle:hover {
+    color: var(--texte-muted);
+  }
+}
+
+.pluie-toggle[disabled] {
+  cursor: default;
+}
+
+/* L'heure exacte remplace le libellé en place (même emplacement), plutôt
+   que de s'ouvrir dans une ligne en dessous. */
+.pluie-toggle small {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  opacity: 0;
+  color: var(--texte-dim);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.pluie-toggle.ouverte .pluie-libelle {
+  opacity: 0;
+}
+
+.pluie-toggle.ouverte small {
+  opacity: 1;
+}
+
+/* Pendant l'accélération, seul le libellé texte se remplace en place par
+   une petite pluie animée qui reste visible tout du long. */
+.pluie-libelle-conteneur {
+  position: relative;
+  display: inline-block;
+}
+
+.pluie-libelle {
+  transition: opacity 0.25s ease;
+}
+
+.pluie-mini-anim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 1em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.pluie-toggle-encours.pluie-interaction-active .pluie-libelle {
+  opacity: 0;
+}
+
+.pluie-toggle-encours.pluie-interaction-active .pluie-mini-anim {
+  opacity: 1;
+}
+
+.pluie-mini-goutte {
+  width: 3px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--info);
+  opacity: 0;
+  animation: pluie-mini-tombe 0.7s ease-in infinite;
+}
+
+.pluie-mini-goutte:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.pluie-mini-goutte:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes pluie-mini-tombe {
+  0% {
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(5px);
+    opacity: 0;
+  }
+}
+
+.carte-meteo {
+  touch-action: manipulation;
+  /* iOS Safari ne délègue pas fiablement les clics à un élément non
+     interactif comme cet <article> sans cursor:pointer, sinon le tap
+     peut ne rien faire du tout. */
+  cursor: pointer;
+}
+
+/* Valeurs statiques (pas de calc()/var() dans animation-duration) car les
+   variables CSS référencées dans les propriétés d'animation ne sont pas
+   fiables sur Safari iOS 12, et un seul palier pour rester léger sur du
+   matériel ancien. */
+.carte-meteo.vitesse-active .pluie-goutte {
+  animation-duration: 0.5s;
+}
+
+.carte-meteo.vitesse-active .nuage-forme {
+  animation-duration: 30s;
+}
+
+.carte-meteo.vitesse-active .soleil-lueur,
+.carte-meteo.vitesse-active .soleil-coeur {
+  animation-duration: 2.4s;
+}
+
+.carte-meteo.vitesse-active .brouillard-nappe {
+  animation-duration: 17s;
+}
+
+/* !important nécessaire pour remplacer temporairement la durée inline
+   posée par flocon dans icons.js. */
+.carte-meteo.vitesse-active .neige-flocon {
+  animation-duration: 2.5s !important;
+}
+
+/* Éclair immédiat et net, en plus de la pluie accélérée — un vrai coup
+   de foudre plutôt qu'un simple réglage de vitesse. */
+.orage-flash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Deux copies du même éclair sous des noms différents, alternées à chaque
+   tap pour redémarrer l'animation sans forcer de reflow, plus fiable sur
+   du vieux WebKit. */
+.orage-flash.orage-flash-actif-a {
+  animation: orage-coup-de-foudre-a 0.7s ease-out;
+}
+
+.orage-flash.orage-flash-actif-b {
+  animation: orage-coup-de-foudre-b 0.7s ease-out;
+}
+
+@keyframes orage-coup-de-foudre-a {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.5;
+  }
+  14% {
+    opacity: 0.05;
+  }
+  22% {
+    opacity: 0.35;
+  }
+  35% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes orage-coup-de-foudre-b {
+  0% {
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.5;
+  }
+  14% {
+    opacity: 0.05;
+  }
+  22% {
+    opacity: 0.35;
+  }
+  35% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes orage-secousse {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-3px);
+  }
+  40% {
+    transform: translateX(2px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+.carte-meteo.orage-secousse {
+  animation: orage-secousse 0.35s ease-out;
+}
+
+.carte-meteo.brouillard-flou-a {
+  animation: brouillard-flou-a 1.35s ease-in-out;
+}
+
+.carte-meteo.brouillard-flou-b {
+  animation: brouillard-flou-b 1.35s ease-in-out;
+}
+
+@keyframes brouillard-flou-a {
+  0%,
+  100% {
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  45%,
+  65% {
+    -webkit-filter: blur(3px);
+    filter: blur(3px);
+    opacity: 0.88;
+  }
+}
+
+@keyframes brouillard-flou-b {
+  0%,
+  100% {
+    -webkit-filter: blur(0);
+    filter: blur(0);
+    opacity: 1;
+  }
+  45%,
+  65% {
+    -webkit-filter: blur(3px);
+    filter: blur(3px);
+    opacity: 0.88;
+  }
+}
+
+/* "calme" (nuit claire) n'a pas de fond animé, donc la réaction porte sur
+   la carte elle-même, en opacité plutôt qu'en filter() pour rester léger
+   sur l'iPad. */
+.calme-flash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.calme-flash.calme-flash-actif-a {
+  animation: calme-reaction-a 1.2s ease-in-out;
+}
+
+.calme-flash.calme-flash-actif-b {
+  animation: calme-reaction-b 1.2s ease-in-out;
+}
+
+@keyframes calme-reaction-a {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+
+@keyframes calme-reaction-b {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}
+
+/* --- Cartes train (départ / arrivée) --- */
+
+.carte-train-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.carte-train-entete > * + * {
+  margin-left: 0.5rem;
+}
+
+.carte-train-entete-gauche {
+  display: flex;
+  align-items: center;
+}
+
+.carte-train-entete-gauche .eyebrow {
+  margin-right: 0.4rem;
+}
+
+/* Alertes départ et arrivée synchronisées par refresh.js. */
+.alerte-clignotante-conteneur {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alerte-anneau {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  bottom: -5px;
+  left: -5px;
+  border-radius: 50%;
+  background: var(--danger);
+  opacity: 0.55;
+  animation: anneau-pulse 1.4s ease-out infinite;
+  animation-delay: var(--alerte-delay, 0ms);
+}
+
+@keyframes anneau-pulse {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.alerte-clignotante {
+  position: relative;
+  color: var(--danger);
+  animation: clignoter 1.4s ease-in-out infinite;
+  animation-delay: var(--alerte-delay, 0ms);
+}
+
+.countdown {
+  color: var(--texte-dim);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.train-heure-principale {
+  font-weight: 700;
+  font-size: 3.1rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.train-heure-principale.succes {
+  color: var(--succes);
+}
+
+.train-heure-principale.danger {
+  color: var(--danger);
+}
+
+.train-destination {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.45rem;
+  color: var(--texte);
+  font-size: 0.9rem;
+}
+
+/* Le nom de destination est un nœud texte brut. */
+.train-destination .train-ponct-inline {
+  margin-left: 0.5rem;
+}
+
+.train-ponct-inline {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.train-ponct-inline.retard {
+  color: var(--avertissement);
+}
+
+.train-ponct-inline.avance {
+  color: var(--info);
+}
+
+.train-ponct-inline.a-heure {
+  color: var(--succes);
+}
+
+.train-puis {
+  margin-top: 0.5rem;
+  color: var(--texte-muted);
+  font-size: 0.8rem;
+}
+
+.statut-service {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte-dim);
+}
+
+.statut-service.indisponible {
+  color: var(--danger);
+}
+
+.statut-service.attente {
+  color: var(--avertissement);
+}
+
+.statut-service.bientot {
+  color: var(--accent);
+}
+
+.carte-train-toggle,
+.gym-details-toggle {
+  display: inline-flex;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.9rem;
+  border: none;
+  background: none;
+  color: var(--texte-muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color var(--transition);
+}
+
+@media (hover: hover) {
+  .carte-train-toggle:hover {
+    color: var(--texte);
+  }
+}
+
+.carte-train-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.fleche-toggle {
+  /* Le libellé voisin est un nœud texte brut. */
+  margin-left: 0.35rem;
+  transition: transform var(--transition);
+}
+
+.carte-train-toggle.ouvert .fleche-toggle {
+  transform: rotate(180deg);
+}
+
+/* Panneaux "tucked away" : fermés par défaut, révélés en douceur */
+
+.disclosure {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease,
+    margin-top 0.25s ease;
+}
+
+.disclosure.ouvert {
+  max-height: 700px;
+  opacity: 1;
+  margin-top: 0.9rem;
+}
+
+.train-detail-ligne {
+  display: flex;
+  align-items: baseline;
+  padding: 0.45rem 0;
+  border-top: 1px solid var(--carte-border);
+  font-size: 0.82rem;
+}
+
+.train-detail-ligne > * + * {
+  margin-left: 0.6rem;
+}
+
+.train-detail-ligne:first-child {
+  border-top: none;
+}
+
+.train-detail-heure {
+  font-weight: 600;
+  min-width: 3rem;
+}
+
+.train-detail-heure.retard {
+  color: var(--avertissement);
+}
+
+.train-detail-heure.avance {
+  color: var(--info);
+}
+
+.train-detail-dest {
+  color: var(--texte-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.train-detail-ancienne {
+  color: var(--texte-dim);
+  text-decoration: line-through;
+  font-size: 0.75rem;
+}
+
+.train-detail-ponct {
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.train-detail-ponct.retard {
+  color: var(--avertissement);
+}
+
+.train-detail-ponct.avance {
+  color: var(--info);
+}
+
+.train-detail-ponct.a-heure {
+  color: var(--succes);
+}
+
+/* ──────────────────────────────────────────
+   Carte gym
+   ────────────────────────────────────────── */
+
+.carte-gym {
+  margin-bottom: 15px;
+}
+
+.carte-gym-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.carte-gym-entete > * + * {
+  margin-left: 1rem;
+}
+
+.gym-entete-droite {
+  display: flex;
+  align-items: center;
+}
+
+/* Marges car Safari iOS 12 ne gère pas `gap` sur flexbox. */
+.gym-entete-droite > * + * {
+  margin-left: 0.5rem;
+}
+
+.meaux-meteo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  color: var(--texte-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.meaux-meteo .icone {
+  margin-right: 0.3rem;
+}
+
+/* Le badge du prochain retour Meaux → Trilport reprend les mêmes seuils de
+   retard que les cartes départ/arrivée, mais bleu au repos puisque ce n'est
+   ni un départ ni une arrivée du trajet aller. */
+.meaux-retour {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  color: var(--info);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.meaux-retour .icone {
+  margin-right: 0.3rem;
+}
+
+.meaux-retour-moyen {
+  color: var(--avertissement);
+}
+
+.meaux-retour-fort {
+  color: var(--danger);
+}
+
+.meaux-retour-indisponible,
+.meaux-retour-attente,
+.meaux-retour-bientot,
+.meaux-retour-termine {
+  color: var(--texte-dim);
+  font-weight: 500;
+}
+
+.meaux-retour-ponct {
+  margin-left: 0.3rem;
+  font-size: 0.62em;
+  opacity: 0.85;
+}
+
+.gym-colonnes {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  padding-bottom: 0.15rem;
+  border-top: 1px solid var(--carte-border);
+}
+
+.gym-indisponible {
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--carte-border);
+  color: var(--texte-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.gym-colonnes .gym-col:last-child {
+  text-align: right;
+}
+
+.gym-col span {
+  display: block;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.gym-col strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+.gym-col strong.gym-col-verdict {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.gym-estime {
+  display: inline-block;
+  margin-left: 0.3rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+  background: var(--carte-border);
+  color: var(--texte-dim);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+}
+
+.gym-alternative-heures .gym-estime {
+  margin-left: 0.25rem;
+}
+
+.gym-estime-ligne {
+  display: block;
+  margin-top: 0.15rem;
+  margin-left: 0;
+}
+
+.gym-col-verdict .icone {
+  margin-right: 0.35rem;
+}
+
+.gym-col-duree {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+}
+
+.gym-col-train {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+  color: var(--texte-dim);
+  font-size: 0.75rem;
+}
+
+.gym-col-train .icone {
+  flex-shrink: 0;
+}
+
+.gym-colonnes .gym-col:last-child .gym-col-train {
+  justify-content: flex-end;
+}
+
+.gym-col .gym-retard {
+  color: #e67e22;
+  font-weight: 600;
+  font-size: 0.68rem;
+}
+
+/* Deux alternatives compactes, sans rendu de tableau. */
+.gym-alternatives {
+  margin-top: 0.3rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--carte-border);
+  overflow: hidden;
+}
+
+/* La liste réserve sa hauteur finale indépendamment de la ligne active. La
+   rotation peut donc remplacer ses alternatives sans redimensionner la carte. */
+.gym-alternatives-1 {
+  height: 1.55rem;
+}
+
+.gym-alternatives-2 {
+  height: 3.1rem;
+}
+
+.gym-alternative {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0.2rem 0;
+  color: var(--texte-muted);
+  font-size: 0.75rem;
+}
+
+/* Seules les lignes du popup ("Tous les trajets") sont sélectionnables. */
+.gym-alternative[role="button"] {
+  cursor: pointer;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+  margin-left: -0.4rem;
+  margin-right: -0.4rem;
+  border-radius: var(--rayon-sm);
+  transition: background var(--transition), color var(--transition);
+}
+
+@media (hover: hover) {
+  .gym-alternative[role="button"]:hover {
+    background: var(--surface-2);
+    color: var(--texte);
+  }
+}
+
+.gym-alternative[role="button"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.gym-alternative .icone {
+  margin-right: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Météo lisible sans ouvrir les détails. */
+.gym-alternative-meteo {
+  flex-shrink: 0;
+  margin-right: 0.5rem;
+  color: var(--texte-dim);
+}
+
+.gym-alternative-heures {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gym-alternative-duree {
+  margin-left: auto;
+  padding-left: 0.6rem;
+  color: var(--texte-dim);
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
+
+/* Le libellé "Gym" est lui-même le bouton qui marque la séance faite. */
+.gym-bouton-termine {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.gym-bouton-popup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--carte-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--texte-muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .gym-bouton-popup:hover {
+    color: var(--texte);
+  }
+}
+
+.gym-bouton-popup:focus-visible {
+  color: var(--texte);
+}
+
+.gym-popup-liste {
+  margin-top: 0.9rem;
+}
+
+/* Les fenêtres se superposent dans la même cellule de grille, celle qui
+   arrive attendant hors champ à droite et celle qui part sortant à gauche,
+   selon le data-etat posé par gym.js. */
+.gym-fenetres {
+  display: grid;
+  overflow: hidden;
+}
+
+.gym-fenetre {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(0);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease,
+    visibility 0.5s;
+}
+
+.gym-fenetre[data-etat="suivante"] {
+  transform: translateX(36px);
+}
+
+.gym-fenetre[data-etat="precedente"] {
+  transform: translateX(-36px);
+}
+
+.gym-fenetre-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+/* Les variantes d'une même heure (ex. :30/:38) utilisent un roulement
+   vertical façon horloge digitale, différent du glissement latéral entre
+   heures. */
+.gym-sous-stack {
+  position: relative;
+  display: grid;
+}
+
+.gym-sous {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease,
+    visibility 0.4s;
+}
+
+.gym-sous-active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* La ligne de la fenêtre principale sort immédiatement du flux pour éviter
+   qu'animer sa hauteur ne redimensionne toute la carte Gym. */
+.gym-alternative {
+  height: 1.55rem;
+  box-sizing: border-box;
+}
+
+.gym-alternative-cachee {
+  display: none;
+}
+
+.gym-termine-message {
+  display: none;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--carte-border);
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+}
+
+.carte-gym.gym-termine .gym-corps {
+  display: none;
+}
+
+.carte-gym.gym-termine .gym-termine-message {
+  display: block;
+}
+
+.gym-repos-message {
+  position: relative;
+}
+
+/* Même motif "Zzz" que le train endormi hors service, réutilisé ici. */
+.gym-zzz {
+  display: inline-flex;
+  align-items: flex-end;
+  margin-left: 0.4rem;
+  font-family: var(--font-sans);
+  font-weight: 800;
+  color: var(--texte);
+  pointer-events: none;
+}
+
+.gym-zzz span {
+  display: inline-block;
+  opacity: 0;
+  animation: zzz-flotter 3.2s ease-in infinite;
+}
+
+.gym-zzz span:nth-child(1) {
+  font-size: 0.8rem;
+}
+
+.gym-zzz span:nth-child(2) {
+  font-size: 1rem;
+  margin-left: 2px;
+  animation-delay: -1.07s;
+}
+
+.gym-zzz span:nth-child(3) {
+  font-size: 1.2rem;
+  margin-left: 2px;
+  animation-delay: -2.13s;
+}
+
+/* Deux copies des mêmes keyframes sous des noms distincts, alternées pour
+   redémarrer l'animation sans forcer de reflow, plus fiable sur du vieux
+   WebKit. */
+@keyframes gym-secousse-a {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes gym-secousse-b {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+
+.gym-secousse-a {
+  animation: gym-secousse-a 0.4s ease;
+}
+
+.gym-secousse-b {
+  animation: gym-secousse-b 0.4s ease;
+}
+
+/* ──────────────────────────────────────────
+   Carte trafic
+   ────────────────────────────────────────── */
+
+.carte-trafic {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 92px;
+}
+/* Les éléments absolus sont hors du flux flex. */
+
+.carte-trafic-corps {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.carte-trafic-corps:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.carte-trafic-corps:not(:disabled):focus-visible .carte-trafic-titre {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.carte-trafic-corps > * + * {
+  margin-left: 0.75rem;
+}
+
+.statut-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 0.35rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--texte-dim);
+}
+
+.carte-trafic-fluide .statut-dot {
+  background: var(--succes);
+}
+
+/* Info et ailleurs partagent le niveau orange. */
+.carte-trafic-ailleurs .statut-dot,
+.carte-trafic-info .statut-dot {
+  background: var(--avertissement);
+}
+
+.carte-trafic-info,
+.carte-trafic-ailleurs {
+  position: relative;
+}
+
+/* Ombre interne fixe pour éviter les repaints. */
+.carte-trafic-info::after,
+.carte-trafic-ailleurs::after {
+  /* Durée commune aux autres lueurs. */
+  box-shadow: inset 0 0 18px 3px rgba(255, 176, 82, 0.22);
+}
+
+.carte-trafic-alerte .statut-dot {
+  background: var(--danger);
+  animation: clignoter-restrained 1.4s ease-in-out infinite;
+  animation-delay: var(--alerte-delay, 0ms);
+}
+
+/* Une perturbation du trajet fait respirer toute la carte. */
+.carte-trafic-titre {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Actions trafic dans les deux coins droits. */
+.carte-trafic-icone-bouton {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.carte-trafic-travaux-bouton {
+  bottom: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--carte-border);
+  border-radius: 50%;
+  background: var(--carte);
+  color: var(--texte-muted);
+  transition:
+    border-color var(--transition),
+    color var(--transition);
+}
+
+/* Indicateur de connexion, dans l'en-tête entre le logo et la date — juste
+   l'icône, pas de pilule/texte (façon icône de barre d'état iOS). Jamais
+   coloré comme une vraie alerte trafic (voir .carte-trafic plus bas, jamais
+   touchée par cet indicateur). Invisible via opacity (PAS hidden/display)
+   tant que connecté : la zone reste en place et tapable au bon endroit —
+   un tap dessus fait à la fois apparaître l'icône ET bascule la pause
+   manuelle (voir refresh.js), pas deux gestes séparés. Déconnecté : visible
+   en continu, pour savoir où retaper afin de revenir en ligne. */
+/* padding + margin négative égale : agrandit la zone tapable réelle très
+   au-delà du glyphe (16px de marge de chaque côté, ~54px de zone au total)
+   sans rien déplacer visuellement dans l'en-tête — même astuce que pour
+   agrandir une cible tactile sans changer la mise en page autour. */
+.connexion-etat {
+  display: inline-flex;
+  align-items: center;
+  padding: 16px;
+  margin: -16px;
+  border: none;
+  background: none;
+  color: var(--texte-dim);
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    color 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.connexion-etat.connecte {
+  color: var(--succes);
+  opacity: 0;
+}
+
+/* 1er tap (voir refresh.js) : révèle sans activer — reste vert/"connecte",
+   juste rendu visible, pour que le 2e tap de confirmation vise une icône
+   qu'on voit réellement. */
+.connexion-etat.revele {
+  opacity: 1;
+}
+
+/* "Signal flou" plutôt qu'une icône barrée : filtre STATIQUE, posé une
+   seule fois au changement d'état (pas animé en continu comme le
+   filter: drop-shadow() du train, retiré ailleurs pour son coût de repaint
+   à chaque frame — voir decisions.md) donc sans le même problème de
+   performance sur l'iPad cible. Pleinement opaque (pas juste flouté à faible
+   opacité) : signalé comme trop discret/difficile à repérer en test réel —
+   le flou seul porte désormais le sens "signal perturbé", l'opacité ne sert
+   plus à l'estomper davantage. */
+.connexion-etat.deconnecte {
+  color: var(--texte-muted);
+  filter: blur(1.2px);
+  opacity: 1;
+}
+
+/* Rejoué (refresh.js, jouerTransitionSommeil()) sur chaque carte concernée
+   par le mode sommeil, à l'endormissement ET au réveil — un simple fondu,
+   pas une vraie transition ancien/nouveau contenu (le contenu a déjà changé
+   instantanément dans les deux cas, comme .bus-direction-panneau le fait
+   déjà ailleurs). Opacité seule, rien d'animé en continu : coût nul une
+   fois les 0.6s écoulées, safe sur l'iPad cible. */
+.transition-sommeil {
+  animation: transition-sommeil 0.6s ease;
+}
+
+@keyframes transition-sommeil {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Rejoué à chaque apparition (tap, ou passage hors ligne) — même esprit
+   ressort que le retournement de direction du popup bus
+   (bus-direction-nom-pop), pour que ça n'ait pas juste l'air de sauter à
+   l'écran. */
+.connexion-etat.apparait {
+  animation: connexion-etat-pop 0.4s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+@keyframes connexion-etat-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (hover: hover) {
+  .carte-trafic-travaux-bouton:hover {
+    border-color: var(--accent);
+    color: var(--texte);
+  }
+}
+
+.carte-trafic-travaux-bouton:focus-visible {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+.illustration-train-conteneur {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.illustration-train-glisseur {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 200%;
+  width: auto;
+  opacity: 0;
+  transform: translate(-100%, -50%);
+  animation: traverser-train 14s linear infinite;
+}
+
+/* Info ralentit le train; ailleurs ajoute une secousse. */
+.illustration-train-conteneur.ralenti .illustration-train-glisseur {
+  animation-duration: 48s;
+}
+
+.illustration-train-img {
+  display: block;
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+  opacity: 0.8;
+  /* Aucun filtre coûteux sur cet élément toujours animé. */
+}
+
+.illustration-train-conteneur.en-panne .illustration-train-glisseur {
+  left: 50%;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  animation: none;
+}
+
+.illustration-train-conteneur.en-panne .illustration-train-img {
+  opacity: 0.8;
+  animation: secousse-panne 2s ease-in-out infinite;
+}
+
+.illustration-train-conteneur.secoue .illustration-train-img {
+  animation: secousse-legere 1.5s ease-in-out infinite;
+}
+
+/* Train garé à droite hors service. */
+.illustration-train-conteneur.endormi .illustration-train-glisseur {
+  left: 100%;
+  opacity: 1;
+  transform: translate(-100%, -50%);
+  animation: none;
+}
+
+.illustration-train-conteneur.endormi .illustration-train-img {
+  opacity: 0.8;
+
+}
+
+
+.train-zzz {
+  position: absolute;
+  top: 31%;
+  left: -7%;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  color: var(--texte);
+  font-family: var(--font-sans);
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.train-zzz span {
+  display: inline-block;
+  opacity: 0;
+  animation: zzz-flotter 3.2s ease-in infinite;
+}
+
+.train-zzz span:nth-child(1) {
+  font-size: 1.1rem;
+}
+
+.train-zzz span:nth-child(2) {
+  font-size: 1.5rem;
+  margin-right: 3px;
+  animation-delay: -1.07s;
+}
+
+.train-zzz span:nth-child(3) {
+  font-size: 1.9rem;
+  margin-right: 3px;
+  animation-delay: -2.13s;
+}
+
+@keyframes zzz-flotter {
+  0% {
+    opacity: 0;
+    transform: translate(0, 12px) scale(0.6);
+  }
+  15% {
+    opacity: 1;
+  }
+  65% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50px, -35px) scale(1.25);
+  }
+}
+
+@keyframes traverser-train {
+  0% {
+    left: 0;
+    opacity: 0;
+    transform: translate(-100%, -50%);
+  }
+
+  1%,
+  99% {
+    opacity: 1;
+  }
+
+  100% {
+    left: 100%;
+    opacity: 0;
+    transform: translate(0, -50%);
+  }
+}
+
+/* Secousse périodique du train en panne. */
+@keyframes secousse-panne {
+  0%,
+  80%,
+  100% {
+    transform: none;
+  }
+  85% {
+    transform: translate(-3px, 2px) rotate(-1deg);
+  }
+  89% {
+    transform: translate(3px, -2px) rotate(1deg);
+  }
+  93% {
+    transform: translate(-2px, 1px) rotate(-0.6deg);
+  }
+  97% {
+    transform: translate(2px, -1px) rotate(0.5deg);
+  }
+}
+
+/* Secousse légère pendant le déplacement. */
+@keyframes secousse-legere {
+  0%,
+  45%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translate(-3.5px, 2px) rotate(-1.5deg);
+  }
+  56% {
+    transform: translate(3.5px, -2px) rotate(1.5deg);
+  }
+  62% {
+    transform: translate(-3px, 1.8px) rotate(-1.2deg);
+  }
+  68% {
+    transform: translate(3px, -1.8px) rotate(1.2deg);
+  }
+  74% {
+    transform: translate(-2px, 1.2px) rotate(-0.8deg);
+  }
+  80% {
+    transform: translate(2px, -1.2px) rotate(0.8deg);
+  }
+  86% {
+    transform: translate(-1px, 0.6px) rotate(-0.4deg);
+  }
+  92% {
+    transform: translate(1px, -0.6px) rotate(0.4deg);
+  }
+}
+
+/* Détails trafic affichés en popup plein écran. */
+.popup-fond {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  max-height: none;
+  margin-top: 0;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    opacity var(--transition);
+}
+
+.popup-fond.ouvert {
+  /* Annule les limites du panneau inline. */
+  max-height: none;
+  margin-top: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.popup-boite {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  /* Défilement inertiel sur iOS ancien ; sans ça, un tap dans une longue
+     liste scrollable (ex. le popup "Tous les trajets") peut être mal
+     interprété par WebKit, surtout juste après un défilement. */
+  -webkit-overflow-scrolling: touch;
+  /* Empêche le défilement de chaîner vers la page derrière une fois arrivé
+     en haut/bas du popup (iOS 16+ ; ignoré sans effet sur iOS 12). */
+  overscroll-behavior: contain;
+  background: var(--carte);
+  border: 1px solid var(--carte-border);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+  padding: 20px;
+  transform: translateY(10px) scale(0.98);
+  transition: transform var(--transition);
+}
+
+.popup-fond.ouvert .popup-boite {
+  transform: translateY(0) scale(1);
+}
+
+.popup-titre {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-right: 1.6rem;
+}
+
+.popup-fermer {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  color: var(--texte-muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .popup-fermer:hover {
+    color: var(--texte);
+  }
+}
+
+.popup-fermer:focus-visible {
+  color: var(--texte);
+}
+
+.popup-boite p {
+  color: var(--texte-muted);
+  font-size: 0.85rem;
+  white-space: pre-line;
+}
+
+.popup-boite .panneau-meta {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--texte-dim);
+}
+
+.panneau-travaux-item {
+  padding: 0.4rem 0;
+}
+
+.panneau-travaux-item:not(:last-child) {
+  border-bottom: 1px solid var(--carte-border);
+}
+
+@keyframes clignoter {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Clignotement discret de l'alerte trafic. */
+@keyframes clignoter-restrained {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ──────────────────────────────────────────
+   Responsive
+   ────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  /* Statistiques météo en 2 × 2 sur iPad portrait. */
+  .carte-meteo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Le seuil reste sous les 768 px du plus petit iPad cible. */
+  .grille-principale {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .carte-meteo {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Le seuil reste sous les 768 px du plus petit iPad cible. */
+  .grille-principale .carte-arrivee-classique {
+    display: none;
+  }
+  .grille-principale .carte-rentre-mobile {
+    display: flex;
+  }
+
+  body {
+    padding: 20px;
+  }
+  .header {
+    flex-wrap: wrap;
+    row-gap: 0.6rem;
+  }
+  .header-date {
+    display: none;
+  }
+  .badge-demo {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.66rem;
+  }
+  .carte-meteo-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 0.75rem;
+  }
+  .grille-principale {
+    grid-template-columns: 1fr;
+  }
+  .temp {
+    font-size: 3rem;
+  }
+  .train-heure-principale {
+    font-size: 2.75rem;
+  }
+  .gym-colonnes {
+    gap: 0.4rem;
+  }
+  .gym-col span {
+    font-size: 0.6rem;
+  }
+  .gym-col strong {
+    font-size: 1.05rem;
+  }
+  .gym-col strong.gym-col-verdict {
+    font-size: 0.9rem;
+  }
+  .gym-col-duree,
+  .gym-col-train {
+    font-size: 0.62rem;
+  }
+  .carte-trafic {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .illustration-train-conteneur {
+    display: none;
+  }
+  .carte-trafic {
+    min-height: 0;
+  }
+  /* Réserve la place des icônes coin (info/travaux) pour que le titre,
+     sur deux lignes à cette largeur, ne passe jamais dessous. */
+  .carte-trafic-texte {
+    padding-right: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

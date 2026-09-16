@@ -12,26 +12,15 @@ import {
   construireTrajetsGym,
   filtrerDeparts,
   formaterDatePerturbation,
+  texteMeteo,
   trouverProchainePluie,
   formaterDelaiPluie,
-  traduireCodeMeteo,
   dateAujourdhuiParis,
   estDimancheParis,
   construireBusRetour,
   construireBusVersOnAir,
   STOPPOINTS_QUAIS_MEAUX,
 } from "./services/utils.js";
-import {
-  icone,
-  iconeMeteo,
-  iconeVerdict,
-  sceneMeteo,
-  animationMeteoFond,
-  illustrationTrain,
-  illustrationBusCote,
-  illustrationMarche,
-  couleurTemperature,
-} from "./services/icons.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -105,8 +94,7 @@ const villes = [
     longitude: 2.8789,
   },
 ];
-app.set("view engine", "ejs");
-app.use(express.static("public"));
+app.use(express.static("frontend/dist"));
 
 // === Cache météo (10 min, partagé entre requêtes) ===
 
@@ -629,8 +617,7 @@ function creerRetourMeauxDemo(cle) {
 
 // === Route principale (GET /) ===
 
-app.get("/", async (req, res) => {
-  try {
+async function calculerDonneesTableauDeBord(req) {
     const modeDemo = MODE_DEMO_AUTORISE && req.query.demo === "1";
     const [
       resultatMeaux,
@@ -973,8 +960,26 @@ app.get("/", async (req, res) => {
       gymDemoActif,
       retourMeauxDemoActif,
     );
-    res.render("index.ejs", {
+    const detailAlerteAvecDates = detailAlerte
+      ? {
+          ...detailAlerte,
+          debutFormate: formaterDatePerturbation(detailAlerte.debut),
+          finFormate: formaterDatePerturbation(detailAlerte.fin),
+        }
+      : null;
+
+    const meteoActuelleTexte = meteos[0]
+      ? texteMeteo(meteos[0].current.weather_code)
+      : null;
+    const meteoDemainTexte =
+      meteos[0] && meteos[0].daily.weather_code?.[1] !== undefined
+        ? texteMeteo(meteos[0].daily.weather_code[1])
+        : null;
+
+    return {
       meteos,
+      meteoActuelleTexte,
+      meteoDemainTexte,
       trajetsGym,
       trajetsGymTous,
       gymCacheAujourdhui,
@@ -986,12 +991,10 @@ app.get("/", async (req, res) => {
       busRetour,
       busVersOnAir,
       texteAlerte,
-      detailAlerte,
-      formaterDatePerturbation,
+      detailAlerte: detailAlerteAvecDates,
       statutDeparts,
       statutArrivees,
       statutRetourMeaux,
-      traduireCodeMeteo,
       niveauTrafic,
       phaseServiceActuelle,
       prochaineTravaux,
@@ -1013,17 +1016,39 @@ app.get("/", async (req, res) => {
       boutonsPluie,
       boutonsGym,
       boutonsRetourMeaux,
-      icone,
-      iconeMeteo,
-      iconeVerdict,
-      sceneMeteo,
-      animationMeteoFond,
-      illustrationTrain,
-      illustrationBusCote,
-      illustrationMarche,
-      couleurTemperature,
       dateAffichee: dateAffichee(),
-    });
+    };
+}
+
+function donneesTableauDeBordErreur(error) {
+  return {
+    meteos: [],
+    trajetsGym: [],
+    trajetsGymTous: [],
+    gymCacheAujourdhui: false,
+    estDimancheAujourdhui: false,
+    gymVerrouilleActif: null,
+    departsRetourEntete: [],
+    busRetour: [],
+    busVersOnAir: [],
+    statutRetourMeaux: "indisponible",
+    texteAlerte: null,
+    detailAlerte: null,
+    erreur: error.message,
+    niveauTrafic: "fluide",
+    phaseServiceActuelle: "actif",
+    prochaineTravaux: null,
+    prochainePluieTrilport: null,
+    modeDemo: false,
+    demoDisponible: false,
+    dateAffichee: dateAffichee(),
+  };
+}
+
+app.get("/api/dashboard", async (req, res) => {
+  try {
+    const donnees = await calculerDonneesTableauDeBord(req);
+    res.json(donnees);
   } catch (error) {
     console.error(
       "Erreur API:",
@@ -1031,34 +1056,7 @@ app.get("/", async (req, res) => {
       error.response?.status,
       error.message,
     );
-
-    res.render("index.ejs", {
-      meteos: [],
-      trajetsGym: [],
-      trajetsGymTous: [],
-      gymCacheAujourdhui: false,
-      estDimancheAujourdhui: false,
-      gymVerrouilleActif: null,
-      departsRetourEntete: [],
-      busRetour: [],
-      busVersOnAir: [],
-      statutRetourMeaux: "indisponible",
-      texteAlerte: null,
-      detailAlerte: null,
-      erreur: error.message,
-      niveauTrafic: "fluide",
-      phaseServiceActuelle: "actif",
-      prochaineTravaux: null,
-      prochainePluieTrilport: null,
-      modeDemo: false,
-      demoDisponible: false,
-      icone,
-      iconeMeteo,
-      illustrationTrain,
-      illustrationBusCote,
-      illustrationMarche,
-      dateAffichee: dateAffichee(),
-    });
+    res.status(500).json(donneesTableauDeBordErreur(error));
   }
 });
 

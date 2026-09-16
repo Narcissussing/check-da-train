@@ -634,7 +634,12 @@ export function evaluerConditionsMeteo({
   else if (lunettes) resume = "☀️ Lunettes !";
   else resume = "✅ Tranquille";
 
-  return { verdicts: { parapluie, lunettes, couche }, resume, score };
+  return {
+    verdicts: { parapluie, lunettes, couche },
+    resume,
+    resumeSansEmoji: resume.replace(/^\S+\s*/u, ""),
+    score,
+  };
 }
 
 function formaterCibleHoraire(date) {
@@ -927,6 +932,11 @@ export function traduireCodeMeteo(code) {
     99: "⛈️⛈️ orage violent",
   };
   return descriptions[code] ?? "conditions variables";
+}
+
+// Retire l'emoji de tête de traduireCodeMeteo().
+export function texteMeteo(code) {
+  return traduireCodeMeteo(code).replace(/^\S+\s*/u, "");
 }
 
 // Formate une date IDFM (YYYYMMDDTHHMMSS) dans le fuseau de Paris.
