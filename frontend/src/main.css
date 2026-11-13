@@ -526,6 +526,47 @@ button {
   height: 80vh;
 }
 
+/* Tirer pour rafraîchir : le bus arrive avec le doigt, roule pendant le
+   chargement puis repart vers la droite. */
+.bus-tirage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--info);
+  transition: height 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.bus-tirage.bus-tirage-actif {
+  transition: none;
+}
+
+.bus-tirage-bus {
+  display: block;
+}
+
+.bus-tirage-chargement .bus-tirage-bus .bus-cote {
+  animation: bus-roule 0.35s ease-in-out infinite;
+}
+
+.bus-tirage-chargement .bus-tirage-bus {
+  animation: bus-tirage-attente 1.2s ease-in-out infinite;
+}
+
+.bus-tirage-fini .bus-tirage-bus {
+  animation: bus-tirage-depart 0.45s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
+@keyframes bus-tirage-attente {
+  0%, 100% { transform: translateX(-0.4rem); }
+  50% { transform: translateX(0.4rem); }
+}
+
+@keyframes bus-tirage-depart {
+  0% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(12rem); opacity: 0; }
+}
+
 /* Une carte par passage, reprise de la grille .bus-vers-onair-ligne avec le
    sens des colonnes inversé, où un tap remplace le contenu replié par le
    tracé de bus animé dans la même carte plutôt que d'ouvrir un panneau en
@@ -542,6 +583,19 @@ button {
   border-radius: 8px;
   background: var(--surface-2);
   overflow: hidden;
+}
+
+/* Bus parti : la ligne file vers la droite puis se replie. */
+.bus-rentre-item.bus-rentre-sortie {
+  pointer-events: none;
+  animation: bus-rentre-sortie 0.9s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
+@keyframes bus-rentre-sortie {
+  0% { transform: translateX(0); opacity: 1; max-height: 12rem; }
+  15% { transform: translateX(-6px); opacity: 1; max-height: 12rem; }
+  60% { transform: translateX(110%); opacity: 0; max-height: 12rem; border-width: 1px; }
+  100% { transform: translateX(110%); opacity: 0; max-height: 0; border-width: 0; }
 }
 
 .bus-rentre-toggle {

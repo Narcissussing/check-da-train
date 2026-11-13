@@ -3,10 +3,10 @@ import Icon from '../../components/Icon/Icon'
 import WalkFigure from './WalkFigure'
 import BusDepartSalle from './BusDepartSalle'
 
-export default function BusRowRetour({ bus, ouvert, onToggle, maintenant }) {
+export default function BusRowRetour({ bus, ouvert, onToggle, maintenant, sortie = false }) {
   return (
     <li
-      className={`bus-rentre-item${ouvert ? ' bus-rentre-ouvert' : ''}`}
+      className={`bus-rentre-item${ouvert ? ' bus-rentre-ouvert' : ''}${sortie ? ' bus-rentre-sortie' : ''}`}
       data-bus-id={bus.id}
       data-arret={bus.arret}
       data-marche={bus.marcheMinutes ?? ''}
@@ -63,4 +63,5 @@ BusRowRetour.propTypes = {
   ouvert: PropTypes.bool.isRequired,
   onToggle: PropTypes.func.isRequired,
   maintenant: PropTypes.number.isRequired,
+  sortie: PropTypes.bool,
 }

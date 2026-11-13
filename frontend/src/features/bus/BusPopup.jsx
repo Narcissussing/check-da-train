@@ -6,6 +6,21 @@ import useBusPopupState from './useBusPopupState'
 import BusRowRetour from './BusRowRetour'
 import BusRowVersOnAir from './BusRowVersOnAir'
 import BusFiltreControles from './BusFiltreControles'
+import BusSilhouette from './BusSilhouette'
+import usePullToRefresh from './usePullToRefresh'
+
+// Un bus parti depuis plus d'une minute disparaît, sauf s'il est choisi
+// (ligne ouverte) ; la dernière seconde sert à jouer l'animation de sortie.
+const DELAI_PARTI_MS = 60000
+const DUREE_SORTIE_MS = 1000
+
+function etatDepart(bus, maintenant, ouverts) {
+  if (ouverts.includes(bus.id)) return 'visible'
+  const ecoule = maintenant - new Date(bus.depart).getTime()
+  if (ecoule < DELAI_PARTI_MS) return 'visible'
+  if (ecoule < DELAI_PARTI_MS + DUREE_SORTIE_MS) return 'sortie'
+  return 'parti'
+}
 
 function filtrerEtTrier(liste, filtre, champArret, champMarche) {
   let resultat = liste
@@ -24,8 +39,9 @@ function filtrerEtTrier(liste, filtre, champArret, champMarche) {
   return resultat
 }
 
-export default function BusPopup({ open, onClose, onInsideClick, busRetour, busVersOnAir }) {
+export default function BusPopup({ open, onClose, onInsideClick, onRefresh, busRetour, busVersOnAir }) {
   const etat = useBusPopupState()
+  const tirage = usePullToRefresh(onRefresh, open)
   const [maintenant, setMaintenant] = useState(() => Date.now())
 
   useEffect(() => {
@@ -33,17 +49,20 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
     return () => clearInterval(id)
   }, [])
 
-  const arretsRetour = [...new Set(busRetour.map((b) => b.arret).filter(Boolean))]
-  const arretsVersOnAir = [...new Set(busVersOnAir.map((b) => b.arretDescente).filter(Boolean))]
+  const retourVisibles = busRetour.filter((b) => etatDepart(b, maintenant, etat.ouverts) !== 'parti')
+  const versOnAirVisibles = busVersOnAir.filter((b) => etatDepart(b, maintenant, etat.ouverts) !== 'parti')
+
+  const arretsRetour = [...new Set(retourVisibles.map((b) => b.arret).filter(Boolean))]
+  const arretsVersOnAir = [...new Set(versOnAirVisibles.map((b) => b.arretDescente).filter(Boolean))]
 
   const listeRetour = filtrerEtTrier(
-    busRetour,
+    retourVisibles,
     etat.filtres['onair-meaux'],
     (b) => b.arret,
     (b) => Number(b.marcheMinutes),
   )
   const listeVersOnAir = filtrerEtTrier(
-    busVersOnAir,
+    versOnAirVisibles,
     etat.filtres['meaux-onair'],
     (b) => b.arretDescente,
     (b) => Number(b.marcheMinutes),
@@ -58,7 +77,19 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
       autoClose={false}
       boiteClassName="bus-retour-popup"
     >
-      <>
+      <div className="bus-tirage-zone" ref={tirage.zoneRef}>
+        <div
+          className={`bus-tirage bus-tirage-${tirage.etat}${tirage.tirage > 0 && tirage.etat === 'repos' ? ' bus-tirage-actif' : ''}`}
+          style={{ height: `${tirage.tirage}px` }}
+          aria-hidden="true"
+        >
+          <span
+            className="bus-tirage-bus"
+            style={tirage.etat === 'repos' ? { transform: `translateX(${(tirage.progression - 1) * 3}rem)`, opacity: tirage.progression } : undefined}
+          >
+            <BusSilhouette />
+          </span>
+        </div>
         <div
           className="popup-titre bus-direction-toggle bus-direction-toggle-pleine-largeur"
           data-direction-actuelle={etat.direction}
@@ -85,7 +116,7 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
         </div>
 
         <div className="bus-direction-panneau" data-direction-panneau="onair-meaux" hidden={etat.direction !== 'onair-meaux'}>
-          {busRetour.length > 0 ? (
+          {retourVisibles.length > 0 ? (
             <>
               <BusFiltreControles
                 id="bus-rentre-filtres"
@@ -103,6 +134,7 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
                     ouvert={etat.ouverts.includes(bus.id)}
                     onToggle={() => etat.basculerOuverture(bus.id)}
                     maintenant={maintenant}
+                    sortie={etatDepart(bus, maintenant, etat.ouverts) === 'sortie'}
                   />
                 ))}
               </ul>
@@ -114,7 +146,7 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
 
         <div className="bus-direction-panneau" data-direction-panneau="meaux-onair" hidden={etat.direction !== 'meaux-onair'}>
           <div className="bus-autres bus-vers-onair">
-            {busVersOnAir.length > 0 ? (
+            {versOnAirVisibles.length > 0 ? (
               <>
                 <BusFiltreControles
                   id="bus-vers-onair-filtres"
@@ -132,6 +164,7 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
                       ouvert={etat.ouverts.includes(bus.id)}
                       onToggle={() => etat.basculerOuverture(bus.id)}
                       maintenant={maintenant}
+                      sortie={etatDepart(bus, maintenant, etat.ouverts) === 'sortie'}
                     />
                   ))}
                 </ul>
@@ -141,7 +174,7 @@ export default function BusPopup({ open, onClose, onInsideClick, busRetour, busV
             )}
           </div>
         </div>
-      </>
+      </div>
     </Popup>
   )
 }
@@ -150,6 +183,7 @@ BusPopup.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onInsideClick: PropTypes.func,
+  onRefresh: PropTypes.func.isRequired,
   busRetour: PropTypes.array.isRequired,
   busVersOnAir: PropTypes.array.isRequired,
 }

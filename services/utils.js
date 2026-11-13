@@ -249,6 +249,8 @@ const LIGNES_BUS_HAYETTE = {
   C02069: { nom: "2403", couleur: "#dc9600", texte: "#000000", duree: 6 },
   C02070: { nom: "2411", couleur: "#d2d200", texte: "#000000", duree: 10 },
   C01820: { nom: "7702", couleur: "#3c91dc", texte: "#ffffff", duree: 10 },
+  C02230: { nom: "2326", couleur: "#640082", texte: "#ffffff", duree: 7 },
+  C02252: { nom: "2331", couleur: "#a3c2e6", texte: "#000000", duree: 12 },
 };
 
 // Quai de départ à Gare de Meaux par ligne. 2306/2311 utilisent le quai 3 —
@@ -264,9 +266,8 @@ export const QUAI_PAR_LIGNE = {
   7702: "1",
 };
 
-// Arrêt de descente le plus proche d'On Air par ligne, et marche associée.
-// Une ligne vue à plusieurs arrêts garde celui à la marche la plus courte ;
-// une ligne vue seulement à La Hayette garde La Hayette faute d'alternative.
+// Arrêt d'On Air utilisé par ligne, dans les deux directions, et marche associée.
+// Un passage vu à un autre arrêt (ex. 2306 à Cornillon) est ignoré.
 export const DESCENTE_PAR_LIGNE = {
   7718: { nom: "La Hayette", minutes: 9 },
   2319: { nom: "La Hayette", minutes: 9 },
@@ -276,26 +277,13 @@ export const DESCENTE_PAR_LIGNE = {
   2403: { nom: "La Hayette", minutes: 9 },
   2411: { nom: "Saints Pères", minutes: 5 },
   7702: { nom: "La Hayette", minutes: 9 },
+  2326: { nom: "Les Fauvettes", minutes: 1 },
+  2331: { nom: "Les Fauvettes", minutes: 1 },
 };
 
 // Rangement matériel/casier/sac/sortie de la salle, avant même de commencer
 // la marche vers l'arrêt de bus (compte à rebours "Partir de la salle").
 const BUFFER_ARRET_ENTRAINEMENT_MINUTES = 4;
-
-// Marche la plus courte en premier, l'arrêt à privilégier quand un
-// trajet en boucle passe par plusieurs de nos arrêts (voir dédoublonnage
-// dans construireBusRetour). Cornillon n'y figure jamais (aucune ligne ne
-// le priorise) mais reste dans MARCHE_MINUTES_PAR_ARRET pour l'affichage.
-const PRIORITE_ARRET = Object.fromEntries(
-  Object.values(DESCENTE_PAR_LIGNE).map(({ nom, minutes }) => [nom, minutes]),
-);
-
-// Marche à pied depuis On Air jusqu'à chaque arrêt, utilisée dans les deux
-// directions pour l'indicateur de marche affiché à côté de chaque passage.
-const MARCHE_MINUTES_PAR_ARRET = {
-  ...PRIORITE_ARRET,
-  Cornillon: 7,
-};
 
 // StopPoint IDFM de chaque quai de départ à Gare de Meaux, pour la
 // direction Meaux → On Air.
@@ -308,6 +296,13 @@ export const STOPPOINTS_QUAIS_MEAUX = {
   1: "STIF:StopPoint:Q:19837:",
 };
 
+// Un bus parti depuis plus d'une minute n'est plus proposé (sauf s'il est choisi).
+const DELAI_BUS_PARTI_MS = MINUTE_EN_MS;
+
+function estAVenir(depart, maintenant) {
+  return new Date(depart).getTime() >= maintenant - DELAI_BUS_PARTI_MS;
+}
+
 function extraireVisites(data) {
   return (data?.Siri?.ServiceDelivery?.StopMonitoringDelivery ?? []).flatMap(
     (livraison) => livraison?.MonitoredStopVisit ?? [],
@@ -316,8 +311,8 @@ function extraireVisites(data) {
 
 // === Bus Hayette — Rentre (On Air → Meaux) ===
 
-// Associe chaque bus entre son arrêt de départ (Cornillon, Fauvettes,
-// Saints Pères ou La Hayette) et son arrivée à Meaux.
+// Associe chaque bus entre son arrêt de départ (Fauvettes, Saints Pères
+// ou La Hayette) et son arrivée à Meaux.
 export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []) {
   const arriveesParTrajet = new Map();
   extraireVisites(dataMeaux).forEach((visite) => {
@@ -342,6 +337,8 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       const depart = appel?.ExpectedDepartureTime ?? appel?.ExpectedArrivalTime;
       const departPrevu = appel?.AimedDepartureTime ?? appel?.AimedArrivalTime;
       if (!ligne || !/Gare de Meaux/iu.test(destination) || !depart) return null;
+      const descente = DESCENTE_PAR_LIGNE[ligne.nom];
+      if (arret !== descente?.nom) return null;
 
       const trajet = parcours?.FramedVehicleJourneyRef?.DatedVehicleJourneyRef;
       const visiteMeaux = trajet ? arriveesParTrajet.get(trajet) : null;
@@ -371,19 +368,16 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       const retardNiveau =
         retardMeaux >= 10 ? "fort" : retardMeaux >= 5 ? "moyen" : undefined;
 
-      const marcheMinutes = MARCHE_MINUTES_PAR_ARRET[arret] ?? null;
+      const marcheMinutes = descente.minutes;
       // Vrai quand la marche jusqu'à l'arrêt dure plus longtemps que le
       // temps restant avant le départ du bus : impossible à attraper à
       // pied, signal visuel urgent (voir bus-vers-onair-marche-temps /
       // bus-vers-onair-compte, main.css).
-      const marcheDepassee = marcheMinutes != null && marcheMinutes > Math.max(0, dansXMin);
-      const momentArretSalle =
-        marcheMinutes != null
-          ? new Date(
-              new Date(depart).getTime() -
-                (BUFFER_ARRET_ENTRAINEMENT_MINUTES + marcheMinutes) * MINUTE_EN_MS,
-            ).toISOString()
-          : null;
+      const marcheDepassee = marcheMinutes > Math.max(0, dansXMin);
+      const momentArretSalle = new Date(
+        new Date(depart).getTime() -
+          (BUFFER_ARRET_ENTRAINEMENT_MINUTES + marcheMinutes) * MINUTE_EN_MS,
+      ).toISOString();
 
       return {
         id: `${ligne.nom}-${trajet ?? depart}`,
@@ -415,23 +409,14 @@ export function construireBusRetour(donneesDeparts, dataMeaux, trainsRetour = []
       };
     })
     .filter((bus) => bus && new Date(bus.arrivee).getTime() >= maintenant - 2 * MINUTE_EN_MS)
-    .sort((a, b) => new Date(a.depart) - new Date(b.depart))
-    // Une ligne en boucle (ex. 2311) peut passer par plusieurs de nos
-    // arrêts pendant le même trajet, donc on ne garde qu'un arrêt par
-    // trajet identifié, celui le plus proche à pied d'On Air (Fauvettes
-    // > Saints Pères > Hayette), pas le premier chronologique de la boucle.
-    .filter((bus, index, tableau) => {
-      if (!bus.trajet) return true;
-      const candidats = tableau.filter((autre) => autre.trajet === bus.trajet);
-      const meilleur = candidats.reduce((a, b) =>
-        (PRIORITE_ARRET[a.arret] ?? Infinity) <= (PRIORITE_ARRET[b.arret] ?? Infinity) ? a : b,
-      );
-      return bus === meilleur;
-    });
+    .sort((a, b) => new Date(a.depart) - new Date(b.depart));
 
-  // Une ligne repliable par passage individuel, toutes lignes confondues,
-  // triées par heure de départ la plus proche.
-  return buses.slice(0, 8);
+  // Les bus déjà partis restent envoyés tant qu'ils roulent, le client ne les
+  // affiche que si leur ligne est ouverte (bus choisi), sans prendre de place
+  // parmi les 8 prochains.
+  const partis = buses.filter((bus) => !estAVenir(bus.depart, maintenant));
+  const aVenir = buses.filter((bus) => estAVenir(bus.depart, maintenant));
+  return [...partis, ...aVenir.slice(0, 8)];
 }
 
 // === Bus Hayette — Meaux → On Air ===
@@ -486,7 +471,12 @@ export function construireBusVersOnAir(donneesParQuai, maintenant = Date.now()) 
         };
       }),
     )
-    .filter((bus) => bus && new Date(bus.depart).getTime() >= maintenant - 2 * MINUTE_EN_MS)
+    .filter(
+      (bus) =>
+        bus &&
+        (estAVenir(bus.depart, maintenant) ||
+          new Date(bus.arriveeStop ?? bus.depart).getTime() >= maintenant),
+    )
     .sort((a, b) => new Date(a.depart) - new Date(b.depart));
 }
 

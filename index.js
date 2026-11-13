@@ -625,7 +625,6 @@ async function calculerDonneesTableauDeBord(req) {
       resultatTrafic,
       resultatMeteo,
       resultatBusHayette,
-      resultatBusCornillon,
       resultatBusFauvettes,
       resultatBusSaintsPeres,
       resultatBusMeaux,
@@ -635,7 +634,6 @@ async function calculerDonneesTableauDeBord(req) {
       recupererInfosTrafic(),
       obtenirMeteo(),
       recupererProchainsPassages("STIF:StopArea:SP:427141:"),
-      recupererProchainsPassages("STIF:StopArea:SP:10806:"),
       // Fauvettes 478203, confirmé sur place par l'utilisateur, à
       // reconfirmer en direct aux heures de service si des visites manquent.
       recupererProchainsPassages("STIF:StopArea:SP:478203:"),
@@ -840,9 +838,8 @@ async function calculerDonneesTableauDeBord(req) {
       "La Ferté-Milon",
     ]);
     const busRetour = construireBusRetour(
-      // Ordre Cornillon → Fauvettes → Saints Pères → La Hayette.
+      // Ordre Fauvettes → Saints Pères → La Hayette.
       [
-        resultatBusCornillon,
         resultatBusFauvettes,
         resultatBusSaintsPeres,
         resultatBusHayette,

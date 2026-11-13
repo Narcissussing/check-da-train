@@ -2,6 +2,26 @@ import { act, renderHook } from '@testing-library/react'
 import useBusPopupState from './useBusPopupState'
 
 describe('useBusPopupState', () => {
+  beforeEach(() => localStorage.clear())
+
+  test('picked rows survive a page refresh the same day', () => {
+    const premier = renderHook(() => useBusPopupState())
+    act(() => premier.result.current.basculerOuverture('bus-1'))
+    premier.unmount()
+
+    const { result } = renderHook(() => useBusPopupState())
+    expect(result.current.ouverts).toEqual(['bus-1'])
+  })
+
+  test('picked rows saved on another day are dropped', () => {
+    localStorage.setItem(
+      'cdt-bus-choisis',
+      JSON.stringify({ jour: '2000-01-01', ouverts: { 'meaux-onair': ['vieux'], 'onair-meaux': [] } }),
+    )
+    const { result } = renderHook(() => useBusPopupState())
+    expect(result.current.ouverts).toEqual([])
+  })
+
   test('filters and open rows survive a re-render (simulated 60s data refresh)', () => {
     const { result, rerender } = renderHook(() => useBusPopupState())
 
@@ -25,7 +45,7 @@ describe('useBusPopupState', () => {
     expect(result.current.ouverts).toEqual(['b', 'c'])
   })
 
-  test('swapping direction resets filters/sort/open-rows on both sides', () => {
+  test('swapping direction resets filters/sort but keeps each side\'s picked rows', () => {
     const { result } = renderHook(() => useBusPopupState())
     act(() => result.current.definirFiltre('meaux-onair', 'La Hayette'))
     act(() => result.current.basculerTri('meaux-onair'))
@@ -36,5 +56,8 @@ describe('useBusPopupState', () => {
     expect(result.current.filtres['meaux-onair']).toEqual({ arret: 'tous', tri: 'heure', visibles: false })
     expect(result.current.filtres['onair-meaux']).toEqual({ arret: 'tous', tri: 'heure', visibles: false })
     expect(result.current.ouverts).toEqual([])
+
+    act(() => result.current.basculerDirection())
+    expect(result.current.ouverts).toEqual(['x'])
   })
 })

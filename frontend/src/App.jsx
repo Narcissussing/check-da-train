@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Header from './components/Header/Header'
 import WeatherCard from './features/weather/WeatherCard'
@@ -26,6 +26,7 @@ export default function App() {
   const controleurActuel = useRef(null)
   const isPausedRef = useRef(false)
   const chargerRef = useRef(async () => {})
+  const rafraichirBus = useCallback(() => chargerRef.current(), [])
 
   useEffect(() => {
     isPausedRef.current = isPaused
@@ -195,6 +196,7 @@ export default function App() {
         open={busPopup.open}
         onClose={busPopup.hide}
         onInsideClick={busPopup.resetTimer}
+        onRefresh={rafraichirBus}
         busRetour={donnees.busRetour}
         busVersOnAir={donnees.busVersOnAir}
       />
