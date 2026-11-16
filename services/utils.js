@@ -212,6 +212,10 @@ export function extraireDeparts(data) {
         ? formaterHeure(heurePrevue)
         : undefined,
       ecartMinutes,
+      // Statut IDFM du passage (onTime, delayed, cancelled…).
+      statut:
+        visite?.MonitoredVehicleJourney?.MonitoredCall?.DepartureStatus ??
+        visite?.MonitoredVehicleJourney?.MonitoredCall?.ArrivalStatus,
       ponctualiteLibelle:
         ecartMinutes === undefined
           ? undefined

@@ -6,6 +6,7 @@ import {
   recupererDonneesMeteo,
   recupererInfosTrafic,
 } from "./services/api.js";
+import { noterPerturbations, noterRetards, demarrerReleveTrafic } from "./services/releve-trafic.js";
 import {
   extraireDeparts,
   extraireMessages,
@@ -643,6 +644,8 @@ async function calculerDonneesTableauDeBord(req) {
       recupererProchainsPassages("STIF:StopPoint:Q:19851:"),
     ]);
 
+    if (resultatTrafic.status === "fulfilled") noterPerturbations(resultatTrafic.value);
+
     // Direction Meaux → On Air, un appel par quai de départ (voir
     // QUAI_PAR_LIGNE/STOPPOINTS_QUAIS_MEAUX).
     const quaisMeaux = Object.entries(STOPPOINTS_QUAIS_MEAUX);
@@ -662,6 +665,7 @@ async function calculerDonneesTableauDeBord(req) {
     const departsTrilport = resultatOuTableau(resultatTrilport);
     const meauxDisponible = resultatMeaux.status === "fulfilled";
     const trilportDisponible = resultatTrilport.status === "fulfilled";
+    if (trilportDisponible) noterRetards(departsTrilport);
 
     // Départs Trilport → Meaux / Paris
     let departsTrilportDepart = filtrerDeparts(
@@ -1074,6 +1078,8 @@ app.get("/api/dashboard", async (req, res) => {
     res.status(500).json(donneesTableauDeBordErreur(error));
   }
 });
+
+demarrerReleveTrafic();
 
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
